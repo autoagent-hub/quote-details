@@ -58,10 +58,26 @@ type WhopEvent = {
   };
 };
 
-async function findProfileIdByEmail(email: string): Promise<string | null> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+async function getAdminClient() {
+  const { createClient } = await import("@supabase/supabase-js");
+  const url = process.env["EXTERNAL_SUPABASE_URL"] ?? process.env["SUPABASE_URL"];
+  const key =
+    process.env["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"] ??
+    process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!url || !key) return null;
+  const { Database } = {} as { Database: unknown };
+  void Database;
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+async function findProfileIdByEmail(
+  admin: NonNullable<Awaited<ReturnType<typeof getAdminClient>>>,
+  email: string,
+): Promise<string | null> {
   // Profiles mirror auth.users, so resolve the auth user by email.
-  const { data } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+  const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
   const user = data?.users?.find(
     (u) => u.email?.toLowerCase() === email.toLowerCase(),
   );
