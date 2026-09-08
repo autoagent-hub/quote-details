@@ -65,8 +65,6 @@ async function getAdminClient() {
     process.env["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"] ??
     process.env["SUPABASE_SERVICE_ROLE_KEY"];
   if (!url || !key) return null;
-  const { Database } = {} as { Database: unknown };
-  void Database;
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -121,9 +119,12 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
             : null;
         const membershipId = data.membership_id ?? data.id ?? null;
 
+        const admin = await getAdminClient();
+        if (!admin) return new Response("Not configured", { status: 503 });
+
         let profileId = metadataUserId;
         if (!profileId && email) {
-          profileId = await findProfileIdByEmail(email);
+          profileId = await findProfileIdByEmail(admin, email);
         }
 
         if (!profileId) {
@@ -131,8 +132,7 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
           return Response.json({ ok: true, matched: false });
         }
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { error } = await supabaseAdmin
+        const { error } = await admin
           .from("profiles")
           .update({
             trial_status: "SUBSCRIBED",
