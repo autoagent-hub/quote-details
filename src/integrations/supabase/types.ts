@@ -40,6 +40,8 @@ export type Database = {
           timezone: string
           truck_base: number
           vehicle_categories: Json
+          trial_status: string
+          whop_membership_id: string | null
         }
         Insert: {
           addon_ceramic?: number
@@ -66,6 +68,8 @@ export type Database = {
           timezone?: string
           truck_base?: number
           vehicle_categories?: Json
+          trial_status?: string
+          whop_membership_id?: string | null
         }
         Update: {
           addon_ceramic?: number
@@ -92,6 +96,8 @@ export type Database = {
           timezone?: string
           truck_base?: number
           vehicle_categories?: Json
+          trial_status?: string
+          whop_membership_id?: string | null
         }
         Relationships: []
       }
