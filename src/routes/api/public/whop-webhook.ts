@@ -12,27 +12,37 @@ function verifyWhopSignature(
   signatureHeader: string,
   body: string,
 ): boolean {
-  const rawSecret = secret.startsWith("whsec_") ? secret.slice(6) : secret;
-  let key: Buffer;
-  try {
-    key = Buffer.from(rawSecret, "base64");
-  } catch {
-    return false;
+  // Support both key formats: Standard Webhooks ("whsec_" + base64)
+  // and opaque keys ("ws_..." used as-is).
+  const keys: Buffer[] = [];
+  if (secret.startsWith("whsec_")) {
+    try {
+      keys.push(Buffer.from(secret.slice(6), "base64"));
+    } catch {
+      /* fall through */
+    }
   }
+  keys.push(Buffer.from(secret, "utf8"));
+  if (keys.length === 0) return false;
 
   // Reject events older than 5 minutes to prevent replay attacks.
   const ts = Number(timestamp);
   if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false;
 
-  const expected = createHmac("sha256", key).update(`${id}.${timestamp}.${body}`).digest("base64");
+  const signed = `${id}.${timestamp}.${body}`;
+  const expectedList = keys.map((key) =>
+    createHmac("sha256", key).update(signed).digest("base64"),
+  );
 
   // Header may contain multiple space-separated "v1,<sig>" entries.
   for (const part of signatureHeader.split(" ")) {
     const [version, sig] = part.split(",", 2);
     if (version !== "v1" || !sig) continue;
     const a = Buffer.from(sig);
-    const b = Buffer.from(expected);
-    if (a.length === b.length && timingSafeEqual(a, b)) return true;
+    for (const expected of expectedList) {
+      const b = Buffer.from(expected);
+      if (a.length === b.length && timingSafeEqual(a, b)) return true;
+    }
   }
   return false;
 }
