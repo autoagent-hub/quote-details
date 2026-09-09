@@ -106,8 +106,15 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
           return new Response("Invalid JSON", { status: 400 });
         }
 
-        const handled = ["membership.activated", "payment.succeeded"];
-        if (!event.type || !handled.includes(event.type)) {
+        // Map Whop events to the resulting trial_status.
+        const statusByEvent: Record<string, string> = {
+          "membership.activated": "SUBSCRIBED",
+          "payment.succeeded": "SUBSCRIBED",
+          "membership.deactivated": "CANCELLED",
+          "payment.failed": "PAST_DUE",
+        };
+        const newStatus = event.type ? statusByEvent[event.type] : undefined;
+        if (!event.type || !newStatus) {
           return Response.json({ ok: true, ignored: event.type ?? "unknown" });
         }
 
@@ -135,7 +142,7 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
         const { error } = await admin
           .from("profiles")
           .update({
-            trial_status: "SUBSCRIBED",
+            trial_status: newStatus,
             ...(membershipId ? { whop_membership_id: membershipId } : {}),
           })
           .eq("id", profileId);
@@ -145,7 +152,7 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
           return Response.json({ ok: false }, { status: 500 });
         }
 
-        return Response.json({ ok: true, matched: true, trial_status: "SUBSCRIBED" });
+        return Response.json({ ok: true, matched: true, trial_status: newStatus });
       },
     },
   },
