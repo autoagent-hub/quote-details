@@ -44,18 +44,19 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
+        const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         toast.success("Account created");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      const { data } = await supabase.auth.getSession();
+      let { data } = await supabase.auth.getSession();
+      if (!data.session && mode === "signup") {
+        // Email confirmation is disabled: sign straight in.
+        await supabase.auth.signInWithPassword({ email, password });
+        ({ data } = await supabase.auth.getSession());
+      }
       if (data.session) navigate({ to: "/dashboard" });
       else toast.info("Check your inbox to confirm your email.");
     } catch (error) {
