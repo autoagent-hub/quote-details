@@ -142,7 +142,7 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
         const { error } = await admin
           .from("profiles")
           .update({
-            trial_status: "SUBSCRIBED",
+            trial_status: newStatus,
             ...(membershipId ? { whop_membership_id: membershipId } : {}),
           })
           .eq("id", profileId);
@@ -152,7 +152,7 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
           return Response.json({ ok: false }, { status: 500 });
         }
 
-        return Response.json({ ok: true, matched: true, trial_status: "SUBSCRIBED" });
+        return Response.json({ ok: true, matched: true, trial_status: newStatus });
       },
     },
   },
