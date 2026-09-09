@@ -48,7 +48,9 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
     const token = process.env["TELEGRAM_BOT_TOKEN"];
     if (!token) return { sent: false, reason: "no_bot_token" as const };
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { getAdminClient } = await import("@/lib/admin.server");
+    const supabaseAdmin = getAdminClient();
+    if (!supabaseAdmin) return { sent: false, reason: "no_admin_client" as const };
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select(
