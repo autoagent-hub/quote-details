@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHash, timingSafeEqual } from "crypto";
+import { getAdminClient } from "@/lib/admin.server";
 
 function deriveSecret(token: string): string {
   return createHash("sha256").update(`telegram-webhook:${token}`).digest("base64url");
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         const text = (update.message?.text ?? "").trim();
         if (!chatId) return Response.json({ ok: true, ignored: true });
 
-        const match = /^\/start(?:\s+([A-Za-z0-9]+))?$/.exec(text);
+        const match = /^\/start(?:[@\w]*)?(?:\s+(\S+))?$/.exec(text);
         if (!match) {
           await send(
             token,
@@ -48,7 +49,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           return Response.json({ ok: true });
         }
 
-        const code = match[1];
+        const code = (match[1] ?? "").trim().toLowerCase();
         if (!code) {
           await send(
             token,
@@ -58,24 +59,48 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           return Response.json({ ok: true });
         }
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("id, business_name")
-          .eq("telegram_auth_code", code)
-          .maybeSingle();
-
-        if (!profile) {
-          await send(token, chatId, "That link has expired. Grab a fresh one from your dashboard.");
-          return Response.json({ ok: true });
+        const admin = getAdminClient();
+        if (!admin) {
+          await send(
+            token,
+            chatId,
+            "I can't reach QuoteFlow right now. Please try again in a minute.",
+          );
+          return Response.json({ ok: false }, { status: 503 });
         }
 
-        const { error } = await supabaseAdmin
+        const { data: profile, error: lookupError } = await admin
+          .from("profiles")
+          .select("id, business_name")
+          .ilike("telegram_auth_code", code)
+          .maybeSingle();
+
+        if (lookupError) {
+          console.error("telegram webhook lookup failed:", lookupError.message);
+          await send(
+            token,
+            chatId,
+            "Something went wrong on our side. Please tap the Connect button again in a moment.",
+          );
+          return Response.json({ ok: false }, { status: 500 });
+        }
+
+        if (!profile) {
+          await send(
+            token,
+            chatId,
+            "I couldn't match that link to an account. Open your QuoteFlow dashboard → Alerts and tap Connect Telegram Bot again.",
+          );
+          return Response.json({ ok: true, matched: false });
+        }
+
+        const { error } = await admin
           .from("profiles")
           .update({ telegram_chat_id: String(chatId) })
           .eq("id", profile.id);
 
         if (error) {
+          console.error("telegram webhook update failed:", error.message);
           await send(token, chatId, "Something went wrong linking this chat. Please try again.");
           return Response.json({ ok: false }, { status: 500 });
         }
