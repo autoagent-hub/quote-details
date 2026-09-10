@@ -13,6 +13,7 @@ import {
   Plus,
   Send,
   Sparkles,
+  CreditCard,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -196,9 +197,16 @@ function Dashboard() {
             </span>
             QuoteFlow
           </Link>
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            <LogOut className="size-4" /> Sign out
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/upgrade">
+                <CreditCard className="size-4" /> Upgrade
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="size-4" /> Sign out
+            </Button>
+          </div>
         </div>
       </header>
 

@@ -49,7 +49,12 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           return Response.json({ ok: true });
         }
 
-        const code = (match[1] ?? "").trim().toLowerCase();
+        // Telegram start payloads are limited to A-Z, a-z, 0-9, _ and -.
+        // Strip any punctuation accidentally copied around the code.
+        const code = (match[1] ?? "")
+          .trim()
+          .replace(/[^a-zA-Z0-9_-]/g, "")
+          .toLowerCase();
         if (!code) {
           await send(
             token,
@@ -72,7 +77,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         const { data: profile, error: lookupError } = await admin
           .from("profiles")
           .select("id, business_name")
-          .ilike("telegram_auth_code", code)
+          .eq("telegram_auth_code", code)
           .maybeSingle();
 
         if (lookupError) {
