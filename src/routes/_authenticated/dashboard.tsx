@@ -13,6 +13,7 @@ import {
   Plus,
   Send,
   Sparkles,
+  CreditCard,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -48,7 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { sendQuoteAlert } from "@/lib/telegram.functions";
+import { prepareTelegramLink, sendQuoteAlert } from "@/lib/telegram.functions";
 import { Switch } from "@/components/ui/switch";
 import {
   CURRENCIES,
@@ -196,9 +197,16 @@ function Dashboard() {
             </span>
             QuoteFlow
           </Link>
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            <LogOut className="size-4" /> Sign out
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/upgrade">
+                <CreditCard className="size-4" /> Upgrade
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="size-4" /> Sign out
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -803,6 +811,11 @@ function NotificationSettingsCard({ profile }: { profile: Profile }) {
 
 function TelegramCard({ authCode, chatId }: { authCode: string; chatId: string | null }) {
   const connected = !!chatId;
+  const prepare = useMutation({
+    mutationFn: () => prepareTelegramLink(),
+    onSuccess: ({ href }) => window.location.assign(href),
+    onError: (error: Error) => toast.error(error.message),
+  });
   return (
     <Card className="shadow-card">
       <CardHeader className="flex-row items-center justify-between gap-3">
@@ -823,15 +836,18 @@ function TelegramCard({ authCode, chatId }: { authCode: string; chatId: string |
             ? "Every new quote request is pushed to your Telegram chat in real time."
             : "Tap below and press Start in Telegram. Your unique code links the bot to this account."}
         </p>
-        <Button asChild variant={connected ? "outline" : "hero"} size="xl">
-          <a
-            href={`https://t.me/${TELEGRAM_BOT}?start=${authCode}`}
-            target="_blank"
-            rel="noreferrer"
-          >
+        <Button
+          variant={connected ? "outline" : "hero"}
+          size="xl"
+          disabled={prepare.isPending}
+          onClick={() => prepare.mutate()}
+        >
+          {prepare.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
             <Send className="size-4" />
-            {connected ? "Reconnect Telegram Bot" : "Connect Telegram Bot"}
-          </a>
+          )}
+          {connected ? "Reconnect Telegram Bot" : "Connect Telegram Bot"}
         </Button>
         <p className="font-mono text-xs text-muted-foreground">Auth code: {authCode}</p>
       </CardContent>

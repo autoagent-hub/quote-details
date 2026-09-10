@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Check, CreditCard, Loader2, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-
-const WHOP_CHECKOUT_URL = import.meta.env["VITE_WHOP_CHECKOUT_URL"] as string | undefined;
+import { getUpgradeCheckout } from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
   head: () => ({
@@ -46,6 +46,7 @@ const statusCopy: Record<string, { label: string; note: string }> = {
 };
 
 function Upgrade() {
+  const fetchCheckout = useServerFn(getUpgradeCheckout);
   const { data, isLoading } = useQuery({
     queryKey: ["upgrade-account"],
     queryFn: async () => {
@@ -64,24 +65,24 @@ function Upgrade() {
       };
     },
   });
+  const { data: checkout } = useQuery({
+    queryKey: ["upgrade-checkout"],
+    queryFn: () => fetchCheckout(),
+  });
 
   const status = data?.status ?? "TRIAL";
-  const copy = statusCopy[status] ?? statusCopy["TRIAL"]!;
+  const copy = statusCopy[status] ?? {
+    label: "Free trial",
+    note: "You're on the trial. Upgrade any time to keep going.",
+  };
   const subscribed = status === "SUBSCRIBED";
-
-  let checkoutHref = "";
-  if (WHOP_CHECKOUT_URL && data) {
-    const url = new URL(WHOP_CHECKOUT_URL);
-    url.searchParams.set("metadata[user_id]", data.userId);
-    if (data.email) url.searchParams.set("email", data.email);
-    checkoutHref = url.toString();
-  }
+  const checkoutHref = checkout?.href ?? "";
 
   return (
     <div className="min-h-screen bg-surface pb-16">
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
-          <Link to="/_authenticated/dashboard" className="flex items-center gap-2 text-sm font-medium">
+          <Link to="/dashboard" className="flex items-center gap-2 text-sm font-medium">
             <ArrowLeft className="size-4" /> Back to dashboard
           </Link>
           <span className="flex items-center gap-2 font-display text-base font-bold">
@@ -128,7 +129,7 @@ function Upgrade() {
 
               {subscribed ? (
                 <Button asChild variant="outline" size="xl">
-                  <Link to="/_authenticated/dashboard">Back to dashboard</Link>
+                  <Link to="/dashboard">Back to dashboard</Link>
                 </Button>
               ) : checkoutHref ? (
                 <Button asChild variant="hero" size="xl">

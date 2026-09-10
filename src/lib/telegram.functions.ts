@@ -1,4 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createHash } from "crypto";
+
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type AlertInput = {
   detailerId: string;
@@ -14,6 +17,45 @@ type AlertInput = {
 };
 
 const API = "https://api.telegram.org/bot";
+
+export const prepareTelegramLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const token = process.env["TELEGRAM_BOT_TOKEN"];
+    const appUrl = process.env["PUBLIC_APP_URL"];
+    if (!token || !appUrl) throw new Error("Telegram is not configured");
+
+    const { data: profile, error: profileError } = await context.supabase
+      .from("profiles")
+      .select("telegram_auth_code")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (profileError) throw new Error(profileError.message);
+    if (!profile?.telegram_auth_code) throw new Error("Finish setting up your account first");
+
+    const secret = createHash("sha256")
+      .update(`telegram-webhook:${token}`)
+      .digest("base64url");
+    const webhookUrl = `${appUrl.replace(/\/$/, "")}/api/public/telegram/webhook`;
+    const response = await fetch(`${API}${token}/setWebhook`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        url: webhookUrl,
+        secret_token: secret,
+        allowed_updates: ["message"],
+        drop_pending_updates: false,
+      }),
+    });
+    const result = (await response.json()) as { ok?: boolean; description?: string };
+    if (!response.ok || !result.ok) {
+      throw new Error(result.description ?? `Telegram setup failed (${response.status})`);
+    }
+
+    return {
+      href: `https://t.me/${TELEGRAM_BOT}?start=${encodeURIComponent(profile.telegram_auth_code)}`,
+    };
+  });
 
 function fmt(value: number, currency: string): string {
   const amount = Math.round(Number(value) || 0);
