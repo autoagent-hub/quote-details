@@ -49,7 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { sendQuoteAlert } from "@/lib/telegram.functions";
+import { prepareTelegramLink, sendQuoteAlert } from "@/lib/telegram.functions";
 import { Switch } from "@/components/ui/switch";
 import {
   CURRENCIES,
@@ -811,6 +811,11 @@ function NotificationSettingsCard({ profile }: { profile: Profile }) {
 
 function TelegramCard({ authCode, chatId }: { authCode: string; chatId: string | null }) {
   const connected = !!chatId;
+  const prepare = useMutation({
+    mutationFn: () => prepareTelegramLink(),
+    onSuccess: ({ href }) => window.location.assign(href),
+    onError: (error: Error) => toast.error(error.message),
+  });
   return (
     <Card className="shadow-card">
       <CardHeader className="flex-row items-center justify-between gap-3">
@@ -831,15 +836,18 @@ function TelegramCard({ authCode, chatId }: { authCode: string; chatId: string |
             ? "Every new quote request is pushed to your Telegram chat in real time."
             : "Tap below and press Start in Telegram. Your unique code links the bot to this account."}
         </p>
-        <Button asChild variant={connected ? "outline" : "hero"} size="xl">
-          <a
-            href={`https://t.me/${TELEGRAM_BOT}?start=${authCode}`}
-            target="_blank"
-            rel="noreferrer"
-          >
+        <Button
+          variant={connected ? "outline" : "hero"}
+          size="xl"
+          disabled={prepare.isPending}
+          onClick={() => prepare.mutate()}
+        >
+          {prepare.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
             <Send className="size-4" />
-            {connected ? "Reconnect Telegram Bot" : "Connect Telegram Bot"}
-          </a>
+          )}
+          {connected ? "Reconnect Telegram Bot" : "Connect Telegram Bot"}
         </Button>
         <p className="font-mono text-xs text-muted-foreground">Auth code: {authCode}</p>
       </CardContent>
