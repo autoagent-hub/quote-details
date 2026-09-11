@@ -52,8 +52,13 @@ export const prepareTelegramLink = createServerFn({ method: "POST" })
       throw new Error(result.description ?? `Telegram setup failed (${response.status})`);
     }
 
+    const meResponse = await fetch(`${API}${token}/getMe`);
+    const me = (await meResponse.json()) as { ok?: boolean; result?: { username?: string } };
+    const username = me.result?.username ?? process.env["TELEGRAM_BOT_USERNAME"];
+    if (!username) throw new Error("Could not resolve the Telegram bot");
+
     return {
-      href: `https://t.me/${TELEGRAM_BOT}?start=${encodeURIComponent(profile.telegram_auth_code)}`,
+      href: `https://t.me/${username}?start=${encodeURIComponent(profile.telegram_auth_code)}`,
     };
   });
 

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { requestAuthCode, verifyRecoveryCode, verifySignupCode } from "@/lib/auth-codes.functions";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -26,11 +27,15 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+type Mode = "signin" | "signup" | "forgot";
+
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signup");
+  const [mode, setMode] = useState<Mode>("signup");
+  const [step, setStep] = useState<"details" | "code">("details");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -39,28 +44,66 @@ function AuthPage() {
     });
   }, [navigate]);
 
-  const submit = async (e: React.FormEvent) => {
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setStep("details");
+    setCode("");
+  };
+
+  const fail = (error: unknown) =>
+    toast.error(error instanceof Error ? error.message : "Something went wrong");
+
+  const submitDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (mode === "signin") {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        navigate({ to: "/dashboard" });
+        return;
+      }
+      await requestAuthCode({
+        data: { email, purpose: mode === "signup" ? "signup" : "recovery" },
+      });
+      setStep("code");
+      toast.success(`We sent a 6-digit code to ${email}`);
+    } catch (error) {
+      fail(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        toast.success("Account created");
+        await verifySignupCode({ data: { email, code, password } });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        await verifyRecoveryCode({ data: { email, code, password } });
+        toast.success("Password updated");
       }
-      let { data } = await supabase.auth.getSession();
-      if (!data.session && mode === "signup") {
-        // Email confirmation is disabled: sign straight in.
-        await supabase.auth.signInWithPassword({ email, password });
-        ({ data } = await supabase.auth.getSession());
-      }
-      if (data.session) navigate({ to: "/dashboard" });
-      else toast.info("Check your inbox to confirm your email.");
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      navigate({ to: "/dashboard" });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Something went wrong");
+      fail(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resend = async () => {
+    setLoading(true);
+    try {
+      await requestAuthCode({
+        data: { email, purpose: mode === "signup" ? "signup" : "recovery" },
+      });
+      toast.success("New code sent");
+    } catch (error) {
+      fail(error);
     } finally {
       setLoading(false);
     }
@@ -78,6 +121,24 @@ function AuthPage() {
     navigate({ to: "/dashboard" });
   };
 
+  const title =
+    step === "code"
+      ? "Enter your code"
+      : mode === "signup"
+        ? "Start your free trial"
+        : mode === "signin"
+          ? "Welcome back"
+          : "Reset your password";
+
+  const subtitle =
+    step === "code"
+      ? `We emailed a 6-digit code to ${email}. It expires in 10 minutes.`
+      : mode === "signup"
+        ? "7 days free. Set your prices in minutes."
+        : mode === "signin"
+          ? "Sign in to your detailer dashboard."
+          : "We'll email you a code to set a new password.";
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-surface px-5 py-10">
       <Link to="/" className="mb-6 flex items-center gap-2 font-display text-lg font-bold">
@@ -89,65 +150,120 @@ function AuthPage() {
 
       <Card className="w-full max-w-sm shadow-card">
         <CardContent className="p-6">
-          <h1 className="text-xl font-bold">
-            {mode === "signup" ? "Start your free trial" : "Welcome back"}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {mode === "signup"
-              ? "7 days free. Set your prices in minutes."
-              : "Sign in to your detailer dashboard."}
-          </p>
+          <h1 className="text-xl font-bold">{title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@detailing.co"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-            </div>
-            <Button type="submit" variant="hero" size="xl" disabled={loading}>
-              {loading && <Loader2 className="size-4 animate-spin" />}
-              {mode === "signup" ? "Create account" : "Sign in"}
-            </Button>
-          </form>
+          {step === "details" ? (
+            <form onSubmit={submitDetails} className="mt-6 space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@detailing.co"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password">
+                  {mode === "forgot" ? "New password" : "Password"}
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+              <Button type="submit" variant="hero" size="xl" disabled={loading}>
+                {loading && <Loader2 className="size-4 animate-spin" />}
+                {mode === "signup"
+                  ? "Send confirmation code"
+                  : mode === "signin"
+                    ? "Sign in"
+                    : "Send reset code"}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={submitCode} className="mt-6 space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="code">6-digit code</Label>
+                <Input
+                  id="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  required
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="123456"
+                  className="text-center text-lg tracking-[0.4em]"
+                />
+              </div>
+              <Button type="submit" variant="hero" size="xl" disabled={loading}>
+                {loading && <Loader2 className="size-4 animate-spin" />}
+                {mode === "signup" ? "Confirm & create account" : "Reset password"}
+              </Button>
+              <div className="flex items-center justify-between text-sm">
+                <button
+                  type="button"
+                  onClick={resend}
+                  disabled={loading}
+                  className="cursor-pointer text-muted-foreground hover:text-foreground"
+                >
+                  Resend code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep("details")}
+                  className="cursor-pointer text-muted-foreground hover:text-foreground"
+                >
+                  Change email
+                </button>
+              </div>
+            </form>
+          )}
 
-          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
-          </div>
+          {step === "details" && (
+            <>
+              <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="h-px flex-1 bg-border" /> or{" "}
+                <span className="h-px flex-1 bg-border" />
+              </div>
 
-          <Button variant="outline" size="xl" onClick={google}>
-            Continue with Google
-          </Button>
+              <Button variant="outline" size="xl" onClick={google}>
+                Continue with Google
+              </Button>
 
-          <button
-            type="button"
-            onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-            className="mt-5 w-full cursor-pointer text-sm text-muted-foreground hover:text-foreground"
-          >
-            {mode === "signup"
-              ? "Already have an account? Sign in"
-              : "New here? Create an account"}
-          </button>
+              <button
+                type="button"
+                onClick={() => switchMode(mode === "signup" ? "signin" : "signup")}
+                className="mt-5 w-full cursor-pointer text-sm text-muted-foreground hover:text-foreground"
+              >
+                {mode === "signup"
+                  ? "Already have an account? Sign in"
+                  : "New here? Create an account"}
+              </button>
+
+              {mode !== "forgot" && (
+                <button
+                  type="button"
+                  onClick={() => switchMode("forgot")}
+                  className="mt-2 w-full cursor-pointer text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Forgot your password?
+                </button>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
