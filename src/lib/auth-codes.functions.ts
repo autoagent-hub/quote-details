@@ -59,7 +59,7 @@ function emailHtml(code: string, purpose: Purpose) {
 async function sendCodeEmail(to: string, code: string, purpose: Purpose) {
   const apiKey = process.env["RESEND_API_KEY"];
   if (!apiKey) throw new Error("Email sending is not configured yet.");
-  const from = process.env["EMAIL_FROM"] ?? "QuoteFlow <noreply@detailr.online>";
+  const from = "QuoteFlow <noreply@detailr.online>";
   const subject =
     purpose === "signup"
       ? `${code} is your QuoteFlow confirmation code`
