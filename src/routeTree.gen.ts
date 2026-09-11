@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
+import { Route as ApiPublicCheckEmailDomainRouteImport } from './routes/api/public/check-email-domain'
 import { Route as ApiPublicWhopWebhookRouteImport } from './routes/api/public/whop-webhook'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 
@@ -47,6 +48,12 @@ const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
   path: '/upgrade',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicCheckEmailDomainRoute =
+  ApiPublicCheckEmailDomainRouteImport.update({
+    id: '/api/public/check-email-domain',
+    path: '/api/public/check-email-domain',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWhopWebhookRoute = ApiPublicWhopWebhookRouteImport.update({
   id: '/api/public/whop-webhook',
   path: '/api/public/whop-webhook',
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
   '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
   '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
@@ -85,6 +94,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
+  '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
   '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/upgrade'
+    | '/api/public/check-email-domain'
     | '/api/public/whop-webhook'
     | '/api/public/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/upgrade'
+    | '/api/public/check-email-domain'
     | '/api/public/whop-webhook'
     | '/api/public/telegram/webhook'
   id:
@@ -115,6 +127,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/dashboard'
     | '/_authenticated/upgrade'
+    | '/api/public/check-email-domain'
     | '/api/public/whop-webhook'
     | '/api/public/telegram/webhook'
   fileRoutesById: FileRoutesById
@@ -124,6 +137,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   Business_slugRoute: typeof Business_slugRoute
   AuthRoute: typeof AuthRoute
+  ApiPublicCheckEmailDomainRoute: typeof ApiPublicCheckEmailDomainRoute
   ApiPublicWhopWebhookRoute: typeof ApiPublicWhopWebhookRoute
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
 }
@@ -172,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/check-email-domain': {
+      id: '/api/public/check-email-domain'
+      path: '/api/public/check-email-domain'
+      fullPath: '/api/public/check-email-domain'
+      preLoaderRoute: typeof ApiPublicCheckEmailDomainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/whop-webhook': {
       id: '/api/public/whop-webhook'
       path: '/api/public/whop-webhook'
@@ -207,6 +228,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   Business_slugRoute: Business_slugRoute,
   AuthRoute: AuthRoute,
+  ApiPublicCheckEmailDomainRoute: ApiPublicCheckEmailDomainRoute,
   ApiPublicWhopWebhookRoute: ApiPublicWhopWebhookRoute,
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
 }
