@@ -218,6 +218,9 @@ function Dashboard() {
               <PublicLink slug={profile.slug} />
             </div>
 
+            <TrialBanner />
+
+
             <Tabs defaultValue="requests">
               <TabsList className="w-full overflow-x-auto">
                 <TabsTrigger value="requests">Requests</TabsTrigger>
