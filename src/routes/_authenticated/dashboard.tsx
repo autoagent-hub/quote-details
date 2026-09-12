@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Check,
   Copy,
@@ -50,6 +51,7 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { prepareTelegramLink, sendQuoteAlert } from "@/lib/telegram.functions";
+import { getTrialState } from "@/lib/billing.functions";
 import { Switch } from "@/components/ui/switch";
 import {
   CURRENCIES,
@@ -1201,5 +1203,49 @@ function TestingCard({ profile }: { profile: Profile }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function TrialBanner() {
+  const fetchTrial = useServerFn(getTrialState);
+  const { data } = useQuery({ queryKey: ["trial-state"], queryFn: () => fetchTrial() });
+  if (!data) return null;
+
+  if (data.status === "SUBSCRIBED") {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
+        <p className="text-sm font-medium">You're on QuoteFlow Pro — $15/month.</p>
+        <Badge>Pro</Badge>
+      </div>
+    );
+  }
+
+  const expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
+  const daysLeft = expiresAt
+    ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 86400000))
+    : null;
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
+      <div>
+        <p className="text-sm font-medium">
+          {data.expired
+            ? "Your 7-day free trial has ended."
+            : daysLeft !== null
+              ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left in your free trial`
+              : "You're on the free trial"}
+        </p>
+        {expiresAt && (
+          <p className="text-xs text-muted-foreground">
+            {data.expired ? "Ended" : "Ends"} {expiresAt.toLocaleDateString()}
+          </p>
+        )}
+      </div>
+      <Button asChild variant="hero" size="sm">
+        <Link to="/upgrade">
+          <CreditCard className="size-4" /> Upgrade for $15/month
+        </Link>
+      </Button>
+    </div>
   );
 }
