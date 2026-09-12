@@ -41,6 +41,7 @@ export type Database = {
           truck_base: number
           vehicle_categories: Json
           trial_status: string
+          trial_expiry: string
           whop_membership_id: string | null
         }
         Insert: {
@@ -69,6 +70,7 @@ export type Database = {
           truck_base?: number
           vehicle_categories?: Json
           trial_status?: string
+          trial_expiry?: string
           whop_membership_id?: string | null
         }
         Update: {
@@ -97,6 +99,7 @@ export type Database = {
           truck_base?: number
           vehicle_categories?: Json
           trial_status?: string
+          trial_expiry?: string
           whop_membership_id?: string | null
         }
         Relationships: []
