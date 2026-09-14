@@ -5,16 +5,23 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Check,
   Copy,
+  CreditCard,
+  DollarSign,
   ExternalLink,
   FlaskConical,
   Image as ImageIcon,
   Link2,
   Loader2,
   LogOut,
+  MessageSquare,
+  Phone,
   Plus,
+  Search,
   Send,
-  CreditCard,
+  Sparkles,
   Trash2,
+  TrendingUp,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -71,13 +78,13 @@ const TELEGRAM_BOT = "QuoteFlowAlertsBot";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Detailer Dashboard — QuoteFlow" },
+      { title: "Detailer Dashboard — Detailr (detailr.online)" },
       {
         name: "description",
         content:
-          "Set your detailing prices, vehicle categories, Telegram alerts and review incoming quote requests.",
+          "Set your detailing prices, vehicle categories, Telegram alerts and review incoming quote requests on Detailr.",
       },
-      { property: "og:title", content: "Detailer Dashboard — QuoteFlow" },
+      { property: "og:title", content: "Detailer Dashboard — Detailr (detailr.online)" },
       {
         property: "og:description",
         content: "Manage pricing, branding, Telegram alerts and quote history.",
@@ -263,26 +270,37 @@ function Dashboard() {
 
 function PublicLink({ slug }: { slug: string }) {
   const [origin, setOrigin] = useState("");
+  const [copied, setCopied] = useState(false);
   useEffect(() => setOrigin(window.location.origin), []);
   const url = `${origin}/${slug}`;
 
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(url);
+    setCopied(true);
+    toast.success("Quote form link copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-      <Link2 className="size-4" />
-      <span className="font-medium text-foreground">/{slug}</span>
+    <div className="mt-3 flex flex-wrap items-center gap-2.5">
+      <div className="flex items-center gap-1.5 rounded-lg border border-border/80 bg-background/80 px-3 py-1.5 shadow-xs">
+        <Link2 className="size-3.5 text-primary" />
+        <span className="font-mono text-xs font-semibold text-foreground break-all">
+          {origin ? `${origin.replace(/^https?:\/\//, "")}/${slug}` : `detailr.online/${slug}`}
+        </span>
+      </div>
       <Button
-        variant="ghost"
+        variant="outline"
         size="sm"
-        onClick={() => {
-          void navigator.clipboard.writeText(url);
-          toast.success("Quote link copied");
-        }}
+        className="h-8 gap-1.5 text-xs font-semibold"
+        onClick={handleCopy}
       >
-        <Copy className="size-3.5" /> Copy link
+        {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
+        {copied ? "Copied!" : "Copy Link"}
       </Button>
-      <Button asChild variant="ghost" size="sm">
+      <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-semibold">
         <Link to="/$business_slug" params={{ business_slug: slug }} search={{}}>
-          <ExternalLink className="size-3.5" /> Preview
+          <ExternalLink className="size-3.5" /> Preview Form
         </Link>
       </Button>
     </div>
@@ -925,108 +943,269 @@ function QuoteHistory({
   categories: VehicleCategory[];
 }) {
   const [showTests, setShowTests] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const testCount = quotes.filter((q) => q.is_test).length;
-  const visible = showTests ? quotes : quotes.filter((q) => !q.is_test);
+  const realQuotes = quotes.filter((q) => !q.is_test);
+  const visible = showTests ? quotes : realQuotes;
+
+  // Pipeline stats
+  const totalPipeline = quotes.reduce((acc, q) => acc + (Number(q.estimated_price) || 0), 0);
+  const avgQuote = quotes.length ? Math.round(totalPipeline / quotes.length) : 0;
+
+  // Search filter
+  const filtered = visible.filter((q) => {
+    if (!searchQuery.trim()) return true;
+    const term = searchQuery.toLowerCase();
+    return (
+      q.customer_name?.toLowerCase().includes(term) ||
+      q.customer_phone?.toLowerCase().includes(term) ||
+      q.vehicle_desc?.toLowerCase().includes(term) ||
+      q.vehicle_type?.toLowerCase().includes(term) ||
+      q.service_label?.toLowerCase().includes(term)
+    );
+  });
 
   return (
-    <Card className="shadow-card">
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle className="text-base">Quote requests</CardTitle>
-        {testCount > 0 && (
-          <span className="flex items-center gap-2 text-xs text-muted-foreground">
-            Show my {testCount} test{testCount === 1 ? "" : "s"}
-            <Switch
-              checked={showTests}
-              aria-label="Show test requests"
-              onCheckedChange={setShowTests}
-            />
-          </span>
-        )}
-      </CardHeader>
-      <CardContent className="px-0 sm:px-6">
-        {visible.length === 0 ? (
-          <p className="px-6 pb-2 text-sm text-muted-foreground sm:px-0">
-            No requests yet. Share your quote link to start collecting leads.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Add-ons</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead>Photos</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead>When</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visible.map((q) => (
-                  <TableRow key={q.id} className={q.is_test ? "opacity-70" : undefined}>
-                    <TableCell className="font-medium">
-                      {q.customer_name}
-                      {q.is_test && (
-                        <Badge variant="secondary" className="ml-2 align-middle">
-                          <FlaskConical className="size-3" /> TEST
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <a href={`tel:${q.customer_phone}`} className="text-primary hover:underline">
-                        {q.customer_phone}
-                      </a>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      <span className="block font-medium">
-                        {q.vehicle_desc || vehicleLabel(q.vehicle_type, categories)}
-                      </span>
-                      {q.vehicle_desc && (
-                        <span className="text-xs text-muted-foreground">
-                          {vehicleLabel(q.vehicle_type, categories)}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {q.service_label || "—"}
-                      {q.service_price ? (
-                        <span className="block text-xs text-muted-foreground">
-                          {money(Number(q.service_price), q.currency || currency)}
-                        </span>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {q.addons.length
-                        ? q.addons.map((a) => addonLabel(a, services)).join(", ")
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="max-w-[16rem] text-xs whitespace-pre-wrap text-muted-foreground">
-                      {q.notes?.trim() ? q.notes : "—"}
-                    </TableCell>
-                    <TableCell>
-                      {q.photo_urls?.length ? (
-                        <PhotoDialog paths={q.photo_urls} customer={q.customer_name} />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {money(Number(q.estimated_price), q.currency || currency)}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {formatWhen(q.created_at, timezone)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+    <div className="space-y-5">
+      {/* Top Metrics Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="border-border/80 shadow-xs">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Total Leads
+              </span>
+              <Users className="size-4 text-primary" />
+            </div>
+            <p className="mt-2 font-display text-2xl font-bold text-foreground">{quotes.length}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              {realQuotes.length} real customer{realQuotes.length === 1 ? "" : "s"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/80 shadow-xs">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Pipeline Value
+              </span>
+              <DollarSign className="size-4 text-emerald-600" />
+            </div>
+            <p className="mt-2 font-display text-2xl font-bold text-emerald-600">
+              {money(totalPipeline, currency)}
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Estimated quote totals</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/80 shadow-xs">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Avg. Ticket
+              </span>
+              <TrendingUp className="size-4 text-blue-500" />
+            </div>
+            <p className="mt-2 font-display text-2xl font-bold text-foreground">
+              {money(avgQuote, currency)}
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Per detailing quote</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/80 shadow-xs">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Alert Bot
+              </span>
+              <Send className="size-4 text-blue-500" />
+            </div>
+            <div className="mt-2 flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-sm font-bold text-foreground">Active</p>
+            </div>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Instant Telegram pings</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Quote Requests Card */}
+      <Card className="border-border/80 shadow-card">
+        <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle className="text-base font-bold">Customer Quote Requests</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Instant estimates generated by customers using your link.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {testCount > 0 && (
+              <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
+                <span>
+                  Show {testCount} test{testCount === 1 ? "" : "s"}
+                </span>
+                <Switch
+                  checked={showTests}
+                  aria-label="Show test requests"
+                  onCheckedChange={setShowTests}
+                />
+              </label>
+            )}
+          </div>
+        </CardHeader>
+
+        {/* Search Filter Bar */}
+        {quotes.length > 0 && (
+          <div className="border-b border-border/80 px-6 py-2.5">
+            <div className="relative max-w-sm">
+              <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search by customer, phone, or car..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 pl-8 text-xs"
+              />
+            </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+
+        <CardContent className="px-0 sm:px-6">
+          {filtered.length === 0 ? (
+            <div className="px-6 py-12 text-center sm:px-0">
+              <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-surface border border-border">
+                <Users className="size-5 text-muted-foreground" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-foreground">
+                {searchQuery ? "No matching quotes found" : "No quote requests yet"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+                {searchQuery
+                  ? "Try clearing your search query to see all customer leads."
+                  : "Share your unique quote link on Instagram, Yelp, Google Business, or your truck to start receiving leads."}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Quick Contact</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Service Package</TableHead>
+                    <TableHead>Add-ons</TableHead>
+                    <TableHead>Notes & Photos</TableHead>
+                    <TableHead className="text-right">Estimated Total</TableHead>
+                    <TableHead className="text-right">When</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((q) => (
+                    <TableRow
+                      key={q.id}
+                      className={q.is_test ? "opacity-75 bg-surface/30" : undefined}
+                    >
+                      <TableCell className="font-semibold text-foreground">
+                        <div>
+                          {q.customer_name}
+                          {q.is_test && (
+                            <Badge variant="secondary" className="ml-2 text-[10px] py-0">
+                              <FlaskConical className="size-2.5 mr-1" /> TEST
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <a
+                            href={`tel:${q.customer_phone}`}
+                            title={`Call ${q.customer_name}`}
+                            className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-500/20 transition-colors"
+                          >
+                            <Phone className="size-3" /> Call
+                          </a>
+                          <a
+                            href={`sms:${q.customer_phone}`}
+                            title={`SMS ${q.customer_name}`}
+                            className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-500/20 transition-colors"
+                          >
+                            <MessageSquare className="size-3" /> Text
+                          </a>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-sm">
+                        <span className="block font-medium text-foreground">
+                          {q.vehicle_desc || vehicleLabel(q.vehicle_type, categories)}
+                        </span>
+                        {q.vehicle_desc && (
+                          <span className="text-xs text-muted-foreground">
+                            {vehicleLabel(q.vehicle_type, categories)}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="text-sm">
+                        <span className="font-medium text-foreground">
+                          {q.service_label || "—"}
+                        </span>
+                        {q.service_price ? (
+                          <span className="block text-xs text-muted-foreground">
+                            {money(Number(q.service_price), q.currency || currency)}
+                          </span>
+                        ) : null}
+                      </TableCell>
+
+                      <TableCell className="text-xs text-muted-foreground">
+                        {q.addons.length
+                          ? q.addons.map((a) => addonLabel(a, services)).join(", ")
+                          : "—"}
+                      </TableCell>
+
+                      <TableCell className="text-xs">
+                        <div className="flex items-center gap-2">
+                          {q.photo_urls?.length ? (
+                            <PhotoDialog paths={q.photo_urls} customer={q.customer_name} />
+                          ) : null}
+                          {q.notes?.trim() ? (
+                            <span
+                              className="max-w-[12rem] truncate text-muted-foreground"
+                              title={q.notes}
+                            >
+                              {q.notes}
+                            </span>
+                          ) : (
+                            !q.photo_urls?.length && (
+                              <span className="text-muted-foreground">—</span>
+                            )
+                          )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        <span className="font-display font-bold text-foreground">
+                          {money(Number(q.estimated_price), q.currency || currency)}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="text-right text-xs text-muted-foreground">
+                        {formatWhen(q.created_at, timezone)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -1200,16 +1379,19 @@ function TrialBanner() {
 
   if (data.status === "SUBSCRIBED") {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 shadow-xs">
         <div className="flex items-center gap-2.5">
           <img
             src="/favicon.png"
-            alt="QuoteFlow"
+            alt="Detailr"
             className="size-5 rounded-md object-contain shadow-xs"
           />
-          <p className="text-sm font-medium">You're on QuoteFlow Pro — $15/month.</p>
+          <p className="text-sm font-medium text-foreground">
+            You're on <span className="font-bold">Detailr Pro</span> ($15/month) · Unlimited leads
+            active.
+          </p>
         </div>
-        <Badge>Pro</Badge>
+        <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">Pro Member</Badge>
       </div>
     );
   }
@@ -1220,24 +1402,30 @@ function TrialBanner() {
     : null;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
-      <div>
-        <p className="text-sm font-medium">
-          {data.expired
-            ? "Your 7-day free trial has ended."
-            : daysLeft !== null
-              ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left in your free trial`
-              : "You're on the free trial"}
-        </p>
-        {expiresAt && (
-          <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-            {data.expired ? "Ended" : "Ends"} {expiresAt.toLocaleDateString()}
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-xs">
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Sparkles className="size-4.5" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-foreground">
+            {data.expired
+              ? "Your 7-day free trial has ended"
+              : daysLeft !== null
+                ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left in your free trial`
+                : "You're on the free trial"}
           </p>
-        )}
+          {expiresAt && (
+            <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+              {data.expired ? "Ended on" : "Trial ends"} {expiresAt.toLocaleDateString()} · Keep
+              receiving instant Telegram leads
+            </p>
+          )}
+        </div>
       </div>
-      <Button asChild variant="hero" size="sm">
+      <Button asChild variant="hero" size="sm" className="shadow-xs font-semibold">
         <Link to="/upgrade">
-          <CreditCard className="size-4" /> Upgrade for $15/month
+          <CreditCard className="size-4" /> Upgrade to Pro ($15/mo)
         </Link>
       </Button>
     </div>

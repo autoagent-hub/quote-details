@@ -1,6 +1,6 @@
 {
-  "name": "QuoteFlow",
-  "description": "Instant web quotes and real-time Telegram alerts for mobile auto detailers.",
+  "name": "Detailr",
+  "description": "Instant web quotes and real-time Telegram alerts for mobile auto detailers — detailr.online",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

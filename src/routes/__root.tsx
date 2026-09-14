@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -13,6 +14,7 @@ import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { QuoteFlowLogo } from "../components/QuoteFlowLogo";
+import { supabase } from "../integrations/supabase/client";
 
 function NotFoundComponent() {
   return (
@@ -85,13 +87,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "QuoteFlow — Instant Detailing Quotes" },
+      { title: "Detailr — Instant Detailing Quotes & Telegram Alerts (detailr.online)" },
       {
         name: "description",
         content:
-          "QuoteFlow gives mobile auto detailers instant customer price estimates and real-time Telegram quote alerts.",
+          "Detailr (detailr.online) gives mobile auto detailers instant customer price estimates and real-time Telegram quote alerts.",
       },
-      { property: "og:title", content: "QuoteFlow — Instant Detailing Quotes" },
+      { property: "og:title", content: "Detailr — Instant Detailing Quotes (detailr.online)" },
       {
         property: "og:description",
         content: "Instant web quotes and real-time Telegram alerts for mobile auto detailers.",
@@ -136,6 +138,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && typeof window !== "undefined") {
+        const path = window.location.pathname;
+        if (path === "/login" || path === "/signup" || path === "/auth") {
+          navigate({ to: "/dashboard" });
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -13,17 +13,17 @@ import { getUpgradeCheckout } from "@/lib/billing.functions";
 export const Route = createFileRoute("/_authenticated/upgrade")({
   head: () => ({
     meta: [
-      { title: "Upgrade to QuoteFlow Pro — $15/month" },
+      { title: "Upgrade to Detailr Pro — $15/month (detailr.online)" },
       {
         name: "description",
         content:
-          "Move from your free QuoteFlow trial to the $15/month plan and keep unlimited quote requests and real-time Telegram alerts.",
+          "Move from your free Detailr trial to the $15/month plan and keep unlimited quote requests and real-time Telegram alerts on detailr.online.",
       },
-      { property: "og:title", content: "Upgrade to QuoteFlow Pro — $15/month" },
+      { property: "og:title", content: "Upgrade to Detailr Pro — $15/month" },
       {
         property: "og:description",
         content:
-          "Unlimited quote requests, Telegram alerts and your branded quote link for $15/month.",
+          "Unlimited quote requests, Telegram alerts and your branded quote link for $15/month on detailr.online.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -109,11 +109,11 @@ function Upgrade() {
                 <div className="flex items-center gap-2">
                   <img
                     src="/favicon.png"
-                    alt="QuoteFlow logo"
+                    alt="Detailr logo"
                     className="size-5 rounded-md object-contain shadow-xs"
                   />
                   <p className="text-xs font-semibold tracking-widest uppercase opacity-90">
-                    QuoteFlow Pro
+                    Detailr Pro
                   </p>
                 </div>
                 <Badge variant={subscribed ? "default" : "secondary"}>{copy.label}</Badge>

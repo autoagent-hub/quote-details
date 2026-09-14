@@ -36,12 +36,12 @@ export const Route = createFileRoute("/$business_slug")({
     search["test"] === "1" || search["test"] === true ? { test: true } : {},
   head: ({ params }) => ({
     meta: [
-      { title: `Get an instant detailing quote — QuoteFlow` },
+      { title: `Get an instant detailing quote — Detailr (detailr.online)` },
       {
         name: "description",
-        content: `Pick your vehicle and service to get an instant detailing price estimate from ${params.business_slug.replace(/-/g, " ")}.`,
+        content: `Pick your vehicle and service to get an instant detailing price estimate from ${params.business_slug.replace(/-/g, " ")} on detailr.online.`,
       },
-      { property: "og:title", content: "Get an instant detailing quote" },
+      { property: "og:title", content: "Get an instant detailing quote — Detailr" },
       {
         property: "og:description",
         content: "Choose your vehicle, service and add-ons and see your price instantly.",
@@ -226,7 +226,7 @@ function QuoteForm() {
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
         <img
           src="/favicon.png"
-          alt="QuoteFlow"
+          alt="Detailr"
           className="size-12 rounded-xl object-contain shadow-xs"
         />
         <h1 className="text-xl font-bold">Quote form not found</h1>
@@ -234,7 +234,7 @@ function QuoteForm() {
           No detailer uses the link <span className="font-medium">/{business_slug}</span> yet.
         </p>
         <Button asChild variant="outline" className="mt-2">
-          <Link to="/">Back to QuoteFlow</Link>
+          <Link to="/">Back to Detailr</Link>
         </Button>
       </div>
     );
@@ -285,27 +285,45 @@ function QuoteForm() {
           🧪 Test mode — this request is tagged as a test, not a real customer lead.
         </div>
       )}
-      <header className="border-b border-border bg-background px-5 py-5">
-        <div className="mx-auto flex max-w-md items-center gap-3">
-          {profile.logo_url ? (
-            <img
-              src={profile.logo_url}
-              alt={`${profile.business_name} logo`}
-              className="size-12 shrink-0 rounded-xl border border-border object-cover"
-            />
-          ) : (
-            <img
-              src="/favicon.png"
-              alt="QuoteFlow"
-              className="size-12 shrink-0 rounded-xl border border-border bg-background p-1.5 object-contain shadow-xs"
-            />
-          )}
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold">{profile.business_name}</h1>
-            <p className="truncate text-sm text-muted-foreground">
-              {profile.tagline || "Instant detailing quote — takes 30 seconds."}
-            </p>
+      <header className="border-b border-border/80 bg-background/90 px-5 py-4 backdrop-blur-md sticky top-0 z-30 shadow-xs">
+        <div className="mx-auto flex max-w-md items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {profile.logo_url ? (
+              <img
+                src={profile.logo_url}
+                alt={`${profile.business_name} logo`}
+                className="size-11 shrink-0 rounded-xl border border-border object-cover shadow-xs"
+              />
+            ) : (
+              <img
+                src="/favicon.png"
+                alt="Detailr"
+                className="size-11 shrink-0 rounded-xl border border-border bg-background p-1.5 object-contain shadow-xs"
+              />
+            )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="truncate text-base font-bold text-foreground">
+                  {profile.business_name}
+                </h1>
+                <CheckCircle2 className="size-3.5 text-primary shrink-0" />
+              </div>
+              <p className="truncate text-xs text-muted-foreground">
+                {profile.tagline || "Instant mobile detailing estimate"}
+              </p>
+            </div>
           </div>
+
+          {profile.phone && (
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0 gap-1 text-xs font-semibold"
+            >
+              <a href={`tel:${profile.phone}`}>Call</a>
+            </Button>
+          )}
         </div>
       </header>
 
@@ -556,16 +574,29 @@ function QuoteForm() {
         </div>
       </form>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 px-5 py-4 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 border-t border-border/80 bg-background/95 px-5 py-3.5 backdrop-blur-md shadow-2xl z-40">
         <div className="mx-auto max-w-md">
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Estimated total</span>
-            <span className="font-display text-lg font-bold">{money(quote.total, currency)}</span>
+          <div className="mb-2 flex items-baseline justify-between">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Estimated Total
+            </span>
+            <span className="font-display text-2xl font-bold text-foreground">
+              {money(quote.total, currency)}
+            </span>
           </div>
-          <Button variant="hero" size="xl" disabled={!ready || submitting} onClick={() => submit()}>
+          <Button
+            variant="hero"
+            size="xl"
+            disabled={!ready || submitting}
+            onClick={() => submit()}
+            className="w-full shadow-lift font-bold"
+          >
             {submitting && <Loader2 className="size-4 animate-spin" />}
-            Request Quote
+            Request Instant Quote
           </Button>
+          <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
+            ✓ Free instant estimate · No payment required now
+          </p>
         </div>
       </div>
     </div>
@@ -575,10 +606,10 @@ function QuoteForm() {
 function StepLabel({ step, title }: { step: number; title: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="flex size-6 items-center justify-center rounded-full bg-foreground text-[11px] font-bold text-background">
+      <span className="flex size-6 items-center justify-center rounded-lg bg-primary/10 text-[11px] font-bold text-primary">
         {step}
       </span>
-      <h2 className="text-sm font-semibold tracking-wide uppercase">{title}</h2>
+      <h2 className="text-xs font-bold tracking-wider uppercase text-foreground">{title}</h2>
     </div>
   );
 }

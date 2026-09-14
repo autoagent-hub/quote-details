@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "vite build && node scripts/prepare-deploy.js",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "start": "node dist/server/index.mjs",
+    "start": "node start.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

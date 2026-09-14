@@ -44,7 +44,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           await send(
             token,
             chatId,
-            "Open your QuoteFlow dashboard and tap “Connect Telegram Bot” to link this chat.",
+            "Open your Detailr dashboard (detailr.online) and tap “Connect Telegram Bot” to link this chat.",
           );
           return Response.json({ ok: true });
         }
@@ -59,7 +59,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           await send(
             token,
             chatId,
-            "Almost there — use the Connect Telegram Bot button in your QuoteFlow dashboard so I know which business this chat belongs to.",
+            "Almost there — use the Connect Telegram Bot button in your Detailr dashboard so I know which business this chat belongs to.",
           );
           return Response.json({ ok: true });
         }
@@ -69,7 +69,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           await send(
             token,
             chatId,
-            "I can't reach QuoteFlow right now. Please try again in a minute.",
+            "I can't reach Detailr right now. Please try again in a minute.",
           );
           return Response.json({ ok: false }, { status: 503 });
         }
@@ -94,7 +94,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           await send(
             token,
             chatId,
-            "I couldn't match that link to an account. Open your QuoteFlow dashboard → Alerts and tap Connect Telegram Bot again.",
+            "I couldn't match that link to an account. Open your Detailr dashboard → Alerts and tap Connect Telegram Bot again.",
           );
           return Response.json({ ok: true, matched: false });
         }

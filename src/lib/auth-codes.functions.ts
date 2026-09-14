@@ -28,17 +28,17 @@ function emailHtml(code: string, purpose: Purpose) {
   const heading = purpose === "signup" ? "Confirm your email" : "Reset your password";
   const intro =
     purpose === "signup"
-      ? "Use the code below to finish creating your QuoteFlow account."
-      : "Use the code below to set a new password for your QuoteFlow account.";
+      ? "Use the code below to finish creating your Detailr account."
+      : "Use the code below to set a new password for your Detailr account.";
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${heading}</title></head>
 <body style="margin:0;padding:0;background-color:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${heading} — your QuoteFlow code is ${code}</div>
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${heading} — your Detailr code is ${code}</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;">
     <tr><td align="center" style="padding:32px 16px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;border:1px solid #e5e7eb;border-radius:12px;">
         <tr><td style="padding:28px 28px 8px 28px;">
-          <p style="margin:0;font-size:18px;font-weight:bold;">QuoteFlow</p>
+          <p style="margin:0;font-size:18px;font-weight:bold;">Detailr</p>
         </td></tr>
         <tr><td style="padding:0 28px;">
           <h1 style="margin:12px 0 8px 0;font-size:20px;">${heading}</h1>
@@ -48,7 +48,7 @@ function emailHtml(code: string, purpose: Purpose) {
         </td></tr>
         <tr><td style="padding:20px 28px 28px 28px;">
           <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 12px 0;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;">Sent by QuoteFlow · detailr.online</p>
+          <p style="margin:0;font-size:12px;color:#9ca3af;">Sent by Detailr · detailr.online</p>
         </td></tr>
       </table>
     </td></tr>
@@ -60,11 +60,11 @@ async function sendCodeEmail(to: string, code: string, purpose: Purpose) {
   const apiKey = process.env["RESEND_API_KEY"];
   if (!apiKey) throw new Error("Email sending is not configured yet.");
   const emailFrom = process.env["EMAIL_FROM"] || "noreply@detailr.online";
-  const from = emailFrom.includes("<") ? emailFrom : `QuoteFlow <${emailFrom}>`;
+  const from = emailFrom.includes("<") ? emailFrom : `Detailr <${emailFrom}>`;
   const subject =
     purpose === "signup"
-      ? `${code} is your QuoteFlow confirmation code`
-      : `${code} is your QuoteFlow password reset code`;
+      ? `${code} is your Detailr confirmation code`
+      : `${code} is your Detailr password reset code`;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -77,7 +77,7 @@ async function sendCodeEmail(to: string, code: string, purpose: Purpose) {
       to: [to],
       subject,
       html: emailHtml(code, purpose),
-      text: `${purpose === "signup" ? "Confirm your email" : "Reset your password"}\n\nYour QuoteFlow code is ${code}. It expires in 10 minutes.\n\nIf you didn't request this, ignore this email.\n\nQuoteFlow · detailr.online`,
+      text: `${purpose === "signup" ? "Confirm your email" : "Reset your password"}\n\nYour Detailr code is ${code}. It expires in 10 minutes.\n\nIf you didn't request this, ignore this email.\n\nDetailr · detailr.online`,
       reply_to: process.env["EMAIL_REPLY_TO"] ?? "support@detailr.online",
       headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
     }),

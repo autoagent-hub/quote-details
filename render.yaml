@@ -1,20 +1,20 @@
-# Render Blueprint for deploying the TanStack Start app as a Node.js web service.
+# Render Blueprint for deploying Detailr (detailr.online) as a Node.js web service.
 # After pushing this file, go to Render Dashboard → New → Blueprint and select this repo.
 services:
   - type: web
-    name: quote-details
+    name: detailr
     runtime: node
     region: oregon
     plan: starter
     branch: main
-    buildCommand: bun install && NITRO_PRESET=node-server bun run build
-    startCommand: bun run start
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: NITRO_PRESET
         value: node-server
-      # Required: copy these from your Lovable/Supabase project secrets.
+      # Required: copy these from your Supabase and provider project secrets.
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
@@ -28,4 +28,4 @@ services:
       - key: WHOP_CHECKOUT_URL
         sync: false
       - key: PUBLIC_APP_URL
-        value: https://quote-details.lovable.app
+        value: https://detailr.online
