@@ -632,16 +632,17 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
                     </label>
                   </div>
                 ) : mode === "signup" ? (
-                  <div className="rounded-xl border border-border/70 bg-surface p-3 text-xs text-muted-foreground">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
                     <div className="flex items-start gap-2">
-                      <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+                      <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
                       <div>
                         <span className="font-semibold text-foreground">
-                          7 Days Free · No Card Required
+                          7-Day Fair Trial · Starts on 1st Customer Visit
                         </span>
-                        <p className="mt-0.5 text-[11px]">
-                          Enjoy complete access to real-time Telegram alerts and your customized
-                          quote page.
+                        <p className="mt-0.5 text-[11px] text-muted-foreground leading-relaxed">
+                          Your 7-day trial only begins counting down after your first customer
+                          visits your quote link. Take your time setting up your pricing with zero
+                          wasted days.
                         </p>
                       </div>
                     </div>

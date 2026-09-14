@@ -792,6 +792,12 @@ function Landing() {
               <Link to="/signup" className="hover:text-foreground">
                 Start Free Trial
               </Link>
+              <Link
+                to="/admin"
+                className="hover:text-foreground opacity-80 hover:opacity-100 flex items-center gap-1"
+              >
+                Admin Console
+              </Link>
             </div>
 
             <div className="flex items-center gap-2 text-xs">
@@ -800,13 +806,18 @@ function Landing() {
             </div>
           </div>
 
-          <div className="mt-8 border-t border-border/60 pt-6 text-center text-xs text-muted-foreground">
+          <div className="mt-8 border-t border-border/60 pt-6 text-center text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-3">
             <p>
-              © {new Date().getFullYear()} Detailr (
+              © {new Date().getFullYear()}{" "}
+              <strong className="font-semibold text-foreground">Nerochaze</strong> · Detailr (
               <a href="https://detailr.online" className="underline hover:text-foreground">
                 detailr.online
               </a>
               ). Built specifically for mobile auto detailers.
+            </p>
+            <p className="text-muted-foreground/80">
+              A <strong className="font-medium text-foreground">Nerochaze</strong> Company. All
+              rights reserved.
             </p>
           </div>
         </div>

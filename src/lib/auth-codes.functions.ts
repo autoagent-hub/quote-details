@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { sendAdminTelegramAlert } from "@/lib/admin-telegram.functions";
 
 type Purpose = "signup" | "recovery";
 
@@ -202,10 +203,23 @@ async function consumeCode(email: string, purpose: Purpose, code: string) {
 
   const hash = await hashCode(email, purpose, code.trim());
   if (hash !== row.code_hash) {
+    const nextAttempts = row.attempts + 1;
     await admin
       .from("auth_codes" as never)
-      .update({ attempts: row.attempts + 1 } as never)
+      .update({ attempts: nextAttempts } as never)
       .eq("id", row.id);
+
+    if (nextAttempts >= 3) {
+      // Dispatch suspicious activity alert to admin
+      sendAdminTelegramAlert({
+        type: "SUSPICIOUS_ACTIVITY",
+        severity: nextAttempts >= MAX_ATTEMPTS ? "HIGH" : "WARNING",
+        userEmail: email,
+        reason: "Multiple failed authentication verification code attempts",
+        details: `${nextAttempts} consecutive invalid code attempts for ${purpose} operation.`,
+      }).catch((err) => console.warn("[admin-telegram] Alert send failed:", err));
+    }
+
     throw new Error("That code isn't right. Check it and try again.");
   }
 
@@ -229,6 +243,11 @@ export const verifySignupCode = createServerFn({ method: "POST" })
       email,
       password: data.password,
       email_confirm: true,
+      user_metadata: {
+        trial_status: "TRIAL_PENDING",
+        trial_pending_since: new Date().toISOString(),
+        link_views: 0,
+      },
     });
     if (error) {
       if (/already/i.test(error.message))
@@ -236,6 +255,13 @@ export const verifySignupCode = createServerFn({ method: "POST" })
       console.error("[auth-codes] createUser failed", error);
       throw new Error("Could not create your account. Please try again.");
     }
+
+    // Dispatch real-time Telegram notification to Admin
+    sendAdminTelegramAlert({
+      type: "NEW_SIGNUP",
+      userEmail: email,
+    }).catch((err) => console.warn("[admin-telegram] Signup alert failed:", err));
+
     return { ok: true };
   });
 

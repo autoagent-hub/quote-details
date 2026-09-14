@@ -14,6 +14,7 @@ import {
   Link2,
   Loader2,
   LogOut,
+  Mail,
   MessageSquare,
   Phone,
   Plus,
@@ -27,12 +28,14 @@ import {
   Settings2,
   Sliders,
   ReceiptText,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { SkeletonDashboard } from "@/components/skeletons/SkeletonDashboard";
+import { isAdminEmail } from "@/lib/admin-auth";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,6 +63,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { prepareTelegramLink, sendQuoteAlert } from "@/lib/telegram.functions";
 import { getTrialState } from "@/lib/billing.functions";
+import { sendMyWeeklySummary } from "@/lib/weekly-summary.functions";
 import { Switch } from "@/components/ui/switch";
 import {
   CURRENCIES,
@@ -99,6 +103,14 @@ function DashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const { data: user } = useQuery({
+    queryKey: ["auth-user"],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      return userData.user;
+    },
+  });
+
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -135,6 +147,8 @@ function DashboardPage() {
     navigate({ to: "/auth" });
   };
 
+  const isUserAdmin = isAdminEmail(user?.email);
+
   if (isLoading) {
     return <SkeletonDashboard />;
   }
@@ -157,6 +171,18 @@ function DashboardPage() {
                   {profile.business_name}
                 </span>
               </div>
+            )}
+            {isUserAdmin && (
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs font-semibold px-2.5 border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
+              >
+                <Link to="/admin">
+                  <Shield className="size-3 mr-1" /> Admin HQ
+                </Link>
+              </Button>
             )}
             <Button
               asChild
@@ -239,12 +265,21 @@ function DashboardPage() {
                   <BusinessProfileCard profile={profile} />
                   <NotificationSettingsCard profile={profile} />
                 </div>
+                <WeeklyEmailSummaryCard profile={profile} />
               </TabsContent>
             </Tabs>
           </>
         ) : (
           <Onboarding />
         )}
+
+        <footer className="mt-12 border-t border-border/60 pt-6 pb-8 text-center text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="size-2 rounded-full bg-emerald-500" />
+            <span>Detailr Production Cloud • Connected</span>
+          </div>
+          <p>© {new Date().getFullYear()} Detailr · A Nerochaze Company. All rights reserved.</p>
+        </footer>
       </main>
     </div>
   );
@@ -832,12 +867,17 @@ function useProfileUpdate(onDone: string) {
   return useMutation({
     mutationFn: async (payload: TablesUpdate<"profiles"> & { id: string }) => {
       const { id, ...rest } = payload;
+      // Anti-cheat: strip protected billing and subscription fields
+      delete (rest as Record<string, unknown>).trial_status;
+      delete (rest as Record<string, unknown>).trial_expiry;
+      delete (rest as Record<string, unknown>).whop_membership_id;
       const { error } = await supabase.from("profiles").update(rest).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success(onDone);
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      void queryClient.invalidateQueries({ queryKey: ["trial-state"] });
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -1137,6 +1177,94 @@ function NotificationSettingsCard({ profile }: { profile: Profile }) {
           Save Preferences
         </Button>
       </div>
+    </Card>
+  );
+}
+
+function WeeklyEmailSummaryCard({ profile }: { profile: Profile }) {
+  const triggerSummary = useServerFn(sendMyWeeklySummary);
+  const [lastSentEmail, setLastSentEmail] = useState<string | null>(null);
+
+  const send = useMutation({
+    mutationFn: async () => {
+      return await triggerSummary();
+    },
+    onSuccess: (data) => {
+      setLastSentEmail(data.email);
+      toast.success(`Weekly summary sent to ${data.email}! Check your inbox.`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to send weekly summary email");
+    },
+  });
+
+  return (
+    <Card className="border-border/80 shadow-xs" id="email-summary">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Mail className="size-4" />
+            </div>
+            <div>
+              <CardTitle className="text-sm font-bold">Automated Weekly Email Digest</CardTitle>
+              <CardDescription className="text-xs">
+                Executive weekly performance summary of all customer quotes and revenue pipeline.
+              </CardDescription>
+            </div>
+          </div>
+          <Badge
+            variant="outline"
+            className="text-[10px] w-fit border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          >
+            Resend Active · Automated
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="rounded-lg border border-border/70 bg-muted/40 p-3.5 text-xs text-muted-foreground space-y-2">
+          <div className="flex items-center justify-between text-foreground font-semibold">
+            <span>Weekly Digest Highlights</span>
+            <span className="text-[11px] text-primary">Scheduled weekly digest</span>
+          </div>
+          <ul className="space-y-1 text-[11px]">
+            <li className="flex items-center gap-1.5">
+              <span className="text-emerald-500 font-bold">✓</span> Total 7-day quote volume and
+              pipeline revenue
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="text-emerald-500 font-bold">✓</span> Full customer lead contacts and
+              requested detailing packages
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="text-emerald-500 font-bold">✓</span> Most requested detailing service
+              and ticket breakdown
+            </li>
+          </ul>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+          <p className="text-[11px] text-muted-foreground">
+            {lastSentEmail
+              ? `Last dispatched to ${lastSentEmail}`
+              : `Dispatches automatically to your registered detailer email via Resend`}
+          </p>
+          <Button
+            variant="hero"
+            size="sm"
+            className="h-8 text-xs font-semibold gap-1.5"
+            disabled={send.isPending}
+            onClick={() => send.mutate()}
+          >
+            {send.isPending ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Send className="size-3.5" />
+            )}
+            Send Weekly Summary to My Inbox
+          </Button>
+        </div>
+      </CardContent>
     </Card>
   );
 }
@@ -1534,9 +1662,46 @@ function TrialBanner() {
   });
 
   if (isLoading || !trial) return null;
-  const { status, daysLeft } = trial;
+  const { status, daysLeft, linkViews, firstVisitAt, isSuspended, suspensionReason } = trial;
+
+  if (isSuspended) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-xs text-rose-950 dark:text-rose-200">
+        <div className="flex items-center gap-2">
+          <CreditCard className="size-4 shrink-0 text-rose-600" />
+          <span>
+            <strong className="font-bold">Account Suspended:</strong>{" "}
+            {suspensionReason ||
+              "Your account has been restricted by administration. Please contact support@detailr.online."}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (status === "ACTIVE") return null;
+
+  if (status === "TRIAL_PENDING") {
+    return (
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3.5 py-2.5 text-xs text-sky-950 dark:text-sky-200">
+        <div className="flex items-start sm:items-center gap-2.5">
+          <Sparkles className="size-4 text-sky-600 shrink-0 mt-0.5 sm:mt-0" />
+          <div>
+            <strong className="font-bold">7-Day Free Trial (Ready & Waiting):</strong>{" "}
+            <span>
+              Your 7 days will only begin counting down after your first customer visits your quote
+              link. Zero wasted days while configuring your pricing!
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="rounded-full bg-sky-600/20 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-300">
+            0 / 7 Days Used
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (status === "TRIALING") {
     return (
@@ -1546,10 +1711,13 @@ function TrialBanner() {
           <span>
             <strong className="font-bold">7-Day Free Trial</strong> ({daysLeft}{" "}
             {daysLeft === 1 ? "day" : "days"} remaining)
+            {firstVisitAt && (
+              <span className="opacity-80 ml-1">· Started after 1st customer visit</span>
+            )}
           </span>
         </div>
         <Button asChild variant="hero" size="sm" className="h-6 text-[11px] font-semibold px-2.5">
-          <Link to="/upgrade">Upgrade ($9.99/mo)</Link>
+          <Link to="/upgrade">Upgrade to Pro</Link>
         </Button>
       </div>
     );
@@ -1559,10 +1727,10 @@ function TrialBanner() {
     <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3.5 py-2 text-xs text-destructive">
       <div className="flex items-center gap-2">
         <CreditCard className="size-3.5 shrink-0" />
-        <span>Trial expired. Upgrade to keep receiving quote requests.</span>
+        <span>Trial expired. Upgrade to keep receiving customer quote requests.</span>
       </div>
       <Button asChild variant="hero" size="sm" className="h-6 text-[11px] font-semibold px-2.5">
-        <Link to="/upgrade">Activate Pro ($9.99/mo)</Link>
+        <Link to="/upgrade">Activate Pro</Link>
       </Button>
     </div>
   );

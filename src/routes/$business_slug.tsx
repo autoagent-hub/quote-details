@@ -1,7 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, Car, Check, CheckCircle2, FlaskConical, Loader2, X } from "lucide-react";
+import {
+  Camera,
+  Car,
+  Check,
+  CheckCircle2,
+  FlaskConical,
+  Loader2,
+  X,
+  AlertOctagon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
@@ -23,6 +32,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, composePhone, defaultCountryForCurrency } from "@/lib/countries";
 import { sendQuoteAlert } from "@/lib/telegram.functions";
+import { recordPublicLinkVisit } from "@/lib/link-tracker.functions";
 
 import {
   calculateQuote,
@@ -154,6 +164,32 @@ function QuoteForm() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [isSuspended, setIsSuspended] = useState(false);
+  const [suspensionReason, setSuspensionReason] = useState("");
+
+  // Record link visit and activate 7-day trial on first customer visit
+  useEffect(() => {
+    let unmounted = false;
+    recordPublicLinkVisit({
+      data: {
+        slug: business_slug,
+        isTest: !!isTest,
+      },
+    })
+      .then((res) => {
+        if (unmounted) return;
+        if (res.isSuspended) {
+          setIsSuspended(true);
+          setSuspensionReason(
+            res.suspensionReason || "This shop quote link is currently inactive.",
+          );
+        }
+      })
+      .catch((err) => console.warn("[recordLinkVisit] error:", err));
+    return () => {
+      unmounted = true;
+    };
+  }, [business_slug, isTest]);
 
   const { data: profile = initialProfile, isLoading } = useQuery({
     queryKey: ["public-pricing", business_slug],
@@ -294,6 +330,24 @@ function QuoteForm() {
 
   if (isLoading) {
     return <SkeletonQuoteForm />;
+  }
+
+  if (isSuspended) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface px-6 text-center">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-sm">
+          <AlertOctagon className="size-7" />
+        </div>
+        <h1 className="text-xl font-bold">Shop Temporarily Inactive</h1>
+        <p className="max-w-md text-sm text-muted-foreground">
+          {suspensionReason ||
+            "This quote form is temporarily inactive or undergoing administrative updates."}
+        </p>
+        <Button asChild variant="outline" className="mt-2">
+          <Link to="/">Visit Detailr</Link>
+        </Button>
+      </div>
+    );
   }
 
   if (!profile) {
@@ -677,12 +731,15 @@ function QuoteForm() {
           </div>
         </section>
 
-        <div className="pt-2 pb-6 flex items-center justify-center">
+        <div className="pt-2 pb-6 flex flex-col items-center justify-center gap-1">
           <QuoteFlowLogo
             size="xs"
             linkToHome
             className="text-muted-foreground hover:text-foreground opacity-80"
           />
+          <span className="text-[10px] text-muted-foreground/80">
+            Powered by Detailr · A Nerochaze Company
+          </span>
         </div>
       </form>
 

@@ -176,20 +176,40 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // Priority: 1. Injected window.__PUBLIC_CONFIG__ (client runtime), 2. Vite import.meta.env, 3. process.env (Node SSR)
+  const clientConfig =
+    typeof window !== "undefined"
+      ? (
+          window as unknown as {
+            __PUBLIC_CONFIG__?: { supabaseUrl?: string; supabaseAnonKey?: string };
+          }
+        ).__PUBLIC_CONFIG__
+      : undefined;
+
   const publicConfig = {
     supabaseUrl:
+      clientConfig?.supabaseUrl ||
+      import.meta.env.VITE_SUPABASE_URL ||
+      import.meta.env["SUPABASE_URL"] ||
       (typeof process !== "undefined"
         ? process.env["VITE_SUPABASE_URL"] ||
           process.env["SUPABASE_URL"] ||
           process.env["EXTERNAL_SUPABASE_URL"]
-        : "") || "",
+        : "") ||
+      "",
     supabaseAnonKey:
+      clientConfig?.supabaseAnonKey ||
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      import.meta.env["VITE_SUPABASE_ANON_KEY"] ||
+      import.meta.env["SUPABASE_PUBLISHABLE_KEY"] ||
+      import.meta.env["SUPABASE_ANON_KEY"] ||
       (typeof process !== "undefined"
         ? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
           process.env["VITE_SUPABASE_ANON_KEY"] ||
           process.env["SUPABASE_PUBLISHABLE_KEY"] ||
           process.env["SUPABASE_ANON_KEY"]
-        : "") || "",
+        : "") ||
+      "",
   };
 
   const schemaJson = {
@@ -228,11 +248,13 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `window.__PUBLIC_CONFIG__ = ${JSON.stringify(publicConfig)};`,
           }}
         />
         <script
+          suppressHydrationWarning
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(schemaJson),

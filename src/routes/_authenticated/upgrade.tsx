@@ -163,6 +163,10 @@ function Upgrade() {
             </CardContent>
           </Card>
         )}
+
+        <footer className="mt-12 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} Detailr · A Nerochaze Company. All rights reserved.
+        </footer>
       </main>
     </div>
   );

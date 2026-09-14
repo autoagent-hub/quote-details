@@ -140,7 +140,7 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select(
-        "telegram_chat_id, business_name, currency, notify_telegram, notify_include_photos, notify_include_notes",
+        "telegram_chat_id, business_name, currency, notify_telegram, notify_include_photos, notify_include_notes, trial_status, trial_expiry, whop_membership_id",
       )
       .eq("id", data.detailerId)
       .maybeSingle();
@@ -148,6 +148,32 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
     const chatId = profile?.telegram_chat_id;
     if (!chatId) return { sent: false, reason: "not_connected" as const };
     if (profile.notify_telegram === false) return { sent: false, reason: "muted" as const };
+
+    // Anti-cheat: Verify detailer has active access (valid Whop subscription or active trial)
+    const isSubscribed =
+      profile.trial_status === "SUBSCRIBED" &&
+      !!profile.whop_membership_id &&
+      (profile.whop_membership_id.startsWith("mem_") ||
+        profile.whop_membership_id.startsWith("pay_"));
+    const isTrialActive =
+      !!profile.trial_expiry && new Date(profile.trial_expiry).getTime() > Date.now();
+
+    if (!isSubscribed && !isTrialActive && !data.isTest) {
+      // Trial expired and not subscribed: send upgrade notification instead of full quote
+      const appUrl = process.env["PUBLIC_APP_URL"] || "https://detailr.online";
+      const upgradeUrl = `${appUrl.replace(/\/$/, "")}/upgrade`;
+      await fetch(`${API}${token}/sendMessage`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `⚠️ <b>Detailr Alert: Quote Request Paused</b>\n\nA customer requested a quote, but your 7-day free trial has expired.\n\n👉 <a href="${upgradeUrl}">Activate Pro Plan to unlock incoming leads</a>`,
+          parse_mode: "HTML",
+          disable_web_page_preview: true,
+        }),
+      });
+      return { sent: false, reason: "trial_expired" as const };
+    }
 
     const currency = profile.currency || "USD";
     const photos = (data.photoPaths ?? []).slice(0, 10);

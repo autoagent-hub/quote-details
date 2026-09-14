@@ -49,6 +49,10 @@ function LoginPage() {
       </div>
 
       <AuthCard initialMode="signin" />
+
+      <footer className="mx-auto mt-10 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} Detailr · A Nerochaze Company. All rights reserved.
+      </footer>
     </div>
   );
 }

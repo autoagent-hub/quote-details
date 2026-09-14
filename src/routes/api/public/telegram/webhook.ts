@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHash, timingSafeEqual } from "crypto";
 import { getAdminClient } from "@/lib/admin.server";
+import { ADMIN_EMAILS } from "@/lib/admin-auth";
 
 function deriveSecret(token: string): string {
   return createHash("sha256").update(`telegram-webhook:${token}`).digest("base64url");
@@ -16,7 +17,7 @@ async function send(token: string, chatId: number | string, text: string) {
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text }),
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
   });
 }
 
@@ -39,6 +40,41 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         const text = (update.message?.text ?? "").trim();
         if (!chatId) return Response.json({ ok: true, ignored: true });
 
+        const admin = getAdminClient();
+        if (!admin) {
+          await send(
+            token,
+            chatId,
+            "I can't reach Detailr right now. Please try again in a minute.",
+          );
+          return Response.json({ ok: false }, { status: 503 });
+        }
+
+        // Handle /stats command for administrator
+        if (/^\/(?:stats|metrics)(?:[@\w]*)?$/i.test(text)) {
+          const { count: totalDetailers } = await admin
+            .from("profiles")
+            .select("id", { count: "exact", head: true });
+          const { data: quotes } = await admin.from("quotes").select("estimated_price");
+
+          const totalQuotes = quotes?.length || 0;
+          const pipelineValue = (quotes || []).reduce(
+            (acc, q) => acc + (Number(q.estimated_price) || 0),
+            0,
+          );
+
+          await send(
+            token,
+            chatId,
+            `📊 <b>Detailr Platform Overview</b>\n\n` +
+              `👥 <b>Total Detailers:</b> ${totalDetailers || 0}\n` +
+              `📋 <b>Total Quotes Generated:</b> ${totalQuotes}\n` +
+              `💰 <b>Total Pipeline Value:</b> $${Math.round(pipelineValue).toLocaleString()}\n\n` +
+              `👉 <a href="https://detailr.online/admin">Open Admin HQ</a>`,
+          );
+          return Response.json({ ok: true });
+        }
+
         const match = /^\/start(?:[@\w]*)?(?:\s+(\S+))?$/.exec(text);
         if (!match) {
           await send(
@@ -50,11 +86,50 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         }
 
         // Telegram start payloads are limited to A-Z, a-z, 0-9, _ and -.
-        // Strip any punctuation accidentally copied around the code.
         const code = (match[1] ?? "")
           .trim()
           .replace(/[^a-zA-Z0-9_-]/g, "")
           .toLowerCase();
+
+        // 1. Check if this is an Admin connection request (/start admin)
+        if (code === "admin" || code.startsWith("admin_")) {
+          const { data: authUsers } = await admin.auth.admin.listUsers();
+          let adminMatched = false;
+
+          for (const u of authUsers?.users || []) {
+            if (u.email && ADMIN_EMAILS.includes(u.email.toLowerCase())) {
+              adminMatched = true;
+              const meta = (u.user_metadata || {}) as Record<string, unknown>;
+              await admin.auth.admin.updateUserById(u.id, {
+                user_metadata: {
+                  ...meta,
+                  admin_telegram_chat_id: String(chatId),
+                },
+              });
+
+              await admin
+                .from("profiles")
+                .update({ telegram_chat_id: String(chatId) } as never)
+                .eq("id", u.id);
+            }
+          }
+
+          await send(
+            token,
+            chatId,
+            `🛡️ <b>Administrator Console Connected!</b>\n\n` +
+              `You are now registered as the Master System Administrator.\n\n` +
+              `🔔 <b>Active Push Alerts:</b>\n` +
+              `• 🚀 New User Registrations\n` +
+              `• 🚨 Suspicious Activity & Rate-Limit Spikes\n` +
+              `• 🛡️ Account Bans & Flagged Violations\n\n` +
+              `⚡ <b>Commands:</b>\n` +
+              `• <code>/stats</code> - Instant platform KPIs\n\n` +
+              `👉 <a href="https://detailr.online/admin">Open Master Admin Console</a>`,
+          );
+          return Response.json({ ok: true, admin: true });
+        }
+
         if (!code) {
           await send(
             token,
@@ -62,16 +137,6 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
             "Almost there — use the Connect Telegram Bot button in your Detailr dashboard so I know which business this chat belongs to.",
           );
           return Response.json({ ok: true });
-        }
-
-        const admin = getAdminClient();
-        if (!admin) {
-          await send(
-            token,
-            chatId,
-            "I can't reach Detailr right now. Please try again in a minute.",
-          );
-          return Response.json({ ok: false }, { status: 503 });
         }
 
         const { data: profile, error: lookupError } = await admin
