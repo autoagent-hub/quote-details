@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { motion } from "motion/react";
 import {
   ArrowRight,
   Bell,
@@ -214,7 +215,12 @@ function Landing() {
         <div className="mx-auto max-w-6xl px-5">
           <div className="grid items-center gap-12 lg:grid-cols-12">
             {/* Left Hero Copy */}
-            <div className="lg:col-span-7">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="lg:col-span-7"
+            >
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
                 <Sparkles className="size-3.5" />
                 <span>Exclusively Built for Mobile Auto Detailers</span>
@@ -239,7 +245,7 @@ function Landing() {
                   asChild
                   variant="hero"
                   size="lg"
-                  className="h-12 px-6 text-base shadow-lift font-semibold"
+                  className="h-12 px-6 text-base shadow-lift font-semibold transition-transform hover:scale-105"
                 >
                   <Link to="/signup">
                     Start 7-Day Free Trial <ArrowRight className="size-4.5" />
@@ -269,10 +275,15 @@ function Landing() {
                   <Check className="size-4 text-emerald-500 font-bold" /> Cancel anytime
                 </span>
               </div>
-            </div>
+            </motion.div>
 
             {/* Right Hero Showcase: Realistic Telegram Lead Mockup */}
-            <div className="relative lg:col-span-5">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="relative lg:col-span-5"
+            >
               <div className="relative rounded-3xl border border-border/80 bg-surface/90 p-4 shadow-2xl backdrop-blur-md sm:p-6">
                 {/* Hero image peek */}
                 <div className="relative mb-5 overflow-hidden rounded-2xl border border-border/60">
@@ -289,7 +300,12 @@ function Landing() {
                 </div>
 
                 {/* Animated Telegram Notification Card */}
-                <div className="rounded-2xl border border-blue-500/30 bg-card p-4 shadow-xl ring-1 ring-blue-500/10">
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ type: "spring", delay: 0.5, bounce: 0.4 }}
+                  className="mt-6 rounded-2xl border border-blue-500/30 bg-card p-4 shadow-xl ring-1 ring-blue-500/10"
+                >
                   <div className="flex items-center justify-between border-b border-border/70 pb-3">
                     <div className="flex items-center gap-2.5">
                       <div className="flex size-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
@@ -336,20 +352,24 @@ function Landing() {
                   </div>
 
                   <div className="mt-3.5 grid grid-cols-2 gap-2">
-                    <Button variant="hero" size="sm" className="h-9 text-xs font-semibold">
+                    <Button
+                      variant="hero"
+                      size="sm"
+                      className="h-9 text-xs font-semibold hover:scale-105 transition-transform"
+                    >
                       <PhoneCall className="size-3.5" /> Call Customer
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 border-border text-xs font-semibold"
+                      className="h-9 border-border text-xs font-semibold hover:bg-surface"
                     >
                       <MessageSquare className="size-3.5" /> Text Customer
                     </Button>
                   </div>
-                </div>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -357,37 +377,38 @@ function Landing() {
       {/* Metrics Bar */}
       <section className="border-y border-border/80 bg-surface/50 py-8">
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-5 sm:grid-cols-4 sm:gap-8 text-center">
-          <div>
-            <p className="font-display text-3xl font-bold text-foreground sm:text-4xl">$180K+</p>
-            <p className="mt-1 text-xs text-muted-foreground font-medium">
-              Quotes generated for detailers
-            </p>
-          </div>
-          <div>
-            <p className="font-display text-3xl font-bold text-emerald-600 sm:text-4xl">&lt; 20s</p>
-            <p className="mt-1 text-xs text-muted-foreground font-medium">
-              Average time to customer quote
-            </p>
-          </div>
-          <div>
-            <p className="font-display text-3xl font-bold text-primary sm:text-4xl">100%</p>
-            <p className="mt-1 text-xs text-muted-foreground font-medium">
-              Direct profits kept (0% fee)
-            </p>
-          </div>
-          <div>
-            <p className="font-display text-3xl font-bold text-foreground sm:text-4xl">3.2x</p>
-            <p className="mt-1 text-xs text-muted-foreground font-medium">
-              Higher lead conversion rate
-            </p>
-          </div>
+          {[
+            { value: "$180K+", label: "Quotes generated for detailers", color: "text-foreground" },
+            { value: "< 20s", label: "Average time to customer quote", color: "text-emerald-600" },
+            { value: "100%", label: "Direct profits kept (0% fee)", color: "text-primary" },
+            { value: "3.2x", label: "Higher lead conversion rate", color: "text-foreground" },
+          ].map((metric, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+            >
+              <p className={`font-display text-3xl font-bold sm:text-4xl ${metric.color}`}>
+                {metric.value}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground font-medium">{metric.label}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
       {/* Interactive Pricing Calculator Section */}
       <section id="calculator" className="py-20">
         <div className="mx-auto max-w-5xl px-5">
-          <div className="text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
+          >
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Live Product Experience
             </span>
@@ -398,9 +419,15 @@ function Landing() {
               Try the interactive estimator below. This is exactly what customers experience on your
               custom link.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="mt-10 overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="mt-10 overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl"
+          >
             <div className="border-b border-border/80 bg-surface/60 p-4 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -591,14 +618,20 @@ function Landing() {
                 </Button>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Features Grid */}
       <section id="features" className="border-t border-border/70 bg-surface/40 py-20">
         <div className="mx-auto max-w-6xl px-5">
-          <div className="text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5 }}
+            className="text-center"
+          >
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Built Specifically For Detailing
             </span>
@@ -609,25 +642,30 @@ function Landing() {
               Zero complex software. No apps for customers to download. Just instant quotes that
               close.
             </p>
-          </div>
+          </motion.div>
 
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((f) => (
-              <Card
+            {features.map((f, i) => (
+              <motion.div
                 key={f.title}
-                className="group border-border/80 bg-card p-6 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
               >
-                <div className="flex items-center justify-between">
-                  <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-105">
-                    <f.icon className="size-5" />
-                  </span>
-                  <span className="rounded-full bg-surface px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground border border-border/60">
-                    {f.badge}
-                  </span>
-                </div>
-                <h3 className="mt-5 text-lg font-bold text-foreground">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
-              </Card>
+                <Card className="group h-full border-border/80 bg-card p-6 shadow-sm transition-all hover:border-primary/40 hover:shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-105">
+                      <f.icon className="size-5" />
+                    </span>
+                    <span className="rounded-full bg-surface px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground border border-border/60">
+                      {f.badge}
+                    </span>
+                  </div>
+                  <h3 className="mt-5 text-lg font-bold text-foreground">{f.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -636,14 +674,20 @@ function Landing() {
       {/* How It Works in 3 Steps */}
       <section id="how-it-works" className="py-20">
         <div className="mx-auto max-w-5xl px-5">
-          <div className="text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5 }}
+            className="text-center"
+          >
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Quick 3-Minute Setup
             </span>
             <h2 className="mt-3 font-display text-3xl font-bold text-foreground sm:text-4xl">
               From Sign-up to First Lead in Minutes
             </h2>
-          </div>
+          </motion.div>
 
           <div className="mt-14 grid gap-8 md:grid-cols-3">
             {[
@@ -662,17 +706,21 @@ function Landing() {
                 title: "Close With 1 Tap",
                 body: "The moment a customer submits, your Telegram alerts you with their name, phone, and vehicle details. Call them back in seconds.",
               },
-            ].map((s) => (
-              <div
+            ].map((s, i) => (
+              <motion.div
                 key={s.step}
-                className="relative rounded-2xl border border-border/80 bg-card p-6 shadow-sm"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.6, delay: i * 0.15 }}
+                className="relative rounded-2xl border border-border/80 bg-card p-6 shadow-sm transition-transform hover:-translate-y-1"
               >
                 <span className="font-display text-4xl font-extrabold text-primary/30">
                   {s.step}
                 </span>
                 <h3 className="mt-3 text-lg font-bold text-foreground">{s.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -681,31 +729,45 @@ function Landing() {
       {/* Testimonials */}
       <section className="border-t border-border/80 bg-surface/50 py-20">
         <div className="mx-auto max-w-5xl px-5">
-          <div className="text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5 }}
+            className="text-center"
+          >
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Mobile Detailer Stories
             </span>
             <h2 className="mt-3 font-display text-3xl font-bold text-foreground sm:text-4xl">
               Loved by Detailers Across the US & UK
             </h2>
-          </div>
+          </motion.div>
 
           <div className="mt-12 grid gap-6 md:grid-cols-2">
-            {testimonials.map((t) => (
-              <Card key={t.name} className="border-border/80 bg-card p-6 shadow-sm">
-                <div className="flex gap-1 text-amber-500">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star key={i} className="size-4 fill-amber-500" />
-                  ))}
-                </div>
-                <p className="mt-4 text-sm leading-relaxed text-foreground italic">"{t.quote}"</p>
-                <div className="mt-6 border-t border-border/70 pt-4">
-                  <p className="text-sm font-bold text-foreground">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t.company} · {t.location}
-                  </p>
-                </div>
-              </Card>
+            {testimonials.map((t, i) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.5, delay: i * 0.15 }}
+              >
+                <Card className="h-full border-border/80 bg-card p-6 shadow-sm">
+                  <div className="flex gap-1 text-amber-500">
+                    {Array.from({ length: t.rating }).map((_, i) => (
+                      <Star key={i} className="size-4 fill-amber-500" />
+                    ))}
+                  </div>
+                  <p className="mt-4 text-sm leading-relaxed text-foreground italic">"{t.quote}"</p>
+                  <div className="mt-6 border-t border-border/70 pt-4">
+                    <p className="text-sm font-bold text-foreground">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.company} · {t.location}
+                    </p>
+                  </div>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -714,7 +776,13 @@ function Landing() {
       {/* Pricing Section */}
       <section id="pricing" className="py-20">
         <div className="mx-auto max-w-lg px-5">
-          <div className="text-center mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-8"
+          >
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Simple, Transparent Pricing
             </span>
@@ -724,111 +792,115 @@ function Landing() {
             <p className="mt-2 text-sm text-muted-foreground">
               No hidden fees, no tiers, no per-lead charges.
             </p>
-          </div>
+          </motion.div>
 
-          <Card className="overflow-hidden border-border/80 shadow-2xl">
-            <div className="bg-foreground p-8 text-background text-center relative overflow-hidden">
-              <div className="pointer-events-none absolute -right-10 -bottom-10 size-40 rounded-full bg-primary/30 blur-2xl" />
-              <p className="text-xs font-bold uppercase tracking-widest text-primary-glow">
-                Everything Included
-              </p>
-              <div className="mt-4 flex items-baseline justify-center gap-1 font-display">
-                <span className="text-6xl font-extrabold text-white">$9.99</span>
-                <span className="text-base text-white/70">/ month</span>
-              </div>
-              <p className="mt-2 text-xs text-white/80">
-                7-day 100% free trial · Cancel anytime with one click
-              </p>
-            </div>
-
-            <CardContent className="p-8 space-y-6">
-              <ul className="space-y-3.5 text-sm">
-                {[
-                  "Unlimited instant customer quote requests",
-                  "Real-time Telegram alerts sent to your phone",
-                  "Customized vehicle rates & add-on pricing",
-                  "Dedicated branded quote link (e.g. detailr.online/your-shop)",
-                  "Full customer CRM with 1-tap call & SMS",
-                  "Customer photo upload capabilities",
-                  "Zero commission fees on your detailing jobs",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <Check className="mt-0.5 size-4.5 shrink-0 text-primary font-bold" />
-                    <span className="text-foreground">{item}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Button
-                asChild
-                variant="hero"
-                size="xl"
-                className="shadow-lift font-semibold text-base"
-              >
-                <Link to="/signup">Start 7-Day Free Trial</Link>
-              </Button>
-
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">
-                  Already have an account?{" "}
-                  <Link to="/login" className="font-semibold text-primary hover:underline">
-                    Sign in here
-                  </Link>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Card className="overflow-hidden border-border/80 shadow-2xl transition-transform hover:-translate-y-1">
+              <div className="bg-foreground p-8 text-background text-center relative overflow-hidden">
+                <div className="pointer-events-none absolute -right-10 -bottom-10 size-40 rounded-full bg-primary/30 blur-2xl" />
+                <p className="text-xs font-bold uppercase tracking-widest text-primary-glow">
+                  Everything Included
+                </p>
+                <div className="mt-4 flex items-baseline justify-center gap-1 font-display">
+                  <span className="text-6xl font-extrabold text-white">$9.99</span>
+                  <span className="text-base text-white/70">/ month</span>
+                </div>
+                <p className="mt-2 text-xs text-white/80">
+                  7-day 100% free trial · Cancel anytime with one click
                 </p>
               </div>
-            </CardContent>
-          </Card>
+
+              <CardContent className="p-8 space-y-6">
+                <ul className="space-y-3.5 text-sm">
+                  {[
+                    "Unlimited instant customer quote requests",
+                    "Real-time Telegram alerts sent to your phone",
+                    "Customized vehicle rates & add-on pricing",
+                    "Dedicated branded quote link (e.g. detailr.online/your-shop)",
+                    "Full customer CRM with 1-tap call & SMS",
+                    "Customer photo upload capabilities",
+                    "Zero commission fees on your detailing jobs",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <Check className="mt-0.5 size-4.5 shrink-0 text-primary font-bold" />
+                      <span className="text-foreground">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  asChild
+                  variant="hero"
+                  size="xl"
+                  className="shadow-lift font-semibold text-base transition-transform hover:scale-105"
+                >
+                  <Link to="/signup">Start 7-Day Free Trial</Link>
+                </Button>
+
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Already have an account?{" "}
+                    <Link to="/login" className="font-semibold text-primary hover:underline">
+                      Sign in here
+                    </Link>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </section>
 
       {/* Modern Redesigned Footer */}
-      <footer className="border-t border-border/80 bg-surface py-12 text-sm text-muted-foreground">
+      <footer className="border-t border-border/80 bg-surface/50 py-16 text-sm text-muted-foreground">
         <div className="mx-auto max-w-6xl px-5">
-          <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-            <QuoteFlowLogo size="md" linkToHome />
-
-            <div className="flex flex-wrap items-center gap-6 text-xs">
-              <a href="#features" className="hover:text-foreground">
-                Features
-              </a>
-              <a href="#calculator" className="hover:text-foreground">
-                Interactive Demo
-              </a>
-              <a href="#pricing" className="hover:text-foreground">
-                Pricing
-              </a>
-              <Link to="/login" className="hover:text-foreground">
-                Detailer Log In
-              </Link>
-              <Link to="/signup" className="hover:text-foreground">
-                Start Free Trial
-              </Link>
-              <Link
-                to="/admin"
-                className="hover:text-foreground opacity-80 hover:opacity-100 flex items-center gap-1"
-              >
-                Admin Console
-              </Link>
+          <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Brand */}
+            <div className="space-y-4">
+              <QuoteFlowLogo size="md" linkToHome />
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
+                The modern, instant quote software built specifically for mobile auto detailers to close leads in seconds.
+              </p>
             </div>
 
-            <div className="flex items-center gap-2 text-xs">
-              <span className="size-2 rounded-full bg-emerald-500" />
-              <span>All Systems Operational</span>
+            {/* Links */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">Product</h4>
+              <ul className="space-y-2 text-xs">
+                <li><a href="#features" className="hover:text-primary transition-colors">Features</a></li>
+                <li><a href="#calculator" className="hover:text-primary transition-colors">Interactive Demo</a></li>
+                <li><a href="#pricing" className="hover:text-primary transition-colors">Pricing</a></li>
+              </ul>
+            </div>
+
+            {/* Company */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">Company</h4>
+              <ul className="space-y-2 text-xs">
+                <li><Link to="/login" className="hover:text-primary transition-colors">Detailer Log In</Link></li>
+                <li><Link to="/signup" className="hover:text-primary transition-colors">Start Free Trial</Link></li>
+              </ul>
+            </div>
+
+            {/* Status */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">System</h4>
+              <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium">
+                <span className="size-2 rounded-full bg-emerald-500" />
+                <span>All Systems Operational</span>
+              </div>
             </div>
           </div>
 
-          <div className="mt-8 border-t border-border/60 pt-6 text-center text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="mt-16 border-t border-border/60 pt-8 text-center text-xs text-muted-foreground flex flex-col items-center gap-4">
             <p>
               © {new Date().getFullYear()}{" "}
-              <strong className="font-semibold text-foreground">Nerochaze</strong> · Detailr (
-              <a href="https://detailr.online" className="underline hover:text-foreground">
-                detailr.online
-              </a>
-              ). Built specifically for mobile auto detailers.
-            </p>
-            <p className="text-muted-foreground/80">
-              A <strong className="font-medium text-foreground">Nerochaze</strong> Company. All
-              rights reserved.
+              <strong className="font-semibold text-foreground">Nerochaze</strong> · Detailr · Built for mobile auto detailers.
             </p>
           </div>
         </div>
