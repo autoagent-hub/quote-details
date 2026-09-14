@@ -8,6 +8,8 @@ import {
   CreditCard,
   DollarSign,
   ExternalLink,
+  FlaskConical,
+  Globe,
   Image as ImageIcon,
   Link2,
   Loader2,
@@ -186,6 +188,9 @@ function DashboardPage() {
             {/* Top Grid: Key Overview & Actions */}
             <TopMetricsGrid profile={profile} quotes={quotes ?? []} />
 
+            {/* Dedicated Link Testing & Logo Showcase Banner */}
+            <LinkTestingBanner profile={profile} />
+
             {/* Segmented View Container */}
             <Tabs defaultValue="quotes" className="space-y-4">
               <div className="flex items-center justify-between border-b border-border pb-3">
@@ -244,6 +249,177 @@ function DashboardPage() {
   );
 }
 
+function LinkTestingBanner({ profile }: { profile: Profile }) {
+  const [origin, setOrigin] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+
+  useEffect(() => setOrigin(window.location.origin), []);
+  const liveUrl = origin ? `${origin}/${profile.slug}` : `https://detailr.online/${profile.slug}`;
+  const connected = !!profile.telegram_chat_id;
+
+  const copyLive = () => {
+    void navigator.clipboard.writeText(liveUrl);
+    setCopied(true);
+    toast.success("Quote link copied to clipboard!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const sendTest = async () => {
+    setSendingTest(true);
+    try {
+      const result = await sendQuoteAlert({
+        data: {
+          detailerId: profile.id,
+          customerName: "Alex Morgan (Test Lead)",
+          customerPhone: profile.phone || "+1 555-019-2834",
+          vehicle: "2024 Tesla Model Y (Midsize SUV)",
+          service: { label: "Full Detail", price: 190 },
+          addons: [{ label: "Pet Hair Removal", price: 40 }],
+          estimate: 230,
+          notes: "Sample test lead triggered from your dashboard!",
+          isTest: true,
+        },
+      });
+      if (result?.sent) {
+        toast.success("Test alert sent to your Telegram chat!");
+      } else if (result?.reason === "not_connected") {
+        toast.error("Please connect your Telegram bot first in Settings & Bot.");
+      } else {
+        toast.error("Could not send test alert.");
+      }
+    } catch {
+      toast.error("Could not send test alert.");
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
+  return (
+    <Card className="border-border/80 bg-card shadow-xs overflow-hidden">
+      <CardContent className="p-4 sm:p-5 space-y-3.5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          {/* Shop Logo & URL */}
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="relative shrink-0">
+              <img
+                src={profile.logo_url || "/favicon.png"}
+                alt={profile.business_name}
+                referrerPolicy="no-referrer"
+                className="size-11 rounded-xl border border-border bg-background p-1 object-contain shadow-xs"
+              />
+              <span className="absolute -bottom-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-emerald-500 text-[8px] text-white font-bold ring-2 ring-background">
+                ✓
+              </span>
+            </div>
+
+            <div className="min-w-0 space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-sm text-foreground">{profile.business_name}</span>
+                <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Form
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground">Your Link:</span>
+                <code className="font-mono text-xs font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border truncate max-w-[280px] sm:max-w-md">
+                  {liveUrl}
+                </code>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons: Test Link, Live Link, Copy */}
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <Button
+              asChild
+              variant="default"
+              size="sm"
+              className="h-8 text-xs font-semibold gap-1.5 bg-amber-500 hover:bg-amber-600 text-white shadow-xs"
+            >
+              <Link
+                to="/$business_slug"
+                params={{ business_slug: profile.slug }}
+                search={{ test: true }}
+                target="_blank"
+              >
+                <FlaskConical className="size-3.5" /> Test Quote Link
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs font-semibold gap-1.5"
+            >
+              <Link
+                to="/$business_slug"
+                params={{ business_slug: profile.slug }}
+                search={{}}
+                target="_blank"
+              >
+                <Globe className="size-3.5 text-muted-foreground" /> View Live
+              </Link>
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-8 text-xs font-semibold gap-1.5"
+              onClick={copyLive}
+            >
+              {copied ? (
+                <Check className="size-3.5 text-emerald-600" />
+              ) : (
+                <Copy className="size-3.5" />
+              )}
+              {copied ? "Copied" : "Copy Link"}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs font-semibold gap-1.5 text-muted-foreground hover:text-foreground"
+              disabled={sendingTest}
+              onClick={sendTest}
+              title="Send a sample quote alert to your Telegram bot"
+            >
+              {sendingTest ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Send className="size-3.5 text-blue-500" />
+              )}
+              Send Test Alert
+            </Button>
+          </div>
+        </div>
+
+        {/* Informative testing guidance footer */}
+        <div className="pt-2.5 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-foreground">💡 How to test your link:</span>
+            <span>
+              Click <strong>Test Quote Link</strong> to open your calculator in Sandbox Mode. Submit
+              sample cars to hear your Telegram bot chime without distorting real sales stats.
+            </span>
+          </div>
+          {connected ? (
+            <span className="text-emerald-600 font-medium inline-flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-emerald-500" /> Bot connected
+            </span>
+          ) : (
+            <span className="text-amber-600 font-medium inline-flex items-center gap-1">
+              ⚠️ Connect Telegram bot in Settings & Bot
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function TopMetricsGrid({ profile, quotes }: { profile: Profile; quotes: Quote[] }) {
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
@@ -296,30 +472,35 @@ function TopMetricsGrid({ profile, quotes }: { profile: Profile; quotes: Quote[]
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-      {/* Card 1: Live Quote Link */}
+      {/* Card 1: Live Quote Link with Shop Logo */}
       <Card className="border-border/80 shadow-xs flex flex-col justify-between">
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-semibold uppercase tracking-wider text-[10px]">
-              Your Quote Form
+              Your Quote Link
             </span>
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
             </span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1">
-            <Link2 className="size-3 text-muted-foreground shrink-0" />
-            <span className="font-mono text-xs truncate text-foreground">
+          <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 p-1.5">
+            <img
+              src={profile.logo_url || "/favicon.png"}
+              alt={profile.business_name}
+              referrerPolicy="no-referrer"
+              className="size-6 rounded border border-border/80 bg-background object-contain shrink-0 shadow-2xs"
+            />
+            <span className="font-mono text-xs font-medium truncate text-foreground flex-1">
               {origin
                 ? `${origin.replace(/^https?:\/\//, "")}/${profile.slug}`
                 : `detailr.online/${profile.slug}`}
             </span>
           </div>
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-1.5 pt-1">
             <Button
               variant="outline"
               size="sm"
-              className="h-7 flex-1 text-xs font-semibold"
+              className="h-7 flex-1 text-xs font-semibold px-2"
               onClick={handleCopy}
             >
               {copied ? (
@@ -327,15 +508,38 @@ function TopMetricsGrid({ profile, quotes }: { profile: Profile; quotes: Quote[]
               ) : (
                 <Copy className="size-3 mr-1" />
               )}
-              {copied ? "Copied" : "Copy Link"}
+              {copied ? "Copied" : "Copy"}
+            </Button>
+            <Button
+              asChild
+              variant="default"
+              size="sm"
+              className="h-7 text-xs font-semibold px-2 gap-1 bg-amber-500 hover:bg-amber-600 text-white"
+              title="Test quote link in sandbox mode"
+            >
+              <Link
+                to="/$business_slug"
+                params={{ business_slug: profile.slug }}
+                search={{ test: true }}
+                target="_blank"
+              >
+                <FlaskConical className="size-3" />
+                <span>Test</span>
+              </Link>
             </Button>
             <Button
               asChild
               variant="secondary"
               size="sm"
-              className="h-7 text-xs font-semibold px-2.5"
+              className="h-7 text-xs font-semibold px-2"
+              title="View live customer form"
             >
-              <Link to="/$business_slug" params={{ business_slug: profile.slug }} search={{}}>
+              <Link
+                to="/$business_slug"
+                params={{ business_slug: profile.slug }}
+                search={{}}
+                target="_blank"
+              >
                 <ExternalLink className="size-3" />
               </Link>
             </Button>
@@ -740,13 +944,27 @@ function BusinessProfileCard({ profile }: { profile: Profile }) {
           <Label htmlFor="logo_url" className="text-xs">
             Logo / Avatar URL
           </Label>
-          <Input
-            id="logo_url"
-            value={form.logo_url}
-            placeholder="https://... or /favicon.png"
-            onChange={(e) => setForm((f) => ({ ...f, logo_url: e.target.value }))}
-            className="h-8 text-xs"
-          />
+          <div className="flex items-center gap-2.5">
+            <img
+              src={form.logo_url || "/favicon.png"}
+              alt="Logo preview"
+              referrerPolicy="no-referrer"
+              className="size-9 rounded-lg border border-border bg-background p-1 object-contain shrink-0 shadow-xs"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = "/favicon.png";
+              }}
+            />
+            <Input
+              id="logo_url"
+              value={form.logo_url}
+              placeholder="https://... or /favicon.png"
+              onChange={(e) => setForm((f) => ({ ...f, logo_url: e.target.value }))}
+              className="h-8 text-xs flex-1"
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Shown next to your quote link, on your customer quote form, and in Telegram alerts.
+          </p>
         </div>
 
         <div className="flex justify-end pt-1">

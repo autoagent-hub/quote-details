@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, Car, Check, CheckCircle2, Loader2, X } from "lucide-react";
+import { Camera, Car, Check, CheckCircle2, FlaskConical, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
@@ -311,8 +311,43 @@ function QuoteForm() {
   return (
     <div className="min-h-screen bg-surface pb-32">
       {isTest && (
-        <div className="bg-foreground px-5 py-2.5 text-center text-xs font-semibold text-background">
-          🧪 Test mode — this request is tagged as a test, not a real customer lead.
+        <div className="bg-slate-900 text-white px-4 py-2.5 shadow-xs border-b border-amber-500/40 sticky top-0 z-40">
+          <div className="mx-auto flex max-w-md items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-300 font-bold text-[11px]">
+                <FlaskConical className="size-3" />
+              </span>
+              <div className="min-w-0">
+                <span className="font-bold text-amber-300">Sandbox Test Mode</span>
+                <p className="text-[10px] text-slate-300 truncate">
+                  Quotes sent here trigger a test Telegram alert marked [TEST].
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setName("Alex Morgan (Test Lead)");
+                setPhone("5550192834");
+                setVehicleDesc("2024 Tesla Model Y");
+                if (categories.length > 1) {
+                  setCategoryKey(categories[1].key);
+                } else if (categories[0]) {
+                  setCategoryKey(categories[0].key);
+                }
+                if (packages.length > 0) {
+                  setPackageKey(packages[0].key);
+                }
+                setNotes("Testing Telegram bot alert notification from Detailr.");
+                toast.success(
+                  "Sample car & customer details filled! Review estimate below and submit to test.",
+                );
+              }}
+              className="rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1 text-[11px] font-bold transition-colors shrink-0 shadow-2xs cursor-pointer"
+            >
+              Fill Sample Car
+            </button>
+          </div>
         </div>
       )}
       <header className="border-b border-border/80 bg-background/90 px-5 py-4 backdrop-blur-md sticky top-0 z-30 shadow-xs">
@@ -322,12 +357,14 @@ function QuoteForm() {
               <img
                 src={profile.logo_url}
                 alt={`${profile.business_name} logo`}
-                className="size-11 shrink-0 rounded-xl border border-border object-cover shadow-xs"
+                referrerPolicy="no-referrer"
+                className="size-11 shrink-0 rounded-xl border border-border object-contain bg-background shadow-xs"
               />
             ) : (
               <img
                 src="/favicon.png"
                 alt="Detailr"
+                referrerPolicy="no-referrer"
                 className="size-11 shrink-0 rounded-xl border border-border bg-background p-1.5 object-contain shadow-xs"
               />
             )}
