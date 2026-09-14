@@ -34,22 +34,46 @@ import {
 export const Route = createFileRoute("/$business_slug")({
   validateSearch: (search: Record<string, unknown>): { test?: boolean } =>
     search["test"] === "1" || search["test"] === true ? { test: true } : {},
-  head: ({ params }) => ({
-    meta: [
-      { title: `Get an instant detailing quote — Detailr (detailr.online)` },
-      {
-        name: "description",
-        content: `Pick your vehicle and service to get an instant detailing price estimate from ${params.business_slug.replace(/-/g, " ")} on detailr.online.`,
-      },
-      { property: "og:title", content: "Get an instant detailing quote — Detailr" },
-      {
-        property: "og:description",
-        content: "Choose your vehicle, service and add-ons and see your price instantly.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: ({ params }) => {
+    const cleanName = params.business_slug
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    const canonicalUrl = `https://detailr.online/${params.business_slug}`;
+
+    return {
+      meta: [
+        { title: `${cleanName} — Instant Mobile Auto Detailing Quote` },
+        {
+          name: "description",
+          content: `Get an instant auto detailing estimate from ${cleanName}. Select your vehicle type, choose exterior or interior packages, and book online in seconds.`,
+        },
+        {
+          name: "keywords",
+          content: `${cleanName}, mobile auto detailing quote, car detailing estimate, ceramic coating, paint correction, interior detail`,
+        },
+        { name: "robots", content: "index, follow" },
+        { property: "og:site_name", content: "Detailr" },
+        { property: "og:title", content: `${cleanName} — Instant Auto Detailing Quote` },
+        {
+          property: "og:description",
+          content: `Get your instant vehicle detailing price quote from ${cleanName} on Detailr.`,
+        },
+        { property: "og:url", content: canonicalUrl },
+        { property: "og:type", content: "website" },
+        { property: "og:image", content: "https://detailr.online/og-image.jpg" },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: `${cleanName} — Instant Auto Detailing Quote` },
+        {
+          name: "twitter:description",
+          content: `Select your vehicle and options to get an instant detailing price from ${cleanName}.`,
+        },
+        { name: "twitter:image", content: "https://detailr.online/og-image.jpg" },
+      ],
+      links: [{ rel: "canonical", href: canonicalUrl }],
+    };
+  },
   component: QuoteForm,
 });
 

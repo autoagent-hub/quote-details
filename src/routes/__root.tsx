@@ -91,22 +91,69 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Detailr — Instant Detailing Quotes & Telegram Alerts (detailr.online)" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=5" },
+      { title: "Detailr — Instant Detailing Quotes & Real-Time Telegram Alerts (detailr.online)" },
       {
         name: "description",
         content:
-          "Detailr (detailr.online) gives mobile auto detailers instant customer price estimates and real-time Telegram quote alerts.",
+          "Detailr (detailr.online) is the modern software built for mobile auto detailers. Give customers instant vehicle pricing estimates and receive new qualified leads directly in Telegram with photos.",
       },
-      { property: "og:title", content: "Detailr — Instant Detailing Quotes (detailr.online)" },
+      {
+        name: "keywords",
+        content:
+          "mobile auto detailing software, car detailing quote calculator, detailer instant estimate, telegram lead alerts, auto detailing CRM, ceramic coating quote builder, mobile detailer booking, detailr online",
+      },
+      { name: "author", content: "Detailr" },
+      {
+        name: "robots",
+        content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+      },
+      { name: "theme-color", content: "#0284c7" },
+      { name: "application-name", content: "Detailr" },
+      { name: "apple-mobile-web-app-title", content: "Detailr" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+
+      // Open Graph / Facebook / LinkedIn
+      { property: "og:site_name", content: "Detailr" },
+      {
+        property: "og:title",
+        content: "Detailr — Instant Mobile Detailing Quotes & Telegram Alerts",
+      },
       {
         property: "og:description",
-        content: "Instant web quotes and real-time Telegram alerts for mobile auto detailers.",
+        content:
+          "Turn your mobile detailing website visitors into paying jobs with instant pricing estimates and real-time Telegram alerts on your phone.",
       },
+      { property: "og:url", content: "https://detailr.online/" },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "en_US" },
+      { property: "og:image", content: "https://detailr.online/og-image.jpg" },
+      { property: "og:image:secure_url", content: "https://detailr.online/og-image.jpg" },
+      { property: "og:image:type", content: "image/jpeg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      {
+        property: "og:image:alt",
+        content: "Detailr — Instant Quotes & Telegram Alerts for Mobile Auto Detailers",
+      },
+
+      // Twitter Cards
       { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "twitter:title",
+        content: "Detailr — Instant Detailing Quotes & Real-Time Telegram Alerts",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "Convert mobile detailing inquiries on your website in seconds with automated quotes and instant Telegram alerts.",
+      },
+      { name: "twitter:image", content: "https://detailr.online/og-image.jpg" },
+      { name: "twitter:image:alt", content: "Detailr Auto Detailing Quote Software" },
     ],
     links: [
+      { rel: "canonical", href: "https://detailr.online/" },
       {
         rel: "stylesheet",
         href: appCss,
@@ -118,6 +165,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600&display=swap",
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/favicon.png" },
     ],
   }),
 
@@ -144,12 +192,50 @@ function RootShell({ children }: { children: ReactNode }) {
         : "") || "",
   };
 
+  const schemaJson = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "@id": "https://detailr.online/#webapp",
+        name: "Detailr",
+        url: "https://detailr.online",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "All",
+        browserRequirements: "Requires JavaScript. Requires HTML5.",
+        description:
+          "Instant customer quote builder and real-time Telegram lead alerts designed specifically for mobile auto detailers.",
+        image: "https://detailr.online/og-image.jpg",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+          availability: "https://schema.org/InStock",
+        },
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://detailr.online/#organization",
+        name: "Detailr",
+        url: "https://detailr.online",
+        logo: "https://detailr.online/favicon.png",
+        sameAs: ["https://detailr.online"],
+      },
+    ],
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `window.__PUBLIC_CONFIG__ = ${JSON.stringify(publicConfig)};`,
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(schemaJson),
           }}
         />
         <HeadContent />

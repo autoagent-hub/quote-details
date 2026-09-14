@@ -1,6 +1,6 @@
 {
   "name": "Detailr",
-  "description": "Instant web quotes and real-time Telegram alerts for mobile auto detailers — detailr.online",
+  "description": "Instant web quotes and real-time Telegram alerts for mobile auto detailers with automated vehicle pricing — detailr.online",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

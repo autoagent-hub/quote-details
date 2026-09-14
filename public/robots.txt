@@ -12,3 +12,6 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://detailr.online/sitemap.xml
+Host: https://detailr.online
