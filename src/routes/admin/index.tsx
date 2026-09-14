@@ -69,9 +69,11 @@ import {
   adminGetDetailerQuotes,
   adminTriggerSummaryEmail,
   adminGetRecentQuotesStream,
+  getAdminAuditLogs,
   type AdminDetailerSummary,
 } from "@/lib/admin-dashboard.functions";
 import { adminSendWelcomeEmailToAllActiveUsers } from "@/lib/weekly-summary.functions";
+import { getCapturedErrors } from "@/lib/error-tracker";
 import {
   getAdminTelegramStatus,
   updateAdminTelegramSettings,
@@ -186,6 +188,16 @@ function AdminDashboardPage() {
     enabled: !!adminUser,
     refetchInterval: 15000,
   });
+
+  // 7. Fetch audit logs
+  const { data: auditLogs = [], refetch: refetchAuditLogs } = useQuery({
+    queryKey: ["admin", "audit-logs"],
+    queryFn: () => getAdminAuditLogs(),
+    enabled: !!adminUser && activeTab === "security",
+    refetchInterval: 10000,
+  });
+
+  const capturedErrors = getCapturedErrors();
 
   // Action mutation
   const userActionMutation = useMutation({
@@ -1386,6 +1398,115 @@ function AdminDashboardPage() {
                 </div>
               )}
             </div>
+
+            {/* Security Audit Trail & Error Tracking */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 pt-4">
+              {/* Audit Logs Table */}
+              <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Shield className="size-5 text-primary" />
+                    <h3 className="font-semibold text-white text-sm">Security Audit Trail</h3>
+                  </div>
+                  <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
+                    {auditLogs.length} Events
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Real-time log of critical administrative actions performed in Master HQ.
+                </p>
+
+                {auditLogs.length === 0 ? (
+                  <div className="rounded-lg border border-slate-800 bg-slate-950 p-6 text-center text-xs text-slate-400">
+                    No admin audit logs recorded yet.
+                  </div>
+                ) : (
+                  <div className="max-h-[350px] overflow-y-auto space-y-2 pr-1">
+                    {auditLogs.map(
+                      (log: {
+                        id: string;
+                        action: string;
+                        createdAt: string;
+                        adminEmail: string;
+                        ipAddress: string;
+                        details: Record<string, unknown>;
+                      }) => (
+                        <div
+                          key={log.id}
+                          className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs space-y-1"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-primary font-mono text-[11px]">
+                              {log.action}
+                            </span>
+                            <span className="text-[10px] text-slate-500">
+                              {new Date(log.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-300">
+                            <strong>Admin:</strong> {log.adminEmail} (IP: {log.ipAddress})
+                          </div>
+                          {Object.keys(log.details || {}).length > 0 && (
+                            <div className="text-[10px] font-mono text-slate-400 bg-slate-900/80 p-1.5 rounded mt-1 overflow-x-auto">
+                              {JSON.stringify(log.details)}
+                            </div>
+                          )}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Real-Time Error Tracking */}
+              <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="size-5 text-amber-400" />
+                    <h3 className="font-semibold text-white text-sm">Real-Time Error Tracker</h3>
+                  </div>
+                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs">
+                    {capturedErrors.length} Captured
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Captured runtime exceptions and frontend/backend errors in real-time.
+                </p>
+
+                {capturedErrors.length === 0 ? (
+                  <div className="rounded-lg border border-slate-800 bg-slate-950 p-6 text-center text-xs text-slate-400">
+                    <CheckCircle2 className="mx-auto size-6 text-emerald-400 mb-2" />
+                    No runtime errors or exceptions captured. System operating smoothly.
+                  </div>
+                ) : (
+                  <div className="max-h-[350px] overflow-y-auto space-y-2 pr-1">
+                    {capturedErrors.map((err, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs space-y-1"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Badge className="bg-amber-500/20 text-amber-300 border-0 text-[10px]">
+                            {err.context}
+                          </Badge>
+                          <span className="text-[10px] text-slate-500">
+                            {new Date(err.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <div className="text-rose-300 font-semibold text-[11px] mt-1">
+                          {err.message}
+                        </div>
+                        {err.stack && (
+                          <pre className="text-[10px] font-mono text-slate-400 bg-slate-950 p-2 rounded mt-1 overflow-x-auto max-h-24">
+                            {err.stack}
+                          </pre>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1398,15 +1519,18 @@ function AdminDashboardPage() {
                 <Send className="size-5 text-emerald-400" /> Broadcast Onboarding Welcome Email
               </div>
               <p className="text-xs text-slate-400">
-                Dispatches the professional step-by-step onboarding guide (with banner images and setup instructions) to all registered active users in the database.
+                Dispatches the professional step-by-step onboarding guide (with banner images and
+                setup instructions) to all registered active users in the database.
               </p>
 
               <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs font-mono text-slate-400 space-y-1">
                 <div>
-                  Template: <strong className="text-emerald-400">Professional Onboarding & Banners</strong>
+                  Template:{" "}
+                  <strong className="text-emerald-400">Professional Onboarding & Banners</strong>
                 </div>
                 <div>
-                  Deliverability: <strong className="text-slate-200">Resend (Anti-Spam Optimized)</strong>
+                  Deliverability:{" "}
+                  <strong className="text-slate-200">Resend (Anti-Spam Optimized)</strong>
                 </div>
                 <div>
                   Target: <strong className="text-slate-200">All Active Detailers</strong>
@@ -1423,7 +1547,9 @@ function AdminDashboardPage() {
                 ) : (
                   <Send className="size-3.5" />
                 )}
-                {sendWelcomeEmailMutation.isPending ? "Broadcasting..." : "Send Test/Welcome Email to All Active Users"}
+                {sendWelcomeEmailMutation.isPending
+                  ? "Broadcasting..."
+                  : "Send Test/Welcome Email to All Active Users"}
               </Button>
             </div>
 

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getAdminClient } from "@/lib/admin.server";
 import { sendWeeklySummaryToDetailer } from "@/lib/weekly-summary.functions";
 import { sendAdminTelegramAlert } from "@/lib/admin-telegram.functions";
+import { logAdminAction } from "@/lib/audit-logger.server";
 
 const ADMIN_EMAIL = "me@detailr.online";
 
@@ -391,6 +392,11 @@ export const adminPerformUserAction = createServerFn({ method: "POST" })
     const { userId, action, reason, customDays } = data;
 
     try {
+      await logAdminAction({
+        action: `ADMIN_${action.toUpperCase()}`,
+        details: { userId, reason, customDays },
+      });
+
       if (action === "flag_suspicious") {
         const { data: user } = await admin.auth.admin.getUserById(userId);
         const meta = user?.user?.user_metadata || {};
@@ -663,4 +669,33 @@ export const adminGetRecentQuotesStream = createServerFn({ method: "GET" }).hand
       createdAt: String(q["created_at"] || ""),
     };
   });
+});
+
+/**
+ * Fetch admin audit logs for security monitoring
+ */
+export const getAdminAuditLogs = createServerFn({ method: "GET" }).handler(async () => {
+  const admin = getAdminClient();
+  if (!admin) return [];
+
+  const { data, error } = await admin
+    .from("audit_logs" as never)
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) {
+    console.error("Failed to fetch audit logs:", error);
+    return [];
+  }
+
+  return (data || []).map((row: Record<string, unknown>) => ({
+    id: String(row["id"] || ""),
+    adminId: String(row["admin_id"] || ""),
+    adminEmail: String(row["admin_email"] || ""),
+    action: String(row["action"] || ""),
+    details: (row["details"] as Record<string, unknown>) || {},
+    ipAddress: String(row["ip_address"] || ""),
+    createdAt: String(row["created_at"] || ""),
+  }));
 });

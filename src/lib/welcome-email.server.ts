@@ -173,7 +173,7 @@ Open your dashboard to get started: ${dashboardUrl}
 Detailr · detailr.online`;
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    let res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -192,9 +192,36 @@ Detailr · detailr.online`;
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error(`[welcome-email] send failed [${res.status}]: ${errText}`);
+      console.warn(
+        `[welcome-email] primary send failed [${res.status}]: ${errText}. Retrying with onboarding@resend.dev...`,
+      );
+
+      // Fallback to Resend sandbox/testing sender if custom domain is unverified
+      res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Detailr <onboarding@resend.dev>",
+          to: [to],
+          subject,
+          html,
+          text,
+          reply_to: process.env["EMAIL_REPLY_TO"] ?? "support@detailr.online",
+          headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
+        }),
+      });
+
+      if (!res.ok) {
+        const fallbackErr = await res.text();
+        console.error(`[welcome-email] fallback send failed [${res.status}]: ${fallbackErr}`);
+        throw new Error(`Resend API error: ${fallbackErr}`);
+      }
     }
   } catch (err) {
     console.error("[welcome-email] failed to dispatch email:", err);
+    throw err;
   }
 }

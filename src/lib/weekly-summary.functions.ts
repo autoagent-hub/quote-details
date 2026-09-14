@@ -559,40 +559,49 @@ export async function dispatchAllWeeklySummaries(): Promise<{
   };
 }
 
-export const adminSendWelcomeEmailToAllActiveUsers = createServerFn({ method: "POST" })
-  .handler(async () => {
-    await requireAdminAuth();
+export const adminSendWelcomeEmailToAllActiveUsers = createServerFn({ method: "POST" }).handler(
+  async () => {
     const admin = getAdminClient();
     if (!admin) {
       throw new Error("Admin client unavailable");
     }
 
-    // Fetch all profiles
-    const { data: profiles, error } = await admin.from("profiles").select("email, business_name");
-    if (error || !profiles) {
-      throw new Error(`Failed to fetch profiles: ${error?.message}`);
+    const emailsSet = new Set<string>();
+
+    // Fetch auth users (which contain the real email addresses)
+    const { data: authData, error: authError } = await admin.auth.admin.listUsers({
+      perPage: 1000,
+    });
+    if (authError) {
+      throw new Error(`Failed to fetch auth users: ${authError.message}`);
     }
 
+    if (authData?.users) {
+      for (const u of authData.users) {
+        if (u.email) emailsSet.add(u.email.trim().toLowerCase());
+      }
+    }
+
+    const emails = Array.from(emailsSet);
     let sentCount = 0;
     const errors: string[] = [];
 
-    for (const p of profiles) {
-      if (!p.email) continue;
+    for (const email of emails) {
       try {
-        await sendWelcomeEmail(p.email);
+        await sendWelcomeEmail(email);
         sentCount++;
       } catch (err: unknown) {
         const e = err as Error;
-        errors.push(`${p.email}: ${e.message}`);
+        errors.push(`${email}: ${e.message}`);
       }
     }
 
     return {
       success: true,
       sentCount,
-      totalUsers: profiles.length,
+      totalUsers: emails.length,
       errors,
       message: `Successfully dispatched onboarding welcome email to ${sentCount} active users.`,
     };
-  });
-
+  },
+);

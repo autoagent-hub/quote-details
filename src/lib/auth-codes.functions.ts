@@ -264,7 +264,11 @@ export const verifySignupCode = createServerFn({ method: "POST" })
     }).catch((err) => console.warn("[admin-telegram] Signup alert failed:", err));
 
     // Send professional automated welcome email with step-by-step guide & banners
-    sendWelcomeEmail(email).catch((err) => console.warn("[welcome-email] dispatch failed:", err));
+    try {
+      await sendWelcomeEmail(email);
+    } catch (err) {
+      console.error("[welcome-email] dispatch failed during signup:", err);
+    }
 
     return { ok: true };
   });
