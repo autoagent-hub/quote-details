@@ -69,9 +69,7 @@ export const prepareTelegramLink = createServerFn({ method: "POST" })
     }
 
     if (!username) {
-      throw new Error(
-        "Could not connect to Telegram bot. Please verify your TELEGRAM_BOT_TOKEN.",
-      );
+      throw new Error("Could not connect to Telegram bot. Please verify your TELEGRAM_BOT_TOKEN.");
     }
 
     // Register Webhook with Telegram (non-blocking if domain pending DNS)

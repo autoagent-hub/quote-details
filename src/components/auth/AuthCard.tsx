@@ -113,7 +113,11 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
   };
 
   const fail = (error: unknown) => {
-    const msg = error instanceof Error ? error.message : "Something went wrong";
+    let msg = error instanceof Error ? error.message : "Something went wrong";
+    if (msg.toLowerCase().includes("load failed") || msg.toLowerCase().includes("failed to fetch")) {
+      msg =
+        "Network connection failed. Please ensure your Supabase URL & anon key are configured in your Render environment variables and that your internet connection is active.";
+    }
     toast.error(msg);
   };
 

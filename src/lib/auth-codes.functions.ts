@@ -97,9 +97,7 @@ async function sendCodeEmail(to: string, code: string, purpose: Purpose) {
   const emailFrom = process.env["EMAIL_FROM"] || "noreply@detailr.online";
   const from = emailFrom.includes("<") ? emailFrom : `Detailr <${emailFrom}>`;
   const rawUrl =
-    process.env["PUBLIC_APP_URL"] ||
-    process.env["RENDER_EXTERNAL_URL"] ||
-    "https://detailr.online";
+    process.env["PUBLIC_APP_URL"] || process.env["RENDER_EXTERNAL_URL"] || "https://detailr.online";
   const appUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
   const subject =

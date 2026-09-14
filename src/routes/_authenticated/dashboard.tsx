@@ -197,7 +197,19 @@ function Dashboard() {
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">
           <QuoteFlowLogo size="md" linkToHome />
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-3">
+            {profile && (
+              <div className="hidden sm:flex items-center gap-2 pr-2 border-r border-border/80">
+                <img
+                  src={profile.logo_url || "/favicon.png"}
+                  alt={profile.business_name}
+                  className="size-7 rounded-lg border border-border object-contain bg-background p-0.5 shadow-xs"
+                />
+                <span className="text-xs font-semibold text-foreground max-w-[140px] truncate">
+                  {profile.business_name}
+                </span>
+              </div>
+            )}
             <Button asChild variant="outline" size="sm">
               <Link to="/upgrade">
                 <CreditCard className="size-4" /> Upgrade
@@ -213,9 +225,21 @@ function Dashboard() {
       <main className="mx-auto max-w-4xl space-y-5 px-5 py-6">
         {profile ? (
           <>
-            <div>
-              <h1 className="text-2xl font-bold">{profile.business_name}</h1>
-              <PublicLink slug={profile.slug} />
+            <div className="flex items-start gap-4">
+              <img
+                src={profile.logo_url || "/favicon.png"}
+                alt={`${profile.business_name} profile`}
+                className="size-14 shrink-0 rounded-2xl border border-border bg-background p-1 object-contain shadow-xs"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold truncate">{profile.business_name}</h1>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                    <CheckCircle2 className="size-3" /> Live
+                  </span>
+                </div>
+                <PublicLink slug={profile.slug} />
+              </div>
             </div>
 
             <TrialBanner />
@@ -341,6 +365,48 @@ function BusinessProfileCard({ profile }: { profile: Profile }) {
         <CardTitle className="text-base">Business profile</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
+        {/* Profile Picture / Brand Avatar */}
+        <div className="rounded-xl border border-border/70 bg-muted/30 p-4 space-y-3">
+          <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Profile Picture & Quote Logo
+          </Label>
+          <div className="flex flex-wrap items-center gap-4">
+            <img
+              src={form.logo_url || "/favicon.png"}
+              alt="Logo preview"
+              className="size-16 rounded-xl border border-border bg-background p-1.5 object-contain shadow-xs"
+            />
+            <div className="space-y-1.5 flex-1 min-w-[200px]">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs font-semibold"
+                  onClick={() => setForm((f) => ({ ...f, logo_url: "/favicon.png" }))}
+                >
+                  Use Detailr Logo
+                </Button>
+                {form.logo_url && form.logo_url !== "/favicon.png" && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground"
+                    onClick={() => setForm((f) => ({ ...f, logo_url: "" }))}
+                  >
+                    Reset to Default
+                  </Button>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                This image appears on your dashboard, public customer quote pages, and Telegram
+                alerts.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="business_name">Business name</Label>
@@ -370,11 +436,11 @@ function BusinessProfileCard({ profile }: { profile: Profile }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="logo_url">Logo URL</Label>
+            <Label htmlFor="logo_url">Custom Logo / Image URL</Label>
             <Input
               id="logo_url"
               value={form.logo_url}
-              placeholder="https://..."
+              placeholder="https://... or /favicon.png"
               onChange={(e) => setForm((f) => ({ ...f, logo_url: e.target.value }))}
             />
           </div>
@@ -859,10 +925,14 @@ function TelegramCard({ authCode, chatId }: { authCode: string; chatId: string |
             <Send className="size-4 text-blue-500" /> Telegram Real-Time Alerts
           </CardTitle>
           <CardDescription className="text-xs">
-            Receive detailed instant lead notifications on your phone whenever a customer requests a quote.
+            Receive detailed instant lead notifications on your phone whenever a customer requests a
+            quote.
           </CardDescription>
         </div>
-        <Badge variant={connected ? "default" : "secondary"} className="shrink-0 gap-1 font-semibold">
+        <Badge
+          variant={connected ? "default" : "secondary"}
+          className="shrink-0 gap-1 font-semibold"
+        >
           {connected ? (
             <>
               <Check className="size-3 text-emerald-400" /> Connected
@@ -902,7 +972,11 @@ function TelegramCard({ authCode, chatId }: { authCode: string; chatId: string |
               className="gap-1.5 text-xs font-semibold"
               onClick={copyAuthCode}
             >
-              {copiedCode ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
+              {copiedCode ? (
+                <Check className="size-3.5 text-emerald-600" />
+              ) : (
+                <Copy className="size-3.5" />
+              )}
               {copiedCode ? "Command Copied!" : "Copy /start Command"}
             </Button>
           )}

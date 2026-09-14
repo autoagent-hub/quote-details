@@ -128,9 +128,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const publicConfig = {
+    supabaseUrl:
+      (typeof process !== "undefined"
+        ? process.env["VITE_SUPABASE_URL"] ||
+          process.env["SUPABASE_URL"] ||
+          process.env["EXTERNAL_SUPABASE_URL"]
+        : "") || "",
+    supabaseAnonKey:
+      (typeof process !== "undefined"
+        ? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+          process.env["VITE_SUPABASE_ANON_KEY"] ||
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+          process.env["SUPABASE_ANON_KEY"]
+        : "") || "",
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__PUBLIC_CONFIG__ = ${JSON.stringify(publicConfig)};`,
+          }}
+        />
         <HeadContent />
       </head>
       <body suppressHydrationWarning>
