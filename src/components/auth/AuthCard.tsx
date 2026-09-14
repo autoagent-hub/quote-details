@@ -225,29 +225,75 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
   const handleGoogleAuth = async () => {
     setGoogleLoading(true);
     try {
-      // Direct Supabase OAuth with Google
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
-          },
+      const clientId = "537289847876-ep2tfesgqre8iib2boagfs3kre7dlspq.apps.googleusercontent.com";
+
+      if (!window.google?.accounts?.id) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://accounts.google.com/gsi/client";
+          script.async = true;
+          script.defer = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("Failed to load Google Sign-In script"));
+          document.head.appendChild(script);
+        });
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: any) => {
+          try {
+            if (!response.credential) {
+              throw new Error("No Google credential returned");
+            }
+            const { data, error } = await supabase.auth.signInWithIdToken({
+              provider: "google",
+              token: response.credential,
+            });
+            if (error) throw error;
+            toast.success("Logged in successfully with Google!");
+            navigate({ to: "/dashboard" });
+          } catch (err: any) {
+            toast.error(err.message || "Google authentication failed.");
+          } finally {
+            setGoogleLoading(false);
+          }
         },
       });
 
-      if (error) {
-        toast.error(error.message || "Google sign-in failed. Please try again.");
-        return;
-      }
-
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
+      // Prompt Google One Tap / popup
+      window.google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
+          // Fallback to token client popup if One Tap is dismissed
+          const tokenClient = window.google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: "email profile openid",
+            callback: async (tokenResponse: any) => {
+              try {
+                if (tokenResponse.error) {
+                  throw new Error(tokenResponse.error_description || "Google authorization failed");
+                }
+                // For tokenClient access_token / id_token exchange
+                const { data, error } = await supabase.auth.signInWithIdToken({
+                  provider: "google",
+                  token: tokenResponse.id_token || tokenResponse.access_token,
+                  access_token: tokenResponse.access_token,
+                });
+                if (error) throw error;
+                toast.success("Logged in successfully with Google!");
+                navigate({ to: "/dashboard" });
+              } catch (err: any) {
+                toast.error(err.message || "Google authentication failed.");
+              } finally {
+                setGoogleLoading(false);
+              }
+            },
+          });
+          tokenClient.requestAccessToken();
+        }
+      });
+    } catch (error: any) {
       fail(error);
-    } finally {
       setGoogleLoading(false);
     }
   };
