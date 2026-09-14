@@ -225,23 +225,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
   const handleGoogleAuth = async () => {
     setGoogleLoading(true);
     try {
-      // 1. Try Lovable cloud auth if available
-      try {
-        const result = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: `${window.location.origin}/dashboard`,
-        });
-        if (!result.error) {
-          if (result.redirected) return;
-          if (result.tokens) {
-            navigate({ to: "/dashboard" });
-            return;
-          }
-        }
-      } catch (lovableErr) {
-        console.warn("Lovable OAuth attempt:", lovableErr);
-      }
-
-      // 2. Direct Supabase OAuth
+      // Direct Supabase OAuth with Google
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
