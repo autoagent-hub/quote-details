@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { requestAuthCode, verifyRecoveryCode, verifySignupCode } from "@/lib/auth-codes.functions";
@@ -141,12 +142,9 @@ function AuthPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-surface px-5 py-10">
-      <Link to="/" className="mb-6 flex items-center gap-2 font-display text-lg font-bold">
-        <span className="gradient-primary flex size-8 items-center justify-center rounded-lg text-primary-foreground">
-          <Sparkles className="size-4" />
-        </span>
-        QuoteFlow
-      </Link>
+      <div className="mb-6">
+        <QuoteFlowLogo size="xl" linkToHome />
+      </div>
 
       <Card className="w-full max-w-sm shadow-card">
         <CardContent className="p-6">
@@ -169,9 +167,7 @@ function AuthPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="password">
-                  {mode === "forgot" ? "New password" : "Password"}
-                </Label>
+                <Label htmlFor="password">{mode === "forgot" ? "New password" : "Password"}</Label>
                 <Input
                   id="password"
                   type="password"

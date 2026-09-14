@@ -42,7 +42,10 @@ export const getTrialState = createServerFn({ method: "GET" })
 
     if (status !== "SUBSCRIBED" && status !== "TRIAL") {
       // Cancelled / past due accounts fall back to the trial tier.
-      await context.supabase.from("profiles").update({ trial_status: "TRIAL" }).eq("id", context.userId);
+      await context.supabase
+        .from("profiles")
+        .update({ trial_status: "TRIAL" })
+        .eq("id", context.userId);
       status = "TRIAL";
     }
 

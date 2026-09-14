@@ -13,13 +13,14 @@ import {
   LogOut,
   Plus,
   Send,
-  Sparkles,
   CreditCard,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { TablesUpdate } from "@/integrations/supabase/types";
+
+import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,12 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -193,12 +189,7 @@ function Dashboard() {
     <div className="min-h-screen bg-surface pb-16">
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2 font-display text-base font-bold">
-            <span className="gradient-primary flex size-7 items-center justify-center rounded-lg text-primary-foreground">
-              <Sparkles className="size-3.5" />
-            </span>
-            QuoteFlow
-          </Link>
+          <QuoteFlowLogo size="md" linkToHome />
           <div className="flex items-center gap-1">
             <Button asChild variant="outline" size="sm">
               <Link to="/upgrade">
@@ -221,7 +212,6 @@ function Dashboard() {
             </div>
 
             <TrialBanner />
-
 
             <Tabs defaultValue="requests">
               <TabsList className="w-full overflow-x-auto">
@@ -612,9 +602,7 @@ function PricingCard({ profile }: { profile: Profile }) {
       <Card className="shadow-card">
         <CardHeader className="flex-row items-center justify-between gap-2">
           <CardTitle className="text-base">Vehicle categories</CardTitle>
-          <Badge variant="secondary">
-            {categories.filter((c) => c.enabled).length} live
-          </Badge>
+          <Badge variant="secondary">{categories.filter((c) => c.enabled).length} live</Badge>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
@@ -634,7 +622,10 @@ function PricingCard({ profile }: { profile: Profile }) {
               setCategories((prev) => [
                 ...prev,
                 {
-                  key: makeKey(label, prev.map((p) => p.key)),
+                  key: makeKey(
+                    label,
+                    prev.map((p) => p.key),
+                  ),
                   label,
                   sub,
                   uplift: amount,
@@ -669,7 +660,10 @@ function PricingCard({ profile }: { profile: Profile }) {
               setPackages((prev) => [
                 ...prev,
                 {
-                  key: makeKey(label, prev.map((p) => p.key)),
+                  key: makeKey(
+                    label,
+                    prev.map((p) => p.key),
+                  ),
                   label,
                   sub,
                   price: amount,
@@ -705,7 +699,10 @@ function PricingCard({ profile }: { profile: Profile }) {
               setAddons((prev) => [
                 ...prev,
                 {
-                  key: makeKey(label, prev.map((p) => p.key)),
+                  key: makeKey(
+                    label,
+                    prev.map((p) => p.key),
+                  ),
                   label,
                   sub,
                   price: amount,
@@ -860,13 +857,7 @@ function TelegramCard({ authCode, chatId }: { authCode: string; chatId: string |
   );
 }
 
-function PhotoDialog({
-  paths,
-  customer,
-}: {
-  paths: string[];
-  customer: string;
-}) {
+function PhotoDialog({ paths, customer }: { paths: string[]; customer: string }) {
   const [open, setOpen] = useState(false);
   const [urls, setUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -883,11 +874,7 @@ function PhotoDialog({
       toast.error(error.message);
       return;
     }
-    setUrls(
-      (data ?? [])
-        .map((d) => d.signedUrl)
-        .filter((u): u is string => !!u),
-    );
+    setUrls((data ?? []).map((d) => d.signedUrl).filter((u): u is string => !!u));
   };
 
   return (
@@ -1175,8 +1162,8 @@ function TestingCard({ profile }: { profile: Profile }) {
           <p className="text-sm font-semibold">Try your own quote link</p>
           <p className="text-sm text-muted-foreground">
             This special link fills a request exactly like a customer would, but every request it
-            creates is tagged <span className="font-semibold">TEST</span> — in your requests list and
-            in the Telegram alert — so you never mistake it for a real lead.
+            creates is tagged <span className="font-semibold">TEST</span> — in your requests list
+            and in the Telegram alert — so you never mistake it for a real lead.
           </p>
           <p className="font-mono text-xs break-all text-muted-foreground">{testUrl}</p>
           <div className="flex flex-wrap gap-2">
@@ -1214,7 +1201,14 @@ function TrialBanner() {
   if (data.status === "SUBSCRIBED") {
     return (
       <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
-        <p className="text-sm font-medium">You're on QuoteFlow Pro — $15/month.</p>
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/favicon.png"
+            alt="QuoteFlow"
+            className="size-5 rounded-md object-contain shadow-xs"
+          />
+          <p className="text-sm font-medium">You're on QuoteFlow Pro — $15/month.</p>
+        </div>
         <Badge>Pro</Badge>
       </div>
     );
@@ -1236,7 +1230,7 @@ function TrialBanner() {
               : "You're on the free trial"}
         </p>
         {expiresAt && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground" suppressHydrationWarning>
             {data.expired ? "Ended" : "Ends"} {expiresAt.toLocaleDateString()}
           </p>
         )}

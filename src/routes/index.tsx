@@ -1,16 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Zap,
-  Send,
-  SmartphoneNfc,
-  PhoneCall,
-  Check,
-  ArrowRight,
-  Sparkles,
-} from "lucide-react";
+import { Zap, Send, SmartphoneNfc, PhoneCall, Check, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import heroImage from "@/assets/hero-detailer.jpg";
 
 export const Route = createFileRoute("/")({
@@ -61,12 +54,7 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <span className="flex items-center gap-2 font-display text-lg font-bold">
-            <span className="gradient-primary flex size-8 items-center justify-center rounded-lg text-primary-foreground">
-              <Sparkles className="size-4" />
-            </span>
-            QuoteFlow
-          </span>
+          <QuoteFlowLogo size="lg" linkToHome />
           <Button asChild variant="ghost" size="sm">
             <Link to="/auth">Sign in</Link>
           </Button>
@@ -168,7 +156,10 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border/70 py-8 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} QuoteFlow. Quotes that close while you work.
+        <div className="mx-auto flex flex-col items-center justify-center gap-2">
+          <QuoteFlowLogo size="sm" linkToHome />
+          <p>© {new Date().getFullYear()} QuoteFlow. Quotes that close while you work.</p>
+        </div>
       </footer>
     </div>
   );

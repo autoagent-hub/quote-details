@@ -33,9 +33,7 @@ export const prepareTelegramLink = createServerFn({ method: "POST" })
     if (profileError) throw new Error(profileError.message);
     if (!profile?.telegram_auth_code) throw new Error("Finish setting up your account first");
 
-    const secret = createHash("sha256")
-      .update(`telegram-webhook:${token}`)
-      .digest("base64url");
+    const secret = createHash("sha256").update(`telegram-webhook:${token}`).digest("base64url");
     const webhookUrl = `${appUrl.replace(/\/$/, "")}/api/public/telegram/webhook`;
     const response = await fetch(`${API}${token}/setWebhook`, {
       method: "POST",
@@ -120,9 +118,7 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
     ];
 
     const body = [
-      data.isTest
-        ? `🧪 <b>TEST REQUEST — not a real customer</b>`
-        : `🚨 <b>NEW QUOTE REQUEST</b>`,
+      data.isTest ? `🧪 <b>TEST REQUEST — not a real customer</b>` : `🚨 <b>NEW QUOTE REQUEST</b>`,
       profile.business_name ? `<i>${esc(profile.business_name)}</i>` : "",
       ``,
       `👤 <b>${esc(data.customerName)}</b>`,

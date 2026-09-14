@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, Car, Check, CheckCircle2, Loader2, Sparkles, X } from "lucide-react";
+import { Camera, Car, Check, CheckCircle2, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+
+import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -199,7 +201,9 @@ function QuoteForm() {
       }).catch(() => undefined);
 
       toast.success(
-        isTest ? "Test request sent — check your Telegram." : "Request sent! They'll reach out shortly.",
+        isTest
+          ? "Test request sent — check your Telegram."
+          : "Request sent! They'll reach out shortly.",
       );
       setDone(true);
     } catch (error) {
@@ -220,7 +224,11 @@ function QuoteForm() {
   if (!profile) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
-        <Car className="size-8 text-muted-foreground" />
+        <img
+          src="/favicon.png"
+          alt="QuoteFlow"
+          className="size-12 rounded-xl object-contain shadow-xs"
+        />
         <h1 className="text-xl font-bold">Quote form not found</h1>
         <p className="max-w-xs text-sm text-muted-foreground">
           No detailer uses the link <span className="font-medium">/{business_slug}</span> yet.
@@ -240,8 +248,8 @@ function QuoteForm() {
         </span>
         <h1 className="mt-6 text-2xl font-bold">Request sent</h1>
         <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-          {profile.business_name} just got an alert with your details and will text or call {fullPhone}{" "}
-          shortly.
+          {profile.business_name} just got an alert with your details and will text or call{" "}
+          {fullPhone} shortly.
         </p>
         <div className="mt-6 w-full max-w-sm rounded-xl border border-border bg-card p-5 text-left shadow-card">
           <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
@@ -259,6 +267,13 @@ function QuoteForm() {
             <a href={`tel:${profile.phone}`}>Call {profile.business_name}</a>
           </Button>
         ) : null}
+        <div className="mt-8">
+          <QuoteFlowLogo
+            size="xs"
+            linkToHome
+            className="text-muted-foreground hover:text-foreground opacity-85"
+          />
+        </div>
       </div>
     );
   }
@@ -279,9 +294,11 @@ function QuoteForm() {
               className="size-12 shrink-0 rounded-xl border border-border object-cover"
             />
           ) : (
-            <span className="gradient-primary flex size-12 shrink-0 items-center justify-center rounded-xl text-primary-foreground">
-              <Sparkles className="size-5" />
-            </span>
+            <img
+              src="/favicon.png"
+              alt="QuoteFlow"
+              className="size-12 shrink-0 rounded-xl border border-border bg-background p-1.5 object-contain shadow-xs"
+            />
           )}
           <div className="min-w-0">
             <h1 className="truncate text-xl font-bold">{profile.business_name}</h1>
@@ -529,6 +546,14 @@ function QuoteForm() {
             </div>
           </div>
         </section>
+
+        <div className="pt-2 pb-6 flex items-center justify-center">
+          <QuoteFlowLogo
+            size="xs"
+            linkToHome
+            className="text-muted-foreground hover:text-foreground opacity-80"
+          />
+        </div>
       </form>
 
       <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 px-5 py-4 backdrop-blur">

@@ -1,0 +1,6 @@
+{
+  "name": "QuoteFlow",
+  "description": "Instant web quotes and real-time Telegram alerts for mobile auto detailers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

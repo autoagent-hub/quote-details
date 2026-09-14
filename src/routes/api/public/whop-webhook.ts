@@ -30,9 +30,7 @@ function verifyWhopSignature(
   if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false;
 
   const signed = `${id}.${timestamp}.${body}`;
-  const expectedList = keys.map((key) =>
-    createHmac("sha256", key).update(signed).digest("base64"),
-  );
+  const expectedList = keys.map((key) => createHmac("sha256", key).update(signed).digest("base64"));
 
   // Header may contain multiple space-separated "v1,<sig>" entries.
   for (const part of signatureHeader.split(" ")) {
@@ -62,8 +60,7 @@ async function getAdminClient() {
   const { createClient } = await import("@supabase/supabase-js");
   const url = process.env["EXTERNAL_SUPABASE_URL"] ?? process.env["SUPABASE_URL"];
   const key =
-    process.env["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"] ??
-    process.env["SUPABASE_SERVICE_ROLE_KEY"];
+    process.env["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_SERVICE_ROLE_KEY"];
   if (!url || !key) return null;
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -76,9 +73,7 @@ async function findProfileIdByEmail(
 ): Promise<string | null> {
   // Profiles mirror auth.users, so resolve the auth user by email.
   const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  const user = data?.users?.find(
-    (u) => u.email?.toLowerCase() === email.toLowerCase(),
-  );
+  const user = data?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
   return user?.id ?? null;
 }
 
@@ -94,8 +89,12 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
         const timestamp = request.headers.get("webhook-timestamp") ?? "";
         const signature = request.headers.get("webhook-signature") ?? "";
 
-        if (!id || !timestamp || !signature ||
-            !verifyWhopSignature(secret, id, timestamp, signature, body)) {
+        if (
+          !id ||
+          !timestamp ||
+          !signature ||
+          !verifyWhopSignature(secret, id, timestamp, signature, body)
+        ) {
           return new Response("Invalid signature", { status: 401 });
         }
 

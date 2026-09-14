@@ -59,7 +59,8 @@ function emailHtml(code: string, purpose: Purpose) {
 async function sendCodeEmail(to: string, code: string, purpose: Purpose) {
   const apiKey = process.env["RESEND_API_KEY"];
   if (!apiKey) throw new Error("Email sending is not configured yet.");
-  const from = "QuoteFlow <noreply@detailr.online>";
+  const emailFrom = process.env["EMAIL_FROM"] || "noreply@detailr.online";
+  const from = emailFrom.includes("<") ? emailFrom : `QuoteFlow <${emailFrom}>`;
   const subject =
     purpose === "signup"
       ? `${code} is your QuoteFlow confirmation code`
@@ -143,12 +144,21 @@ async function consumeCode(email: string, purpose: Purpose, code: string) {
     .order("created_at", { ascending: false })
     .limit(1);
 
-  const row = (data as
-    | { id: string; code_hash: string; expires_at: string; consumed_at: string | null; attempts: number }[]
-    | null)?.[0];
+  const row = (
+    data as
+      | {
+          id: string;
+          code_hash: string;
+          expires_at: string;
+          consumed_at: string | null;
+          attempts: number;
+        }[]
+      | null
+  )?.[0];
 
   if (!row || row.consumed_at) throw new Error("Request a new code to continue.");
-  if (new Date(row.expires_at).getTime() < Date.now()) throw new Error("That code expired. Request a new one.");
+  if (new Date(row.expires_at).getTime() < Date.now())
+    throw new Error("That code expired. Request a new one.");
   if (row.attempts >= MAX_ATTEMPTS) throw new Error("Too many attempts. Request a new code.");
 
   const hash = await hashCode(email, purpose, code.trim());
@@ -182,7 +192,8 @@ export const verifySignupCode = createServerFn({ method: "POST" })
       email_confirm: true,
     });
     if (error) {
-      if (/already/i.test(error.message)) throw new Error("An account with this email already exists. Sign in instead.");
+      if (/already/i.test(error.message))
+        throw new Error("An account with this email already exists. Sign in instead.");
       console.error("[auth-codes] createUser failed", error);
       throw new Error("Could not create your account. Please try again.");
     }

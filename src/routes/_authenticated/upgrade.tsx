@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Check, CreditCard, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, CreditCard, Loader2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { getUpgradeCheckout } from "@/lib/billing.functions";
 
@@ -21,7 +22,8 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
       { property: "og:title", content: "Upgrade to QuoteFlow Pro — $15/month" },
       {
         property: "og:description",
-        content: "Unlimited quote requests, Telegram alerts and your branded quote link for $15/month.",
+        content:
+          "Unlimited quote requests, Telegram alerts and your branded quote link for $15/month.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -41,8 +43,14 @@ const perks = [
 const statusCopy: Record<string, { label: string; note: string }> = {
   TRIAL: { label: "Free trial", note: "You're on the trial. Upgrade any time to keep going." },
   SUBSCRIBED: { label: "Active", note: "You're on the paid plan — nothing else to do." },
-  CANCELLED: { label: "Cancelled", note: "Your plan was cancelled. Resubscribe to switch it back on." },
-  PAST_DUE: { label: "Payment failed", note: "The last payment didn't go through. Retry it below." },
+  CANCELLED: {
+    label: "Cancelled",
+    note: "Your plan was cancelled. Resubscribe to switch it back on.",
+  },
+  PAST_DUE: {
+    label: "Payment failed",
+    note: "The last payment didn't go through. Retry it below.",
+  },
 };
 
 function Upgrade() {
@@ -85,12 +93,7 @@ function Upgrade() {
           <Link to="/dashboard" className="flex items-center gap-2 text-sm font-medium">
             <ArrowLeft className="size-4" /> Back to dashboard
           </Link>
-          <span className="flex items-center gap-2 font-display text-base font-bold">
-            <span className="gradient-primary flex size-7 items-center justify-center rounded-lg text-primary-foreground">
-              <Sparkles className="size-3.5" />
-            </span>
-            QuoteFlow
-          </span>
+          <QuoteFlowLogo size="md" linkToHome />
         </div>
       </header>
 
@@ -103,9 +106,16 @@ function Upgrade() {
           <Card className="overflow-hidden shadow-card">
             <div className="gradient-ink px-7 py-8 text-primary-foreground">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold tracking-widest uppercase opacity-80">
-                  QuoteFlow Pro
-                </p>
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/favicon.png"
+                    alt="QuoteFlow logo"
+                    className="size-5 rounded-md object-contain shadow-xs"
+                  />
+                  <p className="text-xs font-semibold tracking-widest uppercase opacity-90">
+                    QuoteFlow Pro
+                  </p>
+                </div>
                 <Badge variant={subscribed ? "default" : "secondary"}>{copy.label}</Badge>
               </div>
               <p className="mt-3 font-display text-5xl font-bold">
