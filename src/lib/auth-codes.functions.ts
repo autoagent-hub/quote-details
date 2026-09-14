@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { sendAdminTelegramAlert } from "@/lib/admin-telegram.functions";
+import { sendWelcomeEmail } from "@/lib/welcome-email.server";
 
 type Purpose = "signup" | "recovery";
 
@@ -261,6 +262,9 @@ export const verifySignupCode = createServerFn({ method: "POST" })
       type: "NEW_SIGNUP",
       userEmail: email,
     }).catch((err) => console.warn("[admin-telegram] Signup alert failed:", err));
+
+    // Send professional automated welcome email with step-by-step guide & banners
+    sendWelcomeEmail(email).catch((err) => console.warn("[welcome-email] dispatch failed:", err));
 
     return { ok: true };
   });

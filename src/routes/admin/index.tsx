@@ -71,6 +71,7 @@ import {
   adminGetRecentQuotesStream,
   type AdminDetailerSummary,
 } from "@/lib/admin-dashboard.functions";
+import { adminSendWelcomeEmailToAllActiveUsers } from "@/lib/weekly-summary.functions";
 import {
   getAdminTelegramStatus,
   updateAdminTelegramSettings,
@@ -316,6 +317,20 @@ function AdminDashboardPage() {
       setCronRunning(false);
     }
   };
+
+  const sendWelcomeEmailMutation = useMutation({
+    mutationFn: () => adminSendWelcomeEmailToAllActiveUsers(),
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success(res.message);
+      } else {
+        toast.error("Failed to send welcome emails");
+      }
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to send welcome emails");
+    },
+  });
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -1377,6 +1392,41 @@ function AdminDashboardPage() {
         {/* TAB 4: SYSTEM TOOLS & CRON */}
         {activeTab === "tools" && (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* Welcome Email Broadcast Panel */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6 space-y-4">
+              <div className="flex items-center gap-2 font-semibold text-white">
+                <Send className="size-5 text-emerald-400" /> Broadcast Onboarding Welcome Email
+              </div>
+              <p className="text-xs text-slate-400">
+                Dispatches the professional step-by-step onboarding guide (with banner images and setup instructions) to all registered active users in the database.
+              </p>
+
+              <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs font-mono text-slate-400 space-y-1">
+                <div>
+                  Template: <strong className="text-emerald-400">Professional Onboarding & Banners</strong>
+                </div>
+                <div>
+                  Deliverability: <strong className="text-slate-200">Resend (Anti-Spam Optimized)</strong>
+                </div>
+                <div>
+                  Target: <strong className="text-slate-200">All Active Detailers</strong>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => sendWelcomeEmailMutation.mutate()}
+                disabled={sendWelcomeEmailMutation.isPending}
+                className="w-full gap-2 rounded-xl bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700"
+              >
+                {sendWelcomeEmailMutation.isPending ? (
+                  <RefreshCw className="size-3.5 animate-spin" />
+                ) : (
+                  <Send className="size-3.5" />
+                )}
+                {sendWelcomeEmailMutation.isPending ? "Broadcasting..." : "Send Test/Welcome Email to All Active Users"}
+              </Button>
+            </div>
+
             {/* Weekly Email Cron Panel */}
             <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6 space-y-4">
               <div className="flex items-center gap-2 font-semibold text-white">

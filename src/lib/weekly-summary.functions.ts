@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAdminClient } from "@/lib/admin.server";
 import { money } from "@/lib/pricing";
+import { sendWelcomeEmail } from "@/lib/welcome-email.server";
+import { requireAdminAuth } from "@/lib/admin-auth";
 
 export interface WeeklyQuoteSummaryItem {
   id: string;
@@ -556,3 +558,41 @@ export async function dispatchAllWeeklySummaries(): Promise<{
     results,
   };
 }
+
+export const adminSendWelcomeEmailToAllActiveUsers = createServerFn({ method: "POST" })
+  .handler(async () => {
+    await requireAdminAuth();
+    const admin = getAdminClient();
+    if (!admin) {
+      throw new Error("Admin client unavailable");
+    }
+
+    // Fetch all profiles
+    const { data: profiles, error } = await admin.from("profiles").select("email, business_name");
+    if (error || !profiles) {
+      throw new Error(`Failed to fetch profiles: ${error?.message}`);
+    }
+
+    let sentCount = 0;
+    const errors: string[] = [];
+
+    for (const p of profiles) {
+      if (!p.email) continue;
+      try {
+        await sendWelcomeEmail(p.email);
+        sentCount++;
+      } catch (err: unknown) {
+        const e = err as Error;
+        errors.push(`${p.email}: ${e.message}`);
+      }
+    }
+
+    return {
+      success: true,
+      sentCount,
+      totalUsers: profiles.length,
+      errors,
+      message: `Successfully dispatched onboarding welcome email to ${sentCount} active users.`,
+    };
+  });
+

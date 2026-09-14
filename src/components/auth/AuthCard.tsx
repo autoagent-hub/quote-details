@@ -241,20 +241,22 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
 
       window.google.accounts.id.initialize({
         client_id: clientId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         callback: async (response: any) => {
           try {
             if (!response.credential) {
               throw new Error("No Google credential returned");
             }
-            const { data, error } = await supabase.auth.signInWithIdToken({
+            const { error } = await supabase.auth.signInWithIdToken({
               provider: "google",
               token: response.credential,
             });
             if (error) throw error;
             toast.success("Logged in successfully with Google!");
             navigate({ to: "/dashboard" });
-          } catch (err: any) {
-            toast.error(err.message || "Google authentication failed.");
+          } catch (err: unknown) {
+            const e = err as Error;
+            toast.error(e.message || "Google authentication failed.");
           } finally {
             setGoogleLoading(false);
           }
@@ -262,19 +264,25 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
       });
 
       // Prompt Google One Tap / popup
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       window.google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
+        if (
+          notification.isNotDisplayed() ||
+          notification.isSkippedMoment() ||
+          notification.isDismissedMoment()
+        ) {
           // Fallback to token client popup if One Tap is dismissed
           const tokenClient = window.google.accounts.oauth2.initTokenClient({
             client_id: clientId,
             scope: "email profile openid",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             callback: async (tokenResponse: any) => {
               try {
                 if (tokenResponse.error) {
                   throw new Error(tokenResponse.error_description || "Google authorization failed");
                 }
                 // For tokenClient access_token / id_token exchange
-                const { data, error } = await supabase.auth.signInWithIdToken({
+                const { error } = await supabase.auth.signInWithIdToken({
                   provider: "google",
                   token: tokenResponse.id_token || tokenResponse.access_token,
                   access_token: tokenResponse.access_token,
@@ -282,8 +290,9 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
                 if (error) throw error;
                 toast.success("Logged in successfully with Google!");
                 navigate({ to: "/dashboard" });
-              } catch (err: any) {
-                toast.error(err.message || "Google authentication failed.");
+              } catch (err: unknown) {
+                const e = err as Error;
+                toast.error(e.message || "Google authentication failed.");
               } finally {
                 setGoogleLoading(false);
               }
@@ -292,8 +301,9 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
           tokenClient.requestAccessToken();
         }
       });
-    } catch (error: any) {
-      fail(error);
+    } catch (error: unknown) {
+      const e = error as Error;
+      fail(e);
       setGoogleLoading(false);
     }
   };

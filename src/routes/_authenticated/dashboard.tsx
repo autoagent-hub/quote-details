@@ -63,7 +63,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { prepareTelegramLink, sendQuoteAlert } from "@/lib/telegram.functions";
 import { getTrialState } from "@/lib/billing.functions";
-import { sendMyWeeklySummary } from "@/lib/weekly-summary.functions";
 import { Switch } from "@/components/ui/switch";
 import {
   CURRENCIES,
@@ -265,7 +264,6 @@ function DashboardPage() {
                   <BusinessProfileCard profile={profile} />
                   <NotificationSettingsCard profile={profile} />
                 </div>
-                <WeeklyEmailSummaryCard profile={profile} />
               </TabsContent>
             </Tabs>
           </>
@@ -1177,94 +1175,6 @@ function NotificationSettingsCard({ profile }: { profile: Profile }) {
           Save Preferences
         </Button>
       </div>
-    </Card>
-  );
-}
-
-function WeeklyEmailSummaryCard({ profile }: { profile: Profile }) {
-  const triggerSummary = useServerFn(sendMyWeeklySummary);
-  const [lastSentEmail, setLastSentEmail] = useState<string | null>(null);
-
-  const send = useMutation({
-    mutationFn: async () => {
-      return await triggerSummary();
-    },
-    onSuccess: (data) => {
-      setLastSentEmail(data.email);
-      toast.success(`Weekly summary sent to ${data.email}! Check your inbox.`);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to send weekly summary email");
-    },
-  });
-
-  return (
-    <Card className="border-border/80 shadow-xs" id="email-summary">
-      <CardHeader className="pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Mail className="size-4" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-bold">Automated Weekly Email Digest</CardTitle>
-              <CardDescription className="text-xs">
-                Executive weekly performance summary of all customer quotes and revenue pipeline.
-              </CardDescription>
-            </div>
-          </div>
-          <Badge
-            variant="outline"
-            className="text-[10px] w-fit border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-          >
-            Resend Active · Automated
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="rounded-lg border border-border/70 bg-muted/40 p-3.5 text-xs text-muted-foreground space-y-2">
-          <div className="flex items-center justify-between text-foreground font-semibold">
-            <span>Weekly Digest Highlights</span>
-            <span className="text-[11px] text-primary">Scheduled weekly digest</span>
-          </div>
-          <ul className="space-y-1 text-[11px]">
-            <li className="flex items-center gap-1.5">
-              <span className="text-emerald-500 font-bold">✓</span> Total 7-day quote volume and
-              pipeline revenue
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span className="text-emerald-500 font-bold">✓</span> Full customer lead contacts and
-              requested detailing packages
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span className="text-emerald-500 font-bold">✓</span> Most requested detailing service
-              and ticket breakdown
-            </li>
-          </ul>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
-          <p className="text-[11px] text-muted-foreground">
-            {lastSentEmail
-              ? `Last dispatched to ${lastSentEmail}`
-              : `Dispatches automatically to your registered detailer email via Resend`}
-          </p>
-          <Button
-            variant="hero"
-            size="sm"
-            className="h-8 text-xs font-semibold gap-1.5"
-            disabled={send.isPending}
-            onClick={() => send.mutate()}
-          >
-            {send.isPending ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Send className="size-3.5" />
-            )}
-            Send Weekly Summary to My Inbox
-          </Button>
-        </div>
-      </CardContent>
     </Card>
   );
 }
