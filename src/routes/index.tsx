@@ -39,7 +39,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Instant web quotes, real-time Telegram alerts, zero app installs. $15/month with a 7-day free trial on detailr.online.",
+          "Instant web quotes, real-time Telegram alerts, zero app installs. $9.99/month with a 7-day free trial on detailr.online.",
       },
       { property: "og:type", content: "website" },
     ],
@@ -80,7 +80,7 @@ const features = [
   },
   {
     icon: ShieldCheck,
-    title: "Flat $15/mo · 0% Commissions",
+    title: "Flat $9.99/mo · 0% Commissions",
     body: "We never take a cut of your detailing jobs. Keep 100% of your earnings with unlimited quotes and leads.",
     badge: "Fair Pricing",
   },
@@ -696,7 +696,7 @@ function Landing() {
                 Everything Included
               </p>
               <div className="mt-4 flex items-baseline justify-center gap-1 font-display">
-                <span className="text-6xl font-extrabold text-white">$15</span>
+                <span className="text-6xl font-extrabold text-white">$9.99</span>
                 <span className="text-base text-white/70">/ month</span>
               </div>
               <p className="mt-2 text-xs text-white/80">

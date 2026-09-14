@@ -36,7 +36,7 @@ The app consists of three core pages and a Supabase backend integration:
 
 - Key Features Grid: Instant Web Quotes, Real-Time Telegram Alerts, Zero App Install Required, 1-Tap Call/Text Customer Buttons.
 
-- Pricing Card: Flat $15/month subscription with a "7-Day Free Trial" call to action.
+- Pricing Card: Flat $9.99/month subscription with a "7-Day Free Trial" call to action.
 
 SUPABASE DATABASE SCHEME & LOGIC:
 

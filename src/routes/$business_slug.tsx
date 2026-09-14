@@ -5,6 +5,8 @@ import { Camera, Car, Check, CheckCircle2, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
+import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
+import { SkeletonQuoteForm } from "@/components/skeletons/SkeletonQuoteForm";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -246,11 +248,7 @@ function QuoteForm() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-surface">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <SkeletonQuoteForm />;
   }
 
   if (!profile) {
@@ -605,6 +603,18 @@ function QuoteForm() {
           />
         </div>
       </form>
+
+      <GlobalLoadingOverlay
+        isLoading={submitting}
+        title="Processing Your Quote"
+        subtitle={`Sending your request directly to ${profile.business_name}...`}
+        iconUrl={profile.logo_url || "/favicon.png"}
+        steps={[
+          "Calculating vehicle modifiers...",
+          "Applying selected service packages...",
+          "Delivering instant Telegram alert...",
+        ]}
+      />
 
       <div className="fixed inset-x-0 bottom-0 border-t border-border/80 bg-background/95 px-5 py-3.5 backdrop-blur-md shadow-2xl z-40">
         <div className="mx-auto max-w-md">

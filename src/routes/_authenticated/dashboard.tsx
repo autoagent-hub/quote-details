@@ -4,12 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Check,
-  CheckCircle2,
   Copy,
   CreditCard,
   DollarSign,
   ExternalLink,
-  FlaskConical,
   Image as ImageIcon,
   Link2,
   Loader2,
@@ -23,12 +21,15 @@ import {
   Trash2,
   TrendingUp,
   Users,
+  Settings2,
+  Sliders,
+  ReceiptText,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { TablesUpdate } from "@/integrations/supabase/types";
-
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
+import { SkeletonDashboard } from "@/components/skeletons/SkeletonDashboard";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,83 +70,29 @@ import {
   parsePackages,
   parseServices,
   parseVehicleCategories,
+  slugify,
   vehicleLabel,
+  type PackageItem,
+  type Profile,
+  type Quote,
   type ServiceItem,
   type VehicleCategory,
 } from "@/lib/pricing";
 
-const TELEGRAM_BOT = "QuoteFlowAlertsBot";
-
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Detailer Dashboard — Detailr (detailr.online)" },
+      { title: "Dashboard — Detailr (detailr.online)" },
       {
         name: "description",
-        content:
-          "Set your detailing prices, vehicle categories, Telegram alerts and review incoming quote requests on Detailr.",
+        content: "Manage your auto detailing quote requests, pricing rates, and Telegram alerts.",
       },
-      { property: "og:title", content: "Detailer Dashboard — Detailr (detailr.online)" },
-      {
-        property: "og:description",
-        content: "Manage pricing, branding, Telegram alerts and quote history.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Dashboard,
+  component: DashboardPage,
 });
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 40);
-}
-
-type Profile = {
-  id: string;
-  business_name: string;
-  slug: string;
-  tagline: string;
-  phone: string;
-  logo_url: string | null;
-  currency: string;
-  timezone: string;
-  notify_telegram: boolean;
-  notify_include_photos: boolean;
-  notify_include_notes: boolean;
-  allow_photos: boolean;
-  telegram_chat_id: string | null;
-  telegram_auth_code: string;
-  services: unknown;
-  packages: unknown;
-  vehicle_categories: unknown;
-  sedan_base: number;
-  suv_base: number;
-  truck_base: number;
-};
-
-type Quote = {
-  id: string;
-  customer_name: string;
-  customer_phone: string;
-  vehicle_type: string;
-  vehicle_desc: string;
-  service_label: string;
-  service_price: number;
-  addons: string[];
-  estimated_price: number;
-  notes: string;
-  photo_urls: string[];
-  currency: string;
-  created_at: string;
-  is_test: boolean;
-};
-
-function Dashboard() {
+function DashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -186,76 +133,87 @@ function Dashboard() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-surface">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <SkeletonDashboard />;
   }
 
   return (
-    <div className="min-h-screen bg-surface pb-16">
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">
-          <QuoteFlowLogo size="md" linkToHome />
+    <div className="min-h-screen bg-surface pb-16 text-foreground">
+      {/* Clean Minimal Header */}
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <QuoteFlowLogo size="sm" linkToHome />
           <div className="flex items-center gap-3">
             {profile && (
-              <div className="hidden sm:flex items-center gap-2 pr-2 border-r border-border/80">
+              <div className="hidden sm:flex items-center gap-2 pr-3 border-r border-border">
                 <img
                   src={profile.logo_url || "/favicon.png"}
                   alt={profile.business_name}
-                  className="size-7 rounded-lg border border-border object-contain bg-background p-0.5 shadow-xs"
+                  className="size-6 rounded-md border border-border object-contain bg-background"
                 />
-                <span className="text-xs font-semibold text-foreground max-w-[140px] truncate">
+                <span className="text-xs font-semibold max-w-[160px] truncate">
                   {profile.business_name}
                 </span>
               </div>
             )}
-            <Button asChild variant="outline" size="sm">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs font-semibold px-2.5"
+            >
               <Link to="/upgrade">
-                <CreditCard className="size-4" /> Upgrade
+                <CreditCard className="size-3 mr-1" /> Pro Plan
               </Link>
             </Button>
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="size-4" /> Sign out
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-muted-foreground hover:text-foreground px-2"
+              onClick={signOut}
+            >
+              <LogOut className="size-3 mr-1" /> Sign out
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl space-y-5 px-5 py-6">
+      {/* Main Workspace */}
+      <main className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6 py-6">
         {profile ? (
           <>
-            <div className="flex items-start gap-4">
-              <img
-                src={profile.logo_url || "/favicon.png"}
-                alt={`${profile.business_name} profile`}
-                className="size-14 shrink-0 rounded-2xl border border-border bg-background p-1 object-contain shadow-xs"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold truncate">{profile.business_name}</h1>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                    <CheckCircle2 className="size-3" /> Live
-                  </span>
-                </div>
-                <PublicLink slug={profile.slug} />
-              </div>
-            </div>
-
             <TrialBanner />
 
-            <Tabs defaultValue="requests">
-              <TabsList className="w-full overflow-x-auto">
-                <TabsTrigger value="requests">Requests</TabsTrigger>
-                <TabsTrigger value="account">Account</TabsTrigger>
-                <TabsTrigger value="pricing">Pricing</TabsTrigger>
-                <TabsTrigger value="alerts">Alerts</TabsTrigger>
-                <TabsTrigger value="testing">Testing</TabsTrigger>
-              </TabsList>
+            {/* Top Grid: Key Overview & Actions */}
+            <TopMetricsGrid profile={profile} quotes={quotes ?? []} />
 
-              <TabsContent value="requests" className="mt-5">
-                <QuoteHistory
+            {/* Segmented View Container */}
+            <Tabs defaultValue="quotes" className="space-y-4">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <TabsList className="bg-muted/80 p-1 h-9 rounded-lg">
+                  <TabsTrigger
+                    value="quotes"
+                    className="text-xs font-semibold gap-1.5 px-3 rounded-md"
+                  >
+                    <ReceiptText className="size-3.5" /> Quote Requests ({quotes?.length ?? 0})
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="pricing"
+                    className="text-xs font-semibold gap-1.5 px-3 rounded-md"
+                  >
+                    <Sliders className="size-3.5" /> Pricing & Services
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="settings"
+                    className="text-xs font-semibold gap-1.5 px-3 rounded-md"
+                  >
+                    <Settings2 className="size-3.5" /> Settings & Bot
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* TAB 1: Quote Requests */}
+              <TabsContent value="quotes" className="focus-visible:outline-none">
+                <QuoteHistoryCard
                   quotes={quotes ?? []}
                   currency={profile.currency}
                   timezone={profile.timezone}
@@ -264,24 +222,17 @@ function Dashboard() {
                 />
               </TabsContent>
 
-              <TabsContent value="account" className="mt-5 space-y-5">
-                <BusinessProfileCard profile={profile} />
-              </TabsContent>
-
-              <TabsContent value="pricing" className="mt-5 space-y-5">
+              {/* TAB 2: Pricing */}
+              <TabsContent value="pricing" className="focus-visible:outline-none">
                 <PricingCard profile={profile} />
               </TabsContent>
 
-              <TabsContent value="alerts" className="mt-5 space-y-5">
-                <TelegramCard
-                  authCode={profile.telegram_auth_code}
-                  chatId={profile.telegram_chat_id}
-                />
-                <NotificationSettingsCard profile={profile} />
-              </TabsContent>
-
-              <TabsContent value="testing" className="mt-5 space-y-5">
-                <TestingCard profile={profile} />
+              {/* TAB 3: Settings */}
+              <TabsContent value="settings" className="space-y-5 focus-visible:outline-none">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <BusinessProfileCard profile={profile} />
+                  <NotificationSettingsCard profile={profile} />
+                </div>
               </TabsContent>
             </Tabs>
           </>
@@ -293,42 +244,381 @@ function Dashboard() {
   );
 }
 
-function PublicLink({ slug }: { slug: string }) {
+function TopMetricsGrid({ profile, quotes }: { profile: Profile; quotes: Quote[] }) {
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+
   useEffect(() => setOrigin(window.location.origin), []);
-  const url = `${origin}/${slug}`;
+  const quoteUrl = `${origin}/${profile.slug}`;
+  const connected = !!profile.telegram_chat_id;
+
+  const totalPipeline = quotes.reduce((acc, q) => acc + (Number(q.estimated_price) || 0), 0);
+  const avgQuote = quotes.length ? Math.round(totalPipeline / quotes.length) : 0;
+  const realQuotes = quotes.filter((q) => !q.is_test);
 
   const handleCopy = () => {
-    void navigator.clipboard.writeText(url);
+    void navigator.clipboard.writeText(quoteUrl);
     setCopied(true);
-    toast.success("Quote form link copied to clipboard");
+    toast.success("Quote form link copied");
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const sendTest = async () => {
+    setSendingTest(true);
+    try {
+      const result = await sendQuoteAlert({
+        data: {
+          detailerId: profile.id,
+          customerName: "Alex Morgan",
+          customerPhone: profile.phone || "+1 555-019-2834",
+          vehicle: "2024 Tesla Model Y (Midsize SUV)",
+          service: { label: "Full Detail", price: 190 },
+          addons: [{ label: "Pet Hair Removal", price: 40 }],
+          estimate: 230,
+          notes: "Need it done this weekend!",
+          isTest: true,
+        },
+      });
+      if (result?.sent) {
+        toast.success("Test alert sent to your Telegram chat!");
+      } else if (result?.reason === "not_connected") {
+        toast.error("Please connect your Telegram bot first.");
+      } else {
+        toast.error("Could not send test alert.");
+      }
+    } catch {
+      toast.error("Could not send test alert.");
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2.5">
-      <div className="flex items-center gap-1.5 rounded-lg border border-border/80 bg-background/80 px-3 py-1.5 shadow-xs">
-        <Link2 className="size-3.5 text-primary" />
-        <span className="font-mono text-xs font-semibold text-foreground break-all">
-          {origin ? `${origin.replace(/^https?:\/\//, "")}/${slug}` : `detailr.online/${slug}`}
-        </span>
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-8 gap-1.5 text-xs font-semibold"
-        onClick={handleCopy}
-      >
-        {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
-        {copied ? "Copied!" : "Copy Link"}
-      </Button>
-      <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-semibold">
-        <Link to="/$business_slug" params={{ business_slug: slug }} search={{}}>
-          <ExternalLink className="size-3.5" /> Preview Form
-        </Link>
-      </Button>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      {/* Card 1: Live Quote Link */}
+      <Card className="border-border/80 shadow-xs flex flex-col justify-between">
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-semibold uppercase tracking-wider text-[10px]">
+              Your Quote Form
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1">
+            <Link2 className="size-3 text-muted-foreground shrink-0" />
+            <span className="font-mono text-xs truncate text-foreground">
+              {origin
+                ? `${origin.replace(/^https?:\/\//, "")}/${profile.slug}`
+                : `detailr.online/${profile.slug}`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 flex-1 text-xs font-semibold"
+              onClick={handleCopy}
+            >
+              {copied ? (
+                <Check className="size-3 text-emerald-600 mr-1" />
+              ) : (
+                <Copy className="size-3 mr-1" />
+              )}
+              {copied ? "Copied" : "Copy Link"}
+            </Button>
+            <Button
+              asChild
+              variant="secondary"
+              size="sm"
+              className="h-7 text-xs font-semibold px-2.5"
+            >
+              <Link to="/$business_slug" params={{ business_slug: profile.slug }} search={{}}>
+                <ExternalLink className="size-3" />
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card 2: Total Pipeline */}
+      <Card className="border-border/80 shadow-xs">
+        <CardContent className="p-4 space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-semibold uppercase tracking-wider text-[10px]">
+              Pipeline Value
+            </span>
+            <DollarSign className="size-3.5 text-emerald-600" />
+          </div>
+          <p className="font-display text-2xl font-bold text-emerald-600">
+            {money(totalPipeline, profile.currency)}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            {realQuotes.length} customer lead{realQuotes.length === 1 ? "" : "s"} ({quotes.length}{" "}
+            total)
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Card 3: Avg Ticket */}
+      <Card className="border-border/80 shadow-xs">
+        <CardContent className="p-4 space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-semibold uppercase tracking-wider text-[10px]">
+              Average Ticket
+            </span>
+            <TrendingUp className="size-3.5 text-blue-500" />
+          </div>
+          <p className="font-display text-2xl font-bold text-foreground">
+            {money(avgQuote, profile.currency)}
+          </p>
+          <p className="text-[11px] text-muted-foreground">Estimated revenue per job</p>
+        </CardContent>
+      </Card>
+
+      {/* Card 4: Telegram Alerts Status */}
+      <Card className="border-border/80 shadow-xs flex flex-col justify-between">
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-semibold uppercase tracking-wider text-[10px]">
+              Telegram Alerts
+            </span>
+            <Send className="size-3.5 text-blue-500" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`size-2 rounded-full ${connected ? "bg-emerald-500" : "bg-amber-500"}`}
+            />
+            <span className="text-xs font-bold">{connected ? "Bot Connected" : "Not Linked"}</span>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            {connected ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 w-full text-xs font-semibold"
+                disabled={sendingTest}
+                onClick={sendTest}
+              >
+                {sendingTest ? (
+                  <Loader2 className="size-3 animate-spin mr-1" />
+                ) : (
+                  <Send className="size-3 mr-1" />
+                )}
+                Send Test Alert
+              </Button>
+            ) : (
+              <Button asChild variant="hero" size="sm" className="h-7 w-full text-xs font-semibold">
+                <a href="#settings">Connect Bot</a>
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+function QuoteHistoryCard({
+  quotes,
+  currency,
+  timezone,
+  services,
+  categories,
+}: {
+  quotes: Quote[];
+  currency: string;
+  timezone: string;
+  services: ServiceItem[];
+  categories: VehicleCategory[];
+}) {
+  const [showTests, setShowTests] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const testCount = quotes.filter((q) => q.is_test).length;
+  const realQuotes = quotes.filter((q) => !q.is_test);
+  const visible = showTests ? quotes : realQuotes;
+
+  const filtered = visible.filter((q) => {
+    if (!searchQuery.trim()) return true;
+    const term = searchQuery.toLowerCase();
+    return (
+      q.customer_name?.toLowerCase().includes(term) ||
+      q.customer_phone?.toLowerCase().includes(term) ||
+      q.vehicle_desc?.toLowerCase().includes(term) ||
+      q.vehicle_type?.toLowerCase().includes(term) ||
+      q.service_label?.toLowerCase().includes(term)
+    );
+  });
+
+  return (
+    <Card className="border-border/80 shadow-xs">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3">
+        <div>
+          <CardTitle className="text-sm font-bold">Incoming Customer Quotes</CardTitle>
+          <CardDescription className="text-xs">
+            Review customer vehicle specs, requested packages, and initiate 1-tap contact.
+          </CardDescription>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {testCount > 0 && (
+            <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
+              <span>Show tests ({testCount})</span>
+              <Switch
+                checked={showTests}
+                aria-label="Show test requests"
+                onCheckedChange={setShowTests}
+              />
+            </label>
+          )}
+        </div>
+      </CardHeader>
+
+      {/* Filter bar */}
+      {quotes.length > 0 && (
+        <div className="border-b border-border/80 px-4 py-2 bg-muted/20">
+          <div className="relative max-w-xs">
+            <Search className="absolute top-1/2 left-2.5 size-3 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Filter customer name, phone, or car..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-7 pl-7 text-xs bg-background"
+            />
+          </div>
+        </div>
+      )}
+
+      <CardContent className="p-0">
+        {filtered.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <Users className="size-5" />
+            </div>
+            <p className="mt-2.5 text-xs font-semibold text-foreground">
+              {searchQuery ? "No matching quotes found" : "No quote requests yet"}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground max-w-xs mx-auto">
+              {searchQuery
+                ? "Clear your search term to see all incoming leads."
+                : "Share your quote link to begin receiving customer requests."}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-[11px] h-9">Customer</TableHead>
+                  <TableHead className="text-[11px] h-9">Contact</TableHead>
+                  <TableHead className="text-[11px] h-9">Vehicle</TableHead>
+                  <TableHead className="text-[11px] h-9">Package</TableHead>
+                  <TableHead className="text-[11px] h-9">Add-ons</TableHead>
+                  <TableHead className="text-[11px] h-9">Notes / Photos</TableHead>
+                  <TableHead className="text-[11px] h-9 text-right">Estimate</TableHead>
+                  <TableHead className="text-[11px] h-9 text-right">Received</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((q) => (
+                  <TableRow key={q.id} className={q.is_test ? "opacity-75 bg-muted/20" : undefined}>
+                    <TableCell className="font-semibold text-xs py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        {q.customer_name}
+                        {q.is_test && (
+                          <Badge variant="secondary" className="text-[9px] py-0 px-1">
+                            TEST
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <a
+                          href={`tel:${q.customer_phone}`}
+                          title={`Call ${q.customer_name}`}
+                          className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-500/20"
+                        >
+                          <Phone className="size-2.5" /> Call
+                        </a>
+                        <a
+                          href={`sms:${q.customer_phone}`}
+                          title={`SMS ${q.customer_name}`}
+                          className="inline-flex items-center gap-1 rounded bg-blue-500/10 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-500/20"
+                        >
+                          <MessageSquare className="size-2.5" /> SMS
+                        </a>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-xs py-2.5">
+                      <span className="block font-medium">
+                        {q.vehicle_desc || vehicleLabel(q.vehicle_type, categories)}
+                      </span>
+                      {q.vehicle_desc && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {vehicleLabel(q.vehicle_type, categories)}
+                        </span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="text-xs py-2.5">
+                      <span className="font-medium">{q.service_label || "—"}</span>
+                      {q.service_price ? (
+                        <span className="block text-[10px] text-muted-foreground">
+                          {money(Number(q.service_price), q.currency || currency)}
+                        </span>
+                      ) : null}
+                    </TableCell>
+
+                    <TableCell className="text-[11px] text-muted-foreground py-2.5">
+                      {q.addons.length
+                        ? q.addons.map((a) => addonLabel(a, services)).join(", ")
+                        : "—"}
+                    </TableCell>
+
+                    <TableCell className="text-xs py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        {q.photo_urls?.length ? (
+                          <PhotoDialog paths={q.photo_urls} customer={q.customer_name} />
+                        ) : null}
+                        {q.notes?.trim() ? (
+                          <span
+                            className="max-w-[120px] truncate text-[11px] text-muted-foreground"
+                            title={q.notes}
+                          >
+                            {q.notes}
+                          </span>
+                        ) : (
+                          !q.photo_urls?.length && (
+                            <span className="text-muted-foreground text-[11px]">—</span>
+                          )
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-right py-2.5">
+                      <span className="font-display font-bold text-xs">
+                        {money(Number(q.estimated_price), q.currency || currency)}
+                      </span>
+                    </TableCell>
+
+                    <TableCell className="text-right text-[10px] text-muted-foreground py-2.5">
+                      {formatWhen(q.created_at, timezone)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -352,125 +642,74 @@ function BusinessProfileCard({ profile }: { profile: Profile }) {
   const [form, setForm] = useState({
     business_name: profile.business_name,
     slug: profile.slug,
-    tagline: profile.tagline ?? "",
     phone: profile.phone ?? "",
     logo_url: profile.logo_url ?? "",
     currency: profile.currency,
     timezone: profile.timezone,
   });
-  const save = useProfileUpdate("Business profile saved");
+  const save = useProfileUpdate("Profile settings saved");
 
   return (
-    <Card className="shadow-card">
-      <CardHeader>
-        <CardTitle className="text-base">Business profile</CardTitle>
+    <Card className="border-border/80 shadow-xs">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-bold">Shop Profile</CardTitle>
+        <CardDescription className="text-xs">
+          Manage your detailing company name, quote link, and locale.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5">
-        {/* Profile Picture / Brand Avatar */}
-        <div className="rounded-xl border border-border/70 bg-muted/30 p-4 space-y-3">
-          <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            Profile Picture & Quote Logo
+      <CardContent className="space-y-3.5">
+        <div className="space-y-1.5">
+          <Label htmlFor="business_name" className="text-xs">
+            Business name
           </Label>
-          <div className="flex flex-wrap items-center gap-4">
-            <img
-              src={form.logo_url || "/favicon.png"}
-              alt="Logo preview"
-              className="size-16 rounded-xl border border-border bg-background p-1.5 object-contain shadow-xs"
-            />
-            <div className="space-y-1.5 flex-1 min-w-[200px]">
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="text-xs font-semibold"
-                  onClick={() => setForm((f) => ({ ...f, logo_url: "/favicon.png" }))}
-                >
-                  Use Detailr Logo
-                </Button>
-                {form.logo_url && form.logo_url !== "/favicon.png" && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-muted-foreground"
-                    onClick={() => setForm((f) => ({ ...f, logo_url: "" }))}
-                  >
-                    Reset to Default
-                  </Button>
-                )}
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                This image appears on your dashboard, public customer quote pages, and Telegram
-                alerts.
-              </p>
-            </div>
-          </div>
+          <Input
+            id="business_name"
+            value={form.business_name}
+            onChange={(e) => setForm((f) => ({ ...f, business_name: e.target.value }))}
+            className="h-8 text-xs"
+          />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="business_name">Business name</Label>
-            <Input
-              id="business_name"
-              value={form.business_name}
-              onChange={(e) => setForm((f) => ({ ...f, business_name: e.target.value }))}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="slug">Public link</Label>
+            <Label htmlFor="slug" className="text-xs">
+              Quote Link Slug
+            </Label>
             <Input
               id="slug"
               value={form.slug}
               onChange={(e) => setForm((f) => ({ ...f, slug: slugify(e.target.value) }))}
+              className="h-8 text-xs font-mono"
             />
-            <p className="text-xs text-muted-foreground">/{form.slug || "your-link"}</p>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="phone">Business phone</Label>
+            <Label htmlFor="phone" className="text-xs">
+              Phone Number
+            </Label>
             <Input
               id="phone"
               value={form.phone}
               inputMode="tel"
               placeholder="+1 555 010 2020"
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="logo_url">Custom Logo / Image URL</Label>
-            <Input
-              id="logo_url"
-              value={form.logo_url}
-              placeholder="https://... or /favicon.png"
-              onChange={(e) => setForm((f) => ({ ...f, logo_url: e.target.value }))}
+              className="h-8 text-xs"
             />
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="tagline">Tagline</Label>
-          <Textarea
-            id="tagline"
-            rows={2}
-            value={form.tagline}
-            placeholder="Showroom shine, at your driveway."
-            onChange={(e) => setForm((f) => ({ ...f, tagline: e.target.value }))}
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Currency</Label>
+            <Label className="text-xs">Currency</Label>
             <Select
               value={form.currency}
               onValueChange={(v) => setForm((f) => ({ ...f, currency: v }))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-8 text-xs">
                 <SelectValue placeholder="Currency" />
               </SelectTrigger>
               <SelectContent>
                 {CURRENCIES.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
+                  <SelectItem key={c.code} value={c.code} className="text-xs">
                     {c.label}
                   </SelectItem>
                 ))}
@@ -478,17 +717,17 @@ function BusinessProfileCard({ profile }: { profile: Profile }) {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Time zone</Label>
+            <Label className="text-xs">Timezone</Label>
             <Select
               value={form.timezone}
               onValueChange={(v) => setForm((f) => ({ ...f, timezone: v }))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-8 text-xs">
                 <SelectValue placeholder="Time zone" />
               </SelectTrigger>
               <SelectContent>
                 {TIMEZONES.map((tz) => (
-                  <SelectItem key={tz} value={tz}>
+                  <SelectItem key={tz} value={tz} className="text-xs">
                     {tz.replace(/_/g, " ")}
                   </SelectItem>
                 ))}
@@ -497,27 +736,153 @@ function BusinessProfileCard({ profile }: { profile: Profile }) {
           </div>
         </div>
 
-        <Button
-          variant="hero"
-          size="lg"
-          disabled={save.isPending || !form.business_name.trim() || !form.slug}
-          onClick={() =>
-            save.mutate({
-              id: profile.id,
-              business_name: form.business_name.trim(),
-              slug: form.slug,
-              tagline: form.tagline.trim(),
-              phone: form.phone.trim(),
-              logo_url: form.logo_url.trim() || null,
-              currency: form.currency,
-              timezone: form.timezone,
-            })
-          }
-        >
-          {save.isPending && <Loader2 className="size-4 animate-spin" />}
-          Save profile
-        </Button>
+        <div className="space-y-1.5">
+          <Label htmlFor="logo_url" className="text-xs">
+            Logo / Avatar URL
+          </Label>
+          <Input
+            id="logo_url"
+            value={form.logo_url}
+            placeholder="https://... or /favicon.png"
+            onChange={(e) => setForm((f) => ({ ...f, logo_url: e.target.value }))}
+            className="h-8 text-xs"
+          />
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <Button
+            variant="hero"
+            size="sm"
+            className="h-8 text-xs font-semibold"
+            disabled={save.isPending || !form.business_name.trim() || !form.slug}
+            onClick={() =>
+              save.mutate({
+                id: profile.id,
+                business_name: form.business_name.trim(),
+                slug: form.slug,
+                phone: form.phone.trim(),
+                logo_url: form.logo_url.trim() || null,
+                currency: form.currency,
+                timezone: form.timezone,
+              })
+            }
+          >
+            {save.isPending && <Loader2 className="size-3 animate-spin mr-1" />}
+            Save Profile
+          </Button>
+        </div>
       </CardContent>
+    </Card>
+  );
+}
+
+function NotificationSettingsCard({ profile }: { profile: Profile }) {
+  const [settings, setSettings] = useState({
+    notify_telegram: profile.notify_telegram,
+    notify_include_photos: profile.notify_include_photos,
+    notify_include_notes: profile.notify_include_notes,
+    allow_photos: profile.allow_photos,
+  });
+  const save = useProfileUpdate("Notification preferences saved");
+
+  const rows: { key: keyof typeof settings; label: string; sub: string }[] = [
+    {
+      key: "notify_telegram",
+      label: "Send Telegram instant alerts",
+      sub: "Receive quote notifications in real time",
+    },
+    {
+      key: "notify_include_photos",
+      label: "Include photos in alerts",
+      sub: "Send vehicle photos directly in Telegram",
+    },
+    {
+      key: "notify_include_notes",
+      label: "Include customer notes",
+      sub: "Include extra notes in alert payload",
+    },
+    {
+      key: "allow_photos",
+      label: "Allow photo uploads",
+      sub: "Let customers attach up to 5 vehicle photos",
+    },
+  ];
+
+  const prepare = useMutation({
+    mutationFn: () => prepareTelegramLink(),
+    onSuccess: ({ href }) => window.open(href, "_blank", "noopener,noreferrer"),
+    onError: (error: Error) => toast.error(error.message || "Failed to start Telegram connection"),
+  });
+
+  return (
+    <Card className="border-border/80 shadow-xs flex flex-col justify-between" id="settings">
+      <div>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-bold">Telegram Bot & Notifications</CardTitle>
+            <Badge
+              variant={profile.telegram_chat_id ? "default" : "secondary"}
+              className="text-[10px]"
+            >
+              {profile.telegram_chat_id ? "Connected" : "Unlinked"}
+            </Badge>
+          </div>
+          <CardDescription className="text-xs">
+            Connect your Telegram chat for real-time lead alerts.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3.5">
+          <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-center justify-between gap-2">
+            <div className="text-xs">
+              <span className="font-semibold block">Telegram Connection</span>
+              <span className="text-muted-foreground text-[11px]">
+                {profile.telegram_chat_id
+                  ? "Active and receiving leads"
+                  : "Tap to open bot and start"}
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs font-semibold"
+              disabled={prepare.isPending}
+              onClick={() => prepare.mutate()}
+            >
+              <Send className="size-3 mr-1 text-blue-500" />
+              {profile.telegram_chat_id ? "Reconnect" : "Connect"}
+            </Button>
+          </div>
+
+          <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+            {rows.map((r) => (
+              <div key={r.key} className="flex items-center justify-between p-2.5 text-xs">
+                <span className="min-w-0 pr-2">
+                  <span className="block font-medium">{r.label}</span>
+                  <span className="text-[10px] text-muted-foreground">{r.sub}</span>
+                </span>
+                <Switch
+                  checked={settings[r.key]}
+                  aria-label={r.label}
+                  onCheckedChange={(checked) => setSettings((s) => ({ ...s, [r.key]: checked }))}
+                />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </div>
+
+      <div className="p-4 pt-0 flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs font-semibold"
+          disabled={save.isPending}
+          onClick={() => save.mutate({ id: profile.id, ...settings })}
+        >
+          {save.isPending && <Loader2 className="size-3 animate-spin mr-1" />}
+          Save Preferences
+        </Button>
+      </div>
     </Card>
   );
 }
@@ -537,7 +902,6 @@ function makeKey(label: string, taken: string[]): string {
   return key;
 }
 
-/** Editable list of items with a numeric field (price or uplift). */
 function EditableRows<F extends string, T extends BaseRow & Record<F, number>>({
   items,
   field,
@@ -557,54 +921,54 @@ function EditableRows<F extends string, T extends BaseRow & Record<F, number>>({
     onChange(items.map((item, idx) => (idx === i ? ({ ...item, ...changes } as T) : item)));
 
   return (
-    <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+    <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
       {items.map((s, i) => (
-        <div key={s.key} className={`space-y-2 p-3.5 ${s.enabled ? "" : "opacity-55"}`}>
-          <div className="flex items-center gap-3">
-            <Switch
-              checked={s.enabled}
-              aria-label={`Offer ${s.label}`}
-              onCheckedChange={(checked) => patch(i, { enabled: checked })}
-            />
+        <div
+          key={s.key}
+          className={`flex items-center gap-3 p-2.5 text-xs ${s.enabled ? "" : "opacity-50"}`}
+        >
+          <Switch
+            checked={s.enabled}
+            aria-label={`Offer ${s.label}`}
+            onCheckedChange={(checked) => patch(i, { enabled: checked })}
+          />
+          <div className="min-w-0 flex-1 space-y-0.5">
             <Input
               aria-label={`${s.label} name`}
-              className="h-9 min-w-0 flex-1 font-semibold"
+              className="h-7 text-xs font-semibold px-2"
               value={s.label}
               onChange={(e) => patch(i, { label: e.target.value })}
             />
-            {lockedKeys.includes(s.key) ? null : (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`Remove ${s.label}`}
-                onClick={() => onChange(items.filter((_, idx) => idx !== i))}
-              >
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
             <Input
               aria-label={`${s.label} description`}
-              placeholder="Short description customers will see"
-              className="h-9 min-w-0 flex-1 text-xs"
+              placeholder="Short description"
+              className="h-6 text-[11px] px-2 text-muted-foreground"
               value={s.sub}
               onChange={(e) => patch(i, { sub: e.target.value })}
             />
-            <span className="flex shrink-0 items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">{unitLabel}</span>
-              <Input
-                type="number"
-                step={1}
-                inputMode="numeric"
-                aria-label={`${s.label} ${unitLabel} in ${currency}`}
-                className="h-9 w-24"
-                value={String(s[field])}
-                onChange={(e) =>
-                  patch(i, { [field]: Number(e.target.value) || 0 } as Record<F, number>)
-                }
-              />
-            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[10px] text-muted-foreground">{unitLabel}</span>
+            <Input
+              type="number"
+              step={1}
+              inputMode="numeric"
+              aria-label={`${s.label} ${unitLabel} in ${currency}`}
+              className="h-7 w-20 text-right font-mono text-xs font-bold px-2"
+              value={s[field] === 0 ? "0" : s[field] || ""}
+              onChange={(e) => patch(i, { [field]: Number(e.target.value) || 0 })}
+            />
+            {!lockedKeys.includes(s.key) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 text-muted-foreground hover:text-destructive"
+                aria-label={`Remove ${s.label}`}
+                onClick={() => onChange(items.filter((_, idx) => idx !== i))}
+              >
+                <Trash2 className="size-3" />
+              </Button>
+            )}
           </div>
         </div>
       ))}
@@ -612,390 +976,163 @@ function EditableRows<F extends string, T extends BaseRow & Record<F, number>>({
   );
 }
 
-function AddRowForm({
-  unitLabel,
-  onAdd,
-}: {
-  unitLabel: string;
-  onAdd: (row: { label: string; sub: string; amount: number }) => void;
-}) {
-  const [label, setLabel] = useState("");
-  const [sub, setSub] = useState("");
-  const [amount, setAmount] = useState("0");
-
-  const submit = () => {
-    if (!label.trim()) {
-      toast.error("Give it a name first");
-      return;
-    }
-    onAdd({ label: label.trim(), sub: sub.trim(), amount: Number(amount) || 0 });
-    setLabel("");
-    setSub("");
-    setAmount("0");
-  };
-
-  return (
-    <div className="space-y-2 rounded-xl border border-dashed border-border p-3.5">
-      <div className="flex gap-2">
-        <Input
-          aria-label="New item name"
-          placeholder="Name (e.g. Boat / Jet Ski)"
-          className="h-9 min-w-0 flex-1"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-        />
-        <Input
-          type="number"
-          step={1}
-          inputMode="numeric"
-          aria-label={`New item ${unitLabel}`}
-          className="h-9 w-24"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
-      </div>
-      <div className="flex gap-2">
-        <Input
-          aria-label="New item description"
-          placeholder="Short description (optional)"
-          className="h-9 min-w-0 flex-1 text-xs"
-          value={sub}
-          onChange={(e) => setSub(e.target.value)}
-        />
-        <Button variant="outline" size="sm" className="shrink-0" onClick={submit}>
-          <Plus className="size-4" /> Add
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 function PricingCard({ profile }: { profile: Profile }) {
-  const [packages, setPackages] = useState<ServiceItem[]>(() => parsePackages(profile.packages));
-  const [addons, setAddons] = useState<ServiceItem[]>(() => parseServices(profile.services));
+  const save = useProfileUpdate("Pricing rates saved");
+  const currency = profile.currency;
+
   const [categories, setCategories] = useState<VehicleCategory[]>(() =>
     parseVehicleCategories(profile.vehicle_categories),
   );
-  const save = useProfileUpdate("Pricing saved");
+  const [packages, setPackages] = useState<PackageItem[]>(() => parsePackages(profile.packages));
+  const [addons, setAddons] = useState<ServiceItem[]>(() => parseServices(profile.services));
 
-  const lockedPackages = DEFAULT_PACKAGES.map((p) => p.key);
-  const lockedAddons = DEFAULT_SERVICES.map((s) => s.key);
-  const lockedCategories = DEFAULT_VEHICLE_CATEGORIES.map((c) => c.key);
+  const addCategory = () => {
+    const label = "Extra Large / Dually";
+    const key = makeKey(
+      label,
+      categories.map((c) => c.key),
+    );
+    setCategories((prev) => [
+      ...prev,
+      { key, label, sub: "Long bed or dually truck", uplift: 40, enabled: true },
+    ]);
+  };
 
-  return (
-    <>
-      <Card className="shadow-card">
-        <CardHeader className="flex-row items-center justify-between gap-2">
-          <CardTitle className="text-base">Vehicle categories</CardTitle>
-          <Badge variant="secondary">{categories.filter((c) => c.enabled).length} live</Badge>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            The uplift is added to the selected service price. Use a negative number to discount.
-          </p>
-          <EditableRows
-            items={categories}
-            field="uplift"
-            unitLabel="uplift"
-            currency={profile.currency}
-            lockedKeys={lockedCategories}
-            onChange={setCategories}
-          />
-          <AddRowForm
-            unitLabel="uplift"
-            onAdd={({ label, sub, amount }) =>
-              setCategories((prev) => [
-                ...prev,
-                {
-                  key: makeKey(
-                    label,
-                    prev.map((p) => p.key),
-                  ),
-                  label,
-                  sub,
-                  uplift: amount,
-                  enabled: true,
-                },
-              ])
-            }
-          />
-        </CardContent>
-      </Card>
+  const addPackage = () => {
+    const label = "Ceramic Coating";
+    const key = makeKey(
+      label,
+      packages.map((p) => p.key),
+    );
+    setPackages((prev) => [
+      ...prev,
+      { key, label, sub: "Paint prep & 3-yr ceramic coating", price: 500, enabled: true },
+    ]);
+  };
 
-      <Card className="shadow-card">
-        <CardHeader className="flex-row items-center justify-between gap-2">
-          <CardTitle className="text-base">Service packages</CardTitle>
-          <Badge variant="secondary">{packages.filter((p) => p.enabled).length} live</Badge>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            The main job the customer books. Prices are in {profile.currency}.
-          </p>
-          <EditableRows
-            items={packages}
-            field="price"
-            unitLabel="price"
-            currency={profile.currency}
-            lockedKeys={lockedPackages}
-            onChange={setPackages}
-          />
-          <AddRowForm
-            unitLabel="price"
-            onAdd={({ label, sub, amount }) =>
-              setPackages((prev) => [
-                ...prev,
-                {
-                  key: makeKey(
-                    label,
-                    prev.map((p) => p.key),
-                  ),
-                  label,
-                  sub,
-                  price: amount,
-                  enabled: true,
-                },
-              ])
-            }
-          />
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-card">
-        <CardHeader className="flex-row items-center justify-between gap-2">
-          <CardTitle className="text-base">Add-ons</CardTitle>
-          <Badge variant="secondary">{addons.filter((a) => a.enabled).length} live</Badge>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Every common add-on is preloaded. Rename, adjust the rate, switch off anything you don't
-            offer, or add your own below.
-          </p>
-          <EditableRows
-            items={addons}
-            field="price"
-            unitLabel="price"
-            currency={profile.currency}
-            lockedKeys={lockedAddons}
-            onChange={setAddons}
-          />
-          <AddRowForm
-            unitLabel="price"
-            onAdd={({ label, sub, amount }) =>
-              setAddons((prev) => [
-                ...prev,
-                {
-                  key: makeKey(
-                    label,
-                    prev.map((p) => p.key),
-                  ),
-                  label,
-                  sub,
-                  price: amount,
-                  enabled: true,
-                },
-              ])
-            }
-          />
-        </CardContent>
-      </Card>
-
-      <Button
-        variant="hero"
-        size="lg"
-        disabled={save.isPending}
-        onClick={() =>
-          save.mutate({
-            id: profile.id,
-            packages: packages.map((p) => ({ ...p, price: Number(p.price) || 0 })),
-            services: addons.map((a) => ({ ...a, price: Number(a.price) || 0 })),
-            vehicle_categories: categories.map((c) => ({ ...c, uplift: Number(c.uplift) || 0 })),
-            addon_pet_hair: Number(addons.find((a) => a.key === "pet_hair")?.price) || 0,
-            addon_stains: Number(addons.find((a) => a.key === "stains")?.price) || 0,
-            addon_ceramic: Number(addons.find((a) => a.key === "ceramic")?.price) || 0,
-            sedan_base: Number(packages.find((p) => p.key === "full_detail")?.price) || 0,
-            suv_base:
-              (Number(packages.find((p) => p.key === "full_detail")?.price) || 0) +
-              (Number(categories.find((c) => c.key === "suv")?.uplift) || 0),
-            truck_base:
-              (Number(packages.find((p) => p.key === "full_detail")?.price) || 0) +
-              (Number(categories.find((c) => c.key === "truck")?.uplift) || 0),
-          })
-        }
-      >
-        {save.isPending && <Loader2 className="size-4 animate-spin" />}
-        Save pricing
-      </Button>
-    </>
-  );
-}
-
-function NotificationSettingsCard({ profile }: { profile: Profile }) {
-  const [settings, setSettings] = useState({
-    notify_telegram: profile.notify_telegram,
-    notify_include_photos: profile.notify_include_photos,
-    notify_include_notes: profile.notify_include_notes,
-    allow_photos: profile.allow_photos,
-  });
-  const save = useProfileUpdate("Notification settings saved");
-
-  const rows: { key: keyof typeof settings; label: string; sub: string }[] = [
-    {
-      key: "notify_telegram",
-      label: "Telegram alerts",
-      sub: "Push every new request to your chat instantly",
-    },
-    {
-      key: "notify_include_photos",
-      label: "Include photos in alerts",
-      sub: "Send customer photos along with the alert",
-    },
-    {
-      key: "notify_include_notes",
-      label: "Include notes in alerts",
-      sub: "Send the customer's extra details",
-    },
-    {
-      key: "allow_photos",
-      label: "Allow photo uploads",
-      sub: "Let customers attach up to 5 photos on your form",
-    },
-  ];
-
-  return (
-    <Card className="shadow-card">
-      <CardHeader>
-        <CardTitle className="text-base">Notification settings</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
-          {rows.map((r) => (
-            <div key={r.key} className="flex items-center gap-3 p-3.5">
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">{r.label}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">{r.sub}</span>
-              </span>
-              <Switch
-                checked={settings[r.key]}
-                aria-label={r.label}
-                onCheckedChange={(checked) => setSettings((s) => ({ ...s, [r.key]: checked }))}
-              />
-            </div>
-          ))}
-        </div>
-        <Button
-          variant="hero"
-          size="lg"
-          disabled={save.isPending}
-          onClick={() => save.mutate({ id: profile.id, ...settings })}
-        >
-          {save.isPending && <Loader2 className="size-4 animate-spin" />}
-          Save settings
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-function TelegramCard({ authCode, chatId }: { authCode: string; chatId: string | null }) {
-  const connected = !!chatId;
-  const [copiedCode, setCopiedCode] = useState(false);
-  const prepare = useMutation({
-    mutationFn: () => prepareTelegramLink(),
-    onSuccess: ({ href }) => {
-      // Open Telegram link directly
-      window.open(href, "_blank", "noopener,noreferrer");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to start Telegram connection");
-    },
-  });
-
-  const copyAuthCode = () => {
-    if (!authCode) return;
-    void navigator.clipboard.writeText(`/start ${authCode}`);
-    setCopiedCode(true);
-    toast.success("Copied '/start' command to clipboard. Paste it in your Telegram bot chat!");
-    setTimeout(() => setCopiedCode(false), 2500);
+  const addAddon = () => {
+    const label = "Engine Bay Clean";
+    const key = makeKey(
+      label,
+      addons.map((a) => a.key),
+    );
+    setAddons((prev) => [
+      ...prev,
+      { key, label, sub: "Degreased and dressed", price: 45, enabled: true },
+    ]);
   };
 
   return (
-    <Card className="shadow-card border-border/80">
-      <CardHeader className="flex-row items-center justify-between gap-3 pb-3">
-        <div>
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <Send className="size-4 text-blue-500" /> Telegram Real-Time Alerts
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Receive detailed instant lead notifications on your phone whenever a customer requests a
-            quote.
-          </CardDescription>
-        </div>
-        <Badge
-          variant={connected ? "default" : "secondary"}
-          className="shrink-0 gap-1 font-semibold"
-        >
-          {connected ? (
-            <>
-              <Check className="size-3 text-emerald-400" /> Connected
-            </>
-          ) : (
-            "Not Connected"
-          )}
-        </Badge>
-      </CardHeader>
-      <CardContent className="space-y-4 pt-1">
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {connected
-            ? "Your Telegram account is actively receiving new quote requests with vehicle details, pricing, and uploaded vehicle photos."
-            : "Click the button below to launch Telegram and tap Start. The bot will instantly link to your business profile."}
-        </p>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant={connected ? "outline" : "hero"}
-            size="lg"
-            className="gap-2 font-bold"
-            disabled={prepare.isPending}
-            onClick={() => prepare.mutate()}
-          >
-            {prepare.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Send className="size-4" />
-            )}
-            {connected ? "Reconnect Telegram Bot" : "Connect Telegram Bot"}
-          </Button>
-
-          {authCode && (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Sizing Card */}
+        <Card className="border-border/80 shadow-xs">
+          <CardHeader className="flex-row items-center justify-between pb-2.5">
+            <div>
+              <CardTitle className="text-xs font-bold uppercase tracking-wider">
+                1. Vehicle Size Uplift
+              </CardTitle>
+              <CardDescription className="text-[11px]">
+                Size fee added on top of packages.
+              </CardDescription>
+            </div>
             <Button
-              variant="outline"
-              size="lg"
-              className="gap-1.5 text-xs font-semibold"
-              onClick={copyAuthCode}
+              variant="ghost"
+              size="sm"
+              className="h-6 text-[11px] px-2"
+              onClick={addCategory}
             >
-              {copiedCode ? (
-                <Check className="size-3.5 text-emerald-600" />
-              ) : (
-                <Copy className="size-3.5" />
-              )}
-              {copiedCode ? "Command Copied!" : "Copy /start Command"}
+              <Plus className="size-3 mr-0.5" /> Add
             </Button>
-          )}
-        </div>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <EditableRows
+              items={categories}
+              field="uplift"
+              unitLabel={`+${currency}`}
+              currency={currency}
+              lockedKeys={DEFAULT_VEHICLE_CATEGORIES.map((c) => c.key)}
+              onChange={setCategories}
+            />
+          </CardContent>
+        </Card>
 
-        {authCode && (
-          <div className="rounded-lg border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
-            <p className="font-semibold text-foreground">Manual connection instructions:</p>
-            <p>
-              If Telegram doesn't open automatically, message your bot directly and send:{" "}
-              <code className="rounded bg-background px-1.5 py-0.5 font-mono font-bold text-foreground border border-border/80">
-                /start {authCode}
-              </code>
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        {/* Packages Card */}
+        <Card className="border-border/80 shadow-xs">
+          <CardHeader className="flex-row items-center justify-between pb-2.5">
+            <div>
+              <CardTitle className="text-xs font-bold uppercase tracking-wider">
+                2. Primary Packages
+              </CardTitle>
+              <CardDescription className="text-[11px]">
+                Base rates for detailing services.
+              </CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" className="h-6 text-[11px] px-2" onClick={addPackage}>
+              <Plus className="size-3 mr-0.5" /> Add
+            </Button>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <EditableRows
+              items={packages}
+              field="price"
+              unitLabel={currency}
+              currency={currency}
+              lockedKeys={DEFAULT_PACKAGES.map((p) => p.key)}
+              onChange={setPackages}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Addons Card */}
+        <Card className="border-border/80 shadow-xs">
+          <CardHeader className="flex-row items-center justify-between pb-2.5">
+            <div>
+              <CardTitle className="text-xs font-bold uppercase tracking-wider">
+                3. Add-On Services
+              </CardTitle>
+              <CardDescription className="text-[11px]">
+                Optional extras customers can add.
+              </CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" className="h-6 text-[11px] px-2" onClick={addAddon}>
+              <Plus className="size-3 mr-0.5" /> Add
+            </Button>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <EditableRows
+              items={addons}
+              field="price"
+              unitLabel={currency}
+              currency={currency}
+              lockedKeys={DEFAULT_SERVICES.map((s) => s.key)}
+              onChange={setAddons}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Save Action */}
+      <div className="flex justify-end pt-2">
+        <Button
+          variant="hero"
+          size="sm"
+          className="h-8 font-bold text-xs"
+          disabled={save.isPending}
+          onClick={() =>
+            save.mutate({
+              id: profile.id,
+              vehicle_categories: categories,
+              packages: packages,
+              services: addons,
+            })
+          }
+        >
+          {save.isPending && <Loader2 className="size-3.5 animate-spin mr-1.5" />}
+          Save Pricing Configuration
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -1021,27 +1158,32 @@ function PhotoDialog({ paths, customer }: { paths: string[]; customer: string })
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => void load()}>
-        <ImageIcon className="size-3.5" /> {paths.length}
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-6 text-[10px] px-1.5 gap-1"
+        onClick={() => void load()}
+      >
+        <ImageIcon className="size-2.5" /> {paths.length}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Photos from {customer}</DialogTitle>
+            <DialogTitle className="text-sm font-bold">Photos from {customer}</DialogTitle>
           </DialogHeader>
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <div className="flex justify-center py-6">
+              <Loader2 className="size-4 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5 pt-2">
               {urls.map((u) => (
                 <a key={u} href={u} target="_blank" rel="noreferrer">
                   <img
                     src={u}
-                    alt={`Vehicle photo from ${customer}`}
+                    alt={`Photo from ${customer}`}
                     loading="lazy"
-                    className="aspect-square w-full rounded-lg border border-border object-cover"
+                    className="aspect-square w-full rounded-md border border-border object-cover hover:opacity-95"
                   />
                 </a>
               ))}
@@ -1050,286 +1192,6 @@ function PhotoDialog({ paths, customer }: { paths: string[]; customer: string })
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-function QuoteHistory({
-  quotes,
-  currency,
-  timezone,
-  services,
-  categories,
-}: {
-  quotes: Quote[];
-  currency: string;
-  timezone: string;
-  services: ServiceItem[];
-  categories: VehicleCategory[];
-}) {
-  const [showTests, setShowTests] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const testCount = quotes.filter((q) => q.is_test).length;
-  const realQuotes = quotes.filter((q) => !q.is_test);
-  const visible = showTests ? quotes : realQuotes;
-
-  // Pipeline stats
-  const totalPipeline = quotes.reduce((acc, q) => acc + (Number(q.estimated_price) || 0), 0);
-  const avgQuote = quotes.length ? Math.round(totalPipeline / quotes.length) : 0;
-
-  // Search filter
-  const filtered = visible.filter((q) => {
-    if (!searchQuery.trim()) return true;
-    const term = searchQuery.toLowerCase();
-    return (
-      q.customer_name?.toLowerCase().includes(term) ||
-      q.customer_phone?.toLowerCase().includes(term) ||
-      q.vehicle_desc?.toLowerCase().includes(term) ||
-      q.vehicle_type?.toLowerCase().includes(term) ||
-      q.service_label?.toLowerCase().includes(term)
-    );
-  });
-
-  return (
-    <div className="space-y-5">
-      {/* Top Metrics Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="border-border/80 shadow-xs">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Total Leads
-              </span>
-              <Users className="size-4 text-primary" />
-            </div>
-            <p className="mt-2 font-display text-2xl font-bold text-foreground">{quotes.length}</p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              {realQuotes.length} real customer{realQuotes.length === 1 ? "" : "s"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/80 shadow-xs">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Pipeline Value
-              </span>
-              <DollarSign className="size-4 text-emerald-600" />
-            </div>
-            <p className="mt-2 font-display text-2xl font-bold text-emerald-600">
-              {money(totalPipeline, currency)}
-            </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">Estimated quote totals</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/80 shadow-xs">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Avg. Ticket
-              </span>
-              <TrendingUp className="size-4 text-blue-500" />
-            </div>
-            <p className="mt-2 font-display text-2xl font-bold text-foreground">
-              {money(avgQuote, currency)}
-            </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">Per detailing quote</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/80 shadow-xs">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Alert Bot
-              </span>
-              <Send className="size-4 text-blue-500" />
-            </div>
-            <div className="mt-2 flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-sm font-bold text-foreground">Active</p>
-            </div>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">Instant Telegram pings</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Quote Requests Card */}
-      <Card className="border-border/80 shadow-card">
-        <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <CardTitle className="text-base font-bold">Customer Quote Requests</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Instant estimates generated by customers using your link.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {testCount > 0 && (
-              <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
-                <span>
-                  Show {testCount} test{testCount === 1 ? "" : "s"}
-                </span>
-                <Switch
-                  checked={showTests}
-                  aria-label="Show test requests"
-                  onCheckedChange={setShowTests}
-                />
-              </label>
-            )}
-          </div>
-        </CardHeader>
-
-        {/* Search Filter Bar */}
-        {quotes.length > 0 && (
-          <div className="border-b border-border/80 px-6 py-2.5">
-            <div className="relative max-w-sm">
-              <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search by customer, phone, or car..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 pl-8 text-xs"
-              />
-            </div>
-          </div>
-        )}
-
-        <CardContent className="px-0 sm:px-6">
-          {filtered.length === 0 ? (
-            <div className="px-6 py-12 text-center sm:px-0">
-              <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-surface border border-border">
-                <Users className="size-5 text-muted-foreground" />
-              </div>
-              <p className="mt-3 text-sm font-semibold text-foreground">
-                {searchQuery ? "No matching quotes found" : "No quote requests yet"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-                {searchQuery
-                  ? "Try clearing your search query to see all customer leads."
-                  : "Share your unique quote link on Instagram, Yelp, Google Business, or your truck to start receiving leads."}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Quick Contact</TableHead>
-                    <TableHead>Vehicle</TableHead>
-                    <TableHead>Service Package</TableHead>
-                    <TableHead>Add-ons</TableHead>
-                    <TableHead>Notes & Photos</TableHead>
-                    <TableHead className="text-right">Estimated Total</TableHead>
-                    <TableHead className="text-right">When</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((q) => (
-                    <TableRow
-                      key={q.id}
-                      className={q.is_test ? "opacity-75 bg-surface/30" : undefined}
-                    >
-                      <TableCell className="font-semibold text-foreground">
-                        <div>
-                          {q.customer_name}
-                          {q.is_test && (
-                            <Badge variant="secondary" className="ml-2 text-[10px] py-0">
-                              <FlaskConical className="size-2.5 mr-1" /> TEST
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <a
-                            href={`tel:${q.customer_phone}`}
-                            title={`Call ${q.customer_name}`}
-                            className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-500/20 transition-colors"
-                          >
-                            <Phone className="size-3" /> Call
-                          </a>
-                          <a
-                            href={`sms:${q.customer_phone}`}
-                            title={`SMS ${q.customer_name}`}
-                            className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-500/20 transition-colors"
-                          >
-                            <MessageSquare className="size-3" /> Text
-                          </a>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="text-sm">
-                        <span className="block font-medium text-foreground">
-                          {q.vehicle_desc || vehicleLabel(q.vehicle_type, categories)}
-                        </span>
-                        {q.vehicle_desc && (
-                          <span className="text-xs text-muted-foreground">
-                            {vehicleLabel(q.vehicle_type, categories)}
-                          </span>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="text-sm">
-                        <span className="font-medium text-foreground">
-                          {q.service_label || "—"}
-                        </span>
-                        {q.service_price ? (
-                          <span className="block text-xs text-muted-foreground">
-                            {money(Number(q.service_price), q.currency || currency)}
-                          </span>
-                        ) : null}
-                      </TableCell>
-
-                      <TableCell className="text-xs text-muted-foreground">
-                        {q.addons.length
-                          ? q.addons.map((a) => addonLabel(a, services)).join(", ")
-                          : "—"}
-                      </TableCell>
-
-                      <TableCell className="text-xs">
-                        <div className="flex items-center gap-2">
-                          {q.photo_urls?.length ? (
-                            <PhotoDialog paths={q.photo_urls} customer={q.customer_name} />
-                          ) : null}
-                          {q.notes?.trim() ? (
-                            <span
-                              className="max-w-[12rem] truncate text-muted-foreground"
-                              title={q.notes}
-                            >
-                              {q.notes}
-                            </span>
-                          ) : (
-                            !q.photo_urls?.length && (
-                              <span className="text-muted-foreground">—</span>
-                            )
-                          )}
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <span className="font-display font-bold text-foreground">
-                          {money(Number(q.estimated_price), q.currency || currency)}
-                        </span>
-                      </TableCell>
-
-                      <TableCell className="text-right text-xs text-muted-foreground">
-                        {formatWhen(q.created_at, timezone)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
   );
 }
 
@@ -1360,13 +1222,18 @@ function Onboarding() {
   });
 
   return (
-    <Card className="mx-auto max-w-md shadow-card">
+    <Card className="mx-auto max-w-sm shadow-xs border-border/80">
       <CardHeader>
-        <CardTitle className="text-base">Set up your business</CardTitle>
+        <CardTitle className="text-sm font-bold">Set up your Detailing Shop</CardTitle>
+        <CardDescription className="text-xs">
+          Enter your company name to generate your instant customer quote form.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="ob-name">Business name</Label>
+      <CardContent className="space-y-3.5">
+        <div className="space-y-1">
+          <Label htmlFor="ob-name" className="text-xs">
+            Business name
+          </Label>
           <Input
             id="ob-name"
             value={businessName}
@@ -1374,123 +1241,32 @@ function Onboarding() {
               setBusinessName(e.target.value);
               setSlug(slugify(e.target.value));
             }}
-            placeholder="Reflect Mobile Detailing"
+            placeholder="Apex Auto Detailing"
+            className="h-8 text-xs"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ob-slug">Quote link</Label>
+        <div className="space-y-1">
+          <Label htmlFor="ob-slug" className="text-xs">
+            Quote link slug
+          </Label>
           <Input
             id="ob-slug"
             value={slug}
             onChange={(e) => setSlug(slugify(e.target.value))}
-            placeholder="reflect-mobile-detailing"
+            placeholder="apex-auto-detailing"
+            className="h-8 text-xs font-mono"
           />
-          <p className="text-xs text-muted-foreground">
-            Customers will visit /{slug || "your-link"}
-          </p>
         </div>
         <Button
           variant="hero"
-          size="xl"
+          size="sm"
+          className="w-full font-bold h-8 text-xs mt-2"
           disabled={!businessName.trim() || create.isPending}
           onClick={() => create.mutate()}
         >
-          {create.isPending && <Loader2 className="size-4 animate-spin" />}
-          Create my quote form
+          {create.isPending && <Loader2 className="size-3 animate-spin mr-1" />}
+          Create Quote Form
         </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-function TestingCard({ profile }: { profile: Profile }) {
-  const [origin, setOrigin] = useState("");
-  useEffect(() => setOrigin(window.location.origin), []);
-  const testUrl = `${origin}/${profile.slug}?test=1`;
-  const [sending, setSending] = useState(false);
-
-  const sendTest = async () => {
-    setSending(true);
-    try {
-      const result = await sendQuoteAlert({
-        data: {
-          detailerId: profile.id,
-          customerName: "Test Customer",
-          customerPhone: profile.phone || "+10000000000",
-          vehicle: "2023 Test Vehicle (Sedan / Coupe)",
-          service: { label: "Full Detail", price: 190 },
-          addons: [{ label: "Pet Hair Removal", price: 40 }],
-          estimate: 230,
-          notes: "This is a test alert sent from your dashboard.",
-          isTest: true,
-        },
-      });
-      if (result?.sent) {
-        toast.success("Test alert sent — check your Telegram chat.");
-      } else if (result?.reason === "not_connected") {
-        toast.error("Connect your Telegram bot first (Alerts tab).");
-      } else if (result?.reason === "muted") {
-        toast.error("Telegram alerts are switched off in your settings.");
-      } else {
-        toast.error("Could not send the test alert. Try again.");
-      }
-    } catch {
-      toast.error("Could not send the test alert. Try again.");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <Card className="shadow-card">
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle className="text-base">Test your bot & quote link</CardTitle>
-        <Badge variant="secondary">
-          <FlaskConical className="size-3" /> Test mode
-        </Badge>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Send yourself a sample alert to check the bot is linked and the message looks right.
-            Nothing is saved to your requests list.
-          </p>
-          <Button variant="hero" size="xl" disabled={sending} onClick={() => void sendTest()}>
-            {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-            Send test alert to Telegram
-          </Button>
-        </div>
-
-        <div className="space-y-3 rounded-xl border border-border p-4">
-          <p className="text-sm font-semibold">Try your own quote link</p>
-          <p className="text-sm text-muted-foreground">
-            This special link fills a request exactly like a customer would, but every request it
-            creates is tagged <span className="font-semibold">TEST</span> — in your requests list
-            and in the Telegram alert — so you never mistake it for a real lead.
-          </p>
-          <p className="font-mono text-xs break-all text-muted-foreground">{testUrl}</p>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link
-                to="/$business_slug"
-                params={{ business_slug: profile.slug }}
-                search={{ test: true }}
-              >
-                <ExternalLink className="size-3.5" /> Open test link
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                void navigator.clipboard.writeText(testUrl);
-                toast.success("Test link copied");
-              }}
-            >
-              <Copy className="size-3.5" /> Copy test link
-            </Button>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
@@ -1498,59 +1274,41 @@ function TestingCard({ profile }: { profile: Profile }) {
 
 function TrialBanner() {
   const fetchTrial = useServerFn(getTrialState);
-  const { data } = useQuery({ queryKey: ["trial-state"], queryFn: () => fetchTrial() });
-  if (!data) return null;
+  const { data: trial, isLoading } = useQuery({
+    queryKey: ["trial-state"],
+    queryFn: async () => fetchTrial(),
+  });
 
-  if (data.status === "SUBSCRIBED") {
+  if (isLoading || !trial) return null;
+  const { status, daysLeft } = trial;
+
+  if (status === "ACTIVE") return null;
+
+  if (status === "TRIALING") {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 shadow-xs">
-        <div className="flex items-center gap-2.5">
-          <img
-            src="/favicon.png"
-            alt="Detailr"
-            className="size-5 rounded-md object-contain shadow-xs"
-          />
-          <p className="text-sm font-medium text-foreground">
-            You're on <span className="font-bold">Detailr Pro</span> ($15/month) · Unlimited leads
-            active.
-          </p>
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs text-amber-950 dark:text-amber-200">
+        <div className="flex items-center gap-2">
+          <Sparkles className="size-3.5 text-amber-600 shrink-0" />
+          <span>
+            <strong className="font-bold">7-Day Free Trial</strong> ({daysLeft}{" "}
+            {daysLeft === 1 ? "day" : "days"} remaining)
+          </span>
         </div>
-        <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">Pro Member</Badge>
+        <Button asChild variant="hero" size="sm" className="h-6 text-[11px] font-semibold px-2.5">
+          <Link to="/upgrade">Upgrade ($9.99/mo)</Link>
+        </Button>
       </div>
     );
   }
 
-  const expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
-  const daysLeft = expiresAt
-    ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 86400000))
-    : null;
-
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-xs">
-      <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Sparkles className="size-4.5" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-foreground">
-            {data.expired
-              ? "Your 7-day free trial has ended"
-              : daysLeft !== null
-                ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left in your free trial`
-                : "You're on the free trial"}
-          </p>
-          {expiresAt && (
-            <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-              {data.expired ? "Ended on" : "Trial ends"} {expiresAt.toLocaleDateString()} · Keep
-              receiving instant Telegram leads
-            </p>
-          )}
-        </div>
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3.5 py-2 text-xs text-destructive">
+      <div className="flex items-center gap-2">
+        <CreditCard className="size-3.5 shrink-0" />
+        <span>Trial expired. Upgrade to keep receiving quote requests.</span>
       </div>
-      <Button asChild variant="hero" size="sm" className="shadow-xs font-semibold">
-        <Link to="/upgrade">
-          <CreditCard className="size-4" /> Upgrade to Pro ($15/mo)
-        </Link>
+      <Button asChild variant="hero" size="sm" className="h-6 text-[11px] font-semibold px-2.5">
+        <Link to="/upgrade">Activate Pro ($9.99/mo)</Link>
       </Button>
     </div>
   );

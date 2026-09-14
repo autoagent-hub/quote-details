@@ -13,17 +13,17 @@ import { getUpgradeCheckout } from "@/lib/billing.functions";
 export const Route = createFileRoute("/_authenticated/upgrade")({
   head: () => ({
     meta: [
-      { title: "Upgrade to Detailr Pro — $15/month (detailr.online)" },
+      { title: "Upgrade to Detailr Pro — $9.99/month (detailr.online)" },
       {
         name: "description",
         content:
-          "Move from your free Detailr trial to the $15/month plan and keep unlimited quote requests and real-time Telegram alerts on detailr.online.",
+          "Move from your free Detailr trial to the $9.99/month plan and keep unlimited quote requests and real-time Telegram alerts on detailr.online.",
       },
-      { property: "og:title", content: "Upgrade to Detailr Pro — $15/month" },
+      { property: "og:title", content: "Upgrade to Detailr Pro — $9.99/month" },
       {
         property: "og:description",
         content:
-          "Unlimited quote requests, Telegram alerts and your branded quote link for $15/month on detailr.online.",
+          "Unlimited quote requests, Telegram alerts and your branded quote link for $9.99/month on detailr.online.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -119,7 +119,7 @@ function Upgrade() {
                 <Badge variant={subscribed ? "default" : "secondary"}>{copy.label}</Badge>
               </div>
               <p className="mt-3 font-display text-5xl font-bold">
-                $15<span className="text-base font-medium opacity-70">/month</span>
+                $9.99<span className="text-base font-medium opacity-70">/month</span>
               </p>
               <p className="mt-2 text-sm opacity-80">{copy.note}</p>
             </div>
@@ -145,7 +145,7 @@ function Upgrade() {
                 <Button asChild variant="hero" size="xl">
                   <a href={checkoutHref} target="_blank" rel="noreferrer">
                     <CreditCard className="size-4" />
-                    {status === "PAST_DUE" ? "Retry payment" : "Upgrade for $15/month"}
+                    {status === "PAST_DUE" ? "Retry payment" : "Upgrade for $9.99/month"}
                   </a>
                 </Button>
               ) : (

@@ -6,6 +6,8 @@ export type ServiceItem = {
   enabled: boolean;
 };
 
+export type PackageItem = ServiceItem;
+
 export type VehicleCategory = {
   key: string;
   label: string;
@@ -366,4 +368,12 @@ export function formatWhen(iso: string, timezone?: string): string {
   } catch {
     return new Date(iso).toLocaleString();
   }
+}
+
+export function slugify(val: string): string {
+  return val
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
 }
