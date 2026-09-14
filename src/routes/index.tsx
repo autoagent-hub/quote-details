@@ -32,10 +32,7 @@ export const Route = createFileRoute("/")({
         content:
           "Never lose a detailing lead while mid-wash. Detailr (detailr.online) sends customers an instant price estimate and pings you on Telegram the second a quote lands.",
       },
-      {
-        property: "og:site_name",
-        content: "Detailr",
-      },
+      { property: "og:site_name", content: "Detailr" },
       {
         property: "og:title",
         content: "Detailr — Instant Quotes & Telegram Alerts for Mobile Detailers (detailr.online)",
@@ -48,6 +45,7 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://detailr.online/" },
       { property: "og:image", content: "https://detailr.online/og-image.jpg" },
+      { property: "og:image:url", content: "https://detailr.online/og-image.jpg" },
       { property: "og:image:secure_url", content: "https://detailr.online/og-image.jpg" },
       { property: "og:image:type", content: "image/jpeg" },
       { property: "og:image:width", content: "1200" },
@@ -57,6 +55,8 @@ export const Route = createFileRoute("/")({
         content: "Detailr — Instant Quotes & Telegram Alerts for Mobile Auto Detailers",
       },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:site", content: "@detailronline" },
+      { name: "twitter:creator", content: "@detailronline" },
       {
         name: "twitter:title",
         content: "Detailr — Instant Detailing Quotes & Real-Time Telegram Alerts",
@@ -67,7 +67,18 @@ export const Route = createFileRoute("/")({
           "Convert mobile detailing inquiries on your website in seconds with automated quotes and instant Telegram alerts.",
       },
       { name: "twitter:image", content: "https://detailr.online/og-image.jpg" },
+      { name: "twitter:image:src", content: "https://detailr.online/og-image.jpg" },
       { name: "twitter:image:alt", content: "Detailr Auto Detailing Quote Software" },
+      { name: "itemprop:name", content: "Detailr" },
+      {
+        name: "itemprop:description",
+        content: "Instant web quotes and real-time Telegram alerts for mobile auto detailers.",
+      },
+      { name: "itemprop:image", content: "https://detailr.online/og-image.jpg" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://detailr.online/" },
+      { rel: "image_src", href: "https://detailr.online/og-image.jpg" },
     ],
   }),
   component: Landing,

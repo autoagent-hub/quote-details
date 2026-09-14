@@ -124,7 +124,14 @@ export const Route = createFileRoute("/$business_slug")({
         { property: "og:url", content: canonicalUrl },
         { property: "og:type", content: "website" },
         { property: "og:image", content: shareImage },
+        { property: "og:image:url", content: shareImage },
         { property: "og:image:secure_url", content: shareImage },
+        {
+          property: "og:image:type",
+          content: shareImage.endsWith(".png") ? "image/png" : "image/jpeg",
+        },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
         {
           property: "og:image:alt",
           content: isCustomLogo
@@ -132,15 +139,23 @@ export const Route = createFileRoute("/$business_slug")({
             : `${businessName} — Instant Auto Detailing Quote on Detailr`,
         },
         { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:site", content: "@detailronline" },
         { name: "twitter:title", content: `${businessName} — Instant Auto Detailing Quote` },
         { name: "twitter:description", content: description },
         { name: "twitter:image", content: shareImage },
+        { name: "twitter:image:src", content: shareImage },
         {
           name: "twitter:image:alt",
           content: isCustomLogo ? `${businessName} Logo` : `${businessName} Auto Detailing Quote`,
         },
+        { name: "itemprop:name", content: `${businessName} — Instant Auto Detailing Quote` },
+        { name: "itemprop:description", content: description },
+        { name: "itemprop:image", content: shareImage },
       ],
-      links: [{ rel: "canonical", href: canonicalUrl }],
+      links: [
+        { rel: "canonical", href: canonicalUrl },
+        { rel: "image_src", href: shareImage },
+      ],
     };
   },
   component: QuoteForm,
