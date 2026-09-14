@@ -88,9 +88,17 @@ function QuoteForm() {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["public-pricing", business_slug],
     queryFn: async (): Promise<PublicProfile | null> => {
-      const { data, error } = await supabase.rpc("get_public_pricing", { _slug: business_slug });
-      if (error) throw error;
-      return (data?.[0] as PublicProfile | undefined) ?? null;
+      try {
+        const { data, error } = await supabase.rpc("get_public_pricing", { _slug: business_slug });
+        if (error) {
+          console.warn("[get_public_pricing] rpc returned error:", error);
+          return null;
+        }
+        return (data?.[0] as PublicProfile | undefined) ?? null;
+      } catch (err) {
+        console.warn("[get_public_pricing] exception caught:", err);
+        return null;
+      }
     },
   });
 

@@ -57,21 +57,30 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
 
   // If already logged in or auth state changes, redirect to dashboard
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        navigate({ to: "/dashboard" });
-      }
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (data?.session) {
+          navigate({ to: "/dashboard" });
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not retrieve session:", err);
+      });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        navigate({ to: "/dashboard" });
-      }
-    });
+    try {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          navigate({ to: "/dashboard" });
+        }
+      });
 
-    return () => subscription.unsubscribe();
+      return () => subscription.unsubscribe();
+    } catch (err) {
+      console.warn("Could not bind auth change listener:", err);
+    }
   }, [navigate]);
 
   // Sync mode if initialMode prop changes (e.g. navigation between /login and /signup)

@@ -49,7 +49,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="max-w-md text-center">
         <div className="mb-6 flex justify-center">
           <QuoteFlowLogo size="lg" linkToHome />
@@ -60,6 +60,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">
           Something went wrong on our end. You can try refreshing or head back home.
         </p>
+        {error?.message && (
+          <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3 text-left">
+            <p className="font-mono text-xs text-muted-foreground break-all">{error.message}</p>
+          </div>
+        )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -141,18 +146,22 @@ function RootComponent() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && typeof window !== "undefined") {
-        const path = window.location.pathname;
-        if (path === "/login" || path === "/signup" || path === "/auth") {
-          navigate({ to: "/dashboard" });
+    try {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session && typeof window !== "undefined") {
+          const path = window.location.pathname;
+          if (path === "/login" || path === "/signup" || path === "/auth") {
+            navigate({ to: "/dashboard" });
+          }
         }
-      }
-    });
+      });
 
-    return () => subscription.unsubscribe();
+      return () => subscription.unsubscribe();
+    } catch (err) {
+      console.warn("Auth state subscription init failed:", err);
+    }
   }, [navigate]);
 
   return (

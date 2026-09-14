@@ -7,7 +7,7 @@ services:
     region: oregon
     plan: starter
     branch: main
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -15,13 +15,25 @@ services:
       - key: NITRO_PRESET
         value: node-server
       # Required: copy these from your Supabase and provider project secrets.
+      - key: SUPABASE_URL
+        sync: false
       - key: VITE_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_BOT_USERNAME
         sync: false
       - key: WHOP_WEBHOOK_SECRET
         sync: false
