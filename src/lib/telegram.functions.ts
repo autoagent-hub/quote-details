@@ -22,41 +22,84 @@ export const prepareTelegramLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const token = process.env["TELEGRAM_BOT_TOKEN"];
-    const appUrl = process.env["PUBLIC_APP_URL"];
-    if (!token || !appUrl) throw new Error("Telegram is not configured");
-
-    const { data: profile, error: profileError } = await context.supabase
-      .from("profiles")
-      .select("telegram_auth_code")
-      .eq("id", context.userId)
-      .maybeSingle();
-    if (profileError) throw new Error(profileError.message);
-    if (!profile?.telegram_auth_code) throw new Error("Finish setting up your account first");
-
-    const secret = createHash("sha256").update(`telegram-webhook:${token}`).digest("base64url");
-    const webhookUrl = `${appUrl.replace(/\/$/, "")}/api/public/telegram/webhook`;
-    const response = await fetch(`${API}${token}/setWebhook`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        url: webhookUrl,
-        secret_token: secret,
-        allowed_updates: ["message"],
-        drop_pending_updates: false,
-      }),
-    });
-    const result = (await response.json()) as { ok?: boolean; description?: string };
-    if (!response.ok || !result.ok) {
-      throw new Error(result.description ?? `Telegram setup failed (${response.status})`);
+    if (!token) {
+      throw new Error(
+        "TELEGRAM_BOT_TOKEN is not configured in your Render environment variables. Please add your Telegram Bot token.",
+      );
     }
 
-    const meResponse = await fetch(`${API}${token}/getMe`);
-    const me = (await meResponse.json()) as { ok?: boolean; result?: { username?: string } };
-    const username = me.result?.username ?? process.env["TELEGRAM_BOT_USERNAME"];
-    if (!username) throw new Error("Could not resolve the Telegram bot");
+    // Determine public webhook URL
+    let rawUrl =
+      process.env["PUBLIC_APP_URL"] ||
+      process.env["RENDER_EXTERNAL_URL"] ||
+      "https://detailr.online";
+    if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
+      rawUrl = `https://${rawUrl}`;
+    }
+    const appUrl = rawUrl.replace(/\/$/, "");
+
+    // Fetch or generate user's unique telegram auth code
+    const { data: profile, error: profileError } = await context.supabase
+      .from("profiles")
+      .select("telegram_auth_code, business_name")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    if (profileError) throw new Error(profileError.message);
+
+    let authCode = profile?.telegram_auth_code;
+    if (!authCode) {
+      authCode = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+      await context.supabase
+        .from("profiles")
+        .update({ telegram_auth_code: authCode })
+        .eq("id", context.userId);
+    }
+
+    // Resolve Bot username
+    let username = process.env["TELEGRAM_BOT_USERNAME"];
+    try {
+      const meResponse = await fetch(`${API}${token}/getMe`);
+      const me = (await meResponse.json()) as { ok?: boolean; result?: { username?: string } };
+      if (me.ok && me.result?.username) {
+        username = me.result.username;
+      }
+    } catch (err) {
+      console.warn("[telegram] getMe check failed:", err);
+    }
+
+    if (!username) {
+      throw new Error(
+        "Could not connect to Telegram bot. Please verify your TELEGRAM_BOT_TOKEN.",
+      );
+    }
+
+    // Register Webhook with Telegram (non-blocking if domain pending DNS)
+    try {
+      const secret = createHash("sha256").update(`telegram-webhook:${token}`).digest("base64url");
+      const webhookUrl = `${appUrl}/api/public/telegram/webhook`;
+      const response = await fetch(`${API}${token}/setWebhook`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          url: webhookUrl,
+          secret_token: secret,
+          allowed_updates: ["message"],
+          drop_pending_updates: false,
+        }),
+      });
+      const result = (await response.json()) as { ok?: boolean; description?: string };
+      if (!response.ok || !result.ok) {
+        console.warn(`[telegram] setWebhook notice: ${result.description ?? response.statusText}`);
+      }
+    } catch (whErr) {
+      console.warn("[telegram] setWebhook error:", whErr);
+    }
 
     return {
-      href: `https://t.me/${username}?start=${encodeURIComponent(profile.telegram_auth_code)}`,
+      botUsername: username,
+      authCode,
+      href: `https://t.me/${username}?start=${encodeURIComponent(authCode)}`,
     };
   });
 

@@ -24,36 +24,71 @@ async function hashCode(email: string, purpose: string, code: string) {
     .join("");
 }
 
-function emailHtml(code: string, purpose: Purpose) {
+function emailHtml(code: string, purpose: Purpose, appUrl = "https://detailr.online") {
   const heading = purpose === "signup" ? "Confirm your email" : "Reset your password";
   const intro =
     purpose === "signup"
-      ? "Use the code below to finish creating your Detailr account."
+      ? "Use the code below to finish creating your Detailr account and activate your mobile auto detailing quote flow."
       : "Use the code below to set a new password for your Detailr account.";
+  const logoUrl = `${appUrl.replace(/\/$/, "")}/favicon.png`;
+
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${heading}</title></head>
-<body style="margin:0;padding:0;background-color:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${heading}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${heading} — your Detailr code is ${code}</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;">
-    <tr><td align="center" style="padding:32px 16px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;border:1px solid #e5e7eb;border-radius:12px;">
-        <tr><td style="padding:28px 28px 8px 28px;">
-          <p style="margin:0;font-size:18px;font-weight:bold;">Detailr</p>
-        </td></tr>
-        <tr><td style="padding:0 28px;">
-          <h1 style="margin:12px 0 8px 0;font-size:20px;">${heading}</h1>
-          <p style="margin:0 0 20px 0;font-size:14px;line-height:22px;color:#4b5563;">${intro}</p>
-          <p style="margin:0 0 20px 0;font-size:32px;font-weight:bold;letter-spacing:8px;">${code}</p>
-          <p style="margin:0 0 8px 0;font-size:13px;line-height:20px;color:#6b7280;">This code expires in 10 minutes. If you didn't request it, you can safely ignore this email.</p>
-        </td></tr>
-        <tr><td style="padding:20px 28px 28px 28px;">
-          <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 12px 0;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;">Sent by Detailr · detailr.online</p>
-        </td></tr>
-      </table>
-    </td></tr>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);overflow:hidden;">
+          <!-- Header with Logo -->
+          <tr>
+            <td style="padding:32px 32px 20px 32px;border-bottom:1px solid #f1f5f9;background-color:#ffffff;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="vertical-align:middle;padding-right:12px;">
+                    <img src="${logoUrl}" width="38" height="38" alt="Detailr" style="display:block;border-radius:10px;width:38px;height:38px;object-fit:cover;" />
+                  </td>
+                  <td style="vertical-align:middle;">
+                    <span style="font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.5px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">Detailr<span style="color:#0284c7;">.</span></span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Body Content -->
+          <tr>
+            <td style="padding:28px 32px;">
+              <h1 style="margin:0 0 12px 0;font-size:20px;font-weight:700;color:#0f172a;line-height:28px;">${heading}</h1>
+              <p style="margin:0 0 24px 0;font-size:14px;line-height:22px;color:#475569;">${intro}</p>
+              
+              <!-- Code Container -->
+              <div style="background-color:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:18px 24px;text-align:center;margin:0 0 24px 0;">
+                <span style="font-family:'Courier New',Courier,monospace;font-size:36px;font-weight:800;letter-spacing:10px;color:#0369a1;display:inline-block;">${code}</span>
+              </div>
+
+              <p style="margin:0 0 8px 0;font-size:13px;line-height:20px;color:#64748b;">This verification code is valid for <strong>10 minutes</strong>. If you did not request this, you can safely ignore this email.</p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 32px 28px 32px;background-color:#f8fafc;border-top:1px solid #f1f5f9;text-align:center;">
+              <p style="margin:0 0 6px 0;font-size:12px;font-weight:600;color:#64748b;">Detailr · Instant Quotes & Real-Time Telegram Alerts</p>
+              <p style="margin:0;font-size:11px;color:#94a3b8;">Built for professional mobile auto detailers · <a href="https://detailr.online" style="color:#0284c7;text-decoration:none;">detailr.online</a></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
   </table>
-</body></html>`;
+</body>
+</html>`;
 }
 
 async function sendCodeEmail(to: string, code: string, purpose: Purpose) {
@@ -61,6 +96,12 @@ async function sendCodeEmail(to: string, code: string, purpose: Purpose) {
   if (!apiKey) throw new Error("Email sending is not configured yet.");
   const emailFrom = process.env["EMAIL_FROM"] || "noreply@detailr.online";
   const from = emailFrom.includes("<") ? emailFrom : `Detailr <${emailFrom}>`;
+  const rawUrl =
+    process.env["PUBLIC_APP_URL"] ||
+    process.env["RENDER_EXTERNAL_URL"] ||
+    "https://detailr.online";
+  const appUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
+
   const subject =
     purpose === "signup"
       ? `${code} is your Detailr confirmation code`
@@ -76,7 +117,7 @@ async function sendCodeEmail(to: string, code: string, purpose: Purpose) {
       from,
       to: [to],
       subject,
-      html: emailHtml(code, purpose),
+      html: emailHtml(code, purpose, appUrl),
       text: `${purpose === "signup" ? "Confirm your email" : "Reset your password"}\n\nYour Detailr code is ${code}. It expires in 10 minutes.\n\nIf you didn't request this, ignore this email.\n\nDetailr · detailr.online`,
       reply_to: process.env["EMAIL_REPLY_TO"] ?? "support@detailr.online",
       headers: { "X-Entity-Ref-ID": crypto.randomUUID() },

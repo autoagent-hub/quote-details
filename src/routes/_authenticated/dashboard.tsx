@@ -831,45 +831,94 @@ function NotificationSettingsCard({ profile }: { profile: Profile }) {
 
 function TelegramCard({ authCode, chatId }: { authCode: string; chatId: string | null }) {
   const connected = !!chatId;
+  const [copiedCode, setCopiedCode] = useState(false);
   const prepare = useMutation({
     mutationFn: () => prepareTelegramLink(),
-    onSuccess: ({ href }) => window.location.assign(href),
-    onError: (error: Error) => toast.error(error.message),
+    onSuccess: ({ href }) => {
+      // Open Telegram link directly
+      window.open(href, "_blank", "noopener,noreferrer");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to start Telegram connection");
+    },
   });
+
+  const copyAuthCode = () => {
+    if (!authCode) return;
+    void navigator.clipboard.writeText(`/start ${authCode}`);
+    setCopiedCode(true);
+    toast.success("Copied '/start' command to clipboard. Paste it in your Telegram bot chat!");
+    setTimeout(() => setCopiedCode(false), 2500);
+  };
+
   return (
-    <Card className="shadow-card">
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle className="text-base">Telegram alerts</CardTitle>
-        <Badge variant={connected ? "default" : "secondary"}>
+    <Card className="shadow-card border-border/80">
+      <CardHeader className="flex-row items-center justify-between gap-3 pb-3">
+        <div>
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <Send className="size-4 text-blue-500" /> Telegram Real-Time Alerts
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Receive detailed instant lead notifications on your phone whenever a customer requests a quote.
+          </CardDescription>
+        </div>
+        <Badge variant={connected ? "default" : "secondary"} className="shrink-0 gap-1 font-semibold">
           {connected ? (
             <>
-              <Check className="size-3" /> Connected
+              <Check className="size-3 text-emerald-400" /> Connected
             </>
           ) : (
             "Not Connected"
           )}
         </Badge>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
+      <CardContent className="space-y-4 pt-1">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           {connected
-            ? "Every new quote request is pushed to your Telegram chat in real time."
-            : "Tap below and press Start in Telegram. Your unique code links the bot to this account."}
+            ? "Your Telegram account is actively receiving new quote requests with vehicle details, pricing, and uploaded vehicle photos."
+            : "Click the button below to launch Telegram and tap Start. The bot will instantly link to your business profile."}
         </p>
-        <Button
-          variant={connected ? "outline" : "hero"}
-          size="xl"
-          disabled={prepare.isPending}
-          onClick={() => prepare.mutate()}
-        >
-          {prepare.isPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Send className="size-4" />
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant={connected ? "outline" : "hero"}
+            size="lg"
+            className="gap-2 font-bold"
+            disabled={prepare.isPending}
+            onClick={() => prepare.mutate()}
+          >
+            {prepare.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Send className="size-4" />
+            )}
+            {connected ? "Reconnect Telegram Bot" : "Connect Telegram Bot"}
+          </Button>
+
+          {authCode && (
+            <Button
+              variant="outline"
+              size="lg"
+              className="gap-1.5 text-xs font-semibold"
+              onClick={copyAuthCode}
+            >
+              {copiedCode ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
+              {copiedCode ? "Command Copied!" : "Copy /start Command"}
+            </Button>
           )}
-          {connected ? "Reconnect Telegram Bot" : "Connect Telegram Bot"}
-        </Button>
-        <p className="font-mono text-xs text-muted-foreground">Auth code: {authCode}</p>
+        </div>
+
+        {authCode && (
+          <div className="rounded-lg border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
+            <p className="font-semibold text-foreground">Manual connection instructions:</p>
+            <p>
+              If Telegram doesn't open automatically, message your bot directly and send:{" "}
+              <code className="rounded bg-background px-1.5 py-0.5 font-mono font-bold text-foreground border border-border/80">
+                /start {authCode}
+              </code>
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
