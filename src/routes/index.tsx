@@ -33,6 +33,10 @@ export const Route = createFileRoute("/")({
           "Never lose a detailing lead while mid-wash. Detailr (detailr.online) sends customers an instant price estimate and pings you on Telegram the second a quote lands.",
       },
       {
+        property: "og:site_name",
+        content: "Detailr",
+      },
+      {
         property: "og:title",
         content: "Detailr — Instant Quotes & Telegram Alerts for Mobile Detailers (detailr.online)",
       },
@@ -42,6 +46,28 @@ export const Route = createFileRoute("/")({
           "Instant web quotes, real-time Telegram alerts, zero app installs. $9.99/month with a 7-day free trial on detailr.online.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://detailr.online/" },
+      { property: "og:image", content: "https://detailr.online/og-image.jpg" },
+      { property: "og:image:secure_url", content: "https://detailr.online/og-image.jpg" },
+      { property: "og:image:type", content: "image/jpeg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      {
+        property: "og:image:alt",
+        content: "Detailr — Instant Quotes & Telegram Alerts for Mobile Auto Detailers",
+      },
+      { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "twitter:title",
+        content: "Detailr — Instant Detailing Quotes & Real-Time Telegram Alerts",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "Convert mobile detailing inquiries on your website in seconds with automated quotes and instant Telegram alerts.",
+      },
+      { name: "twitter:image", content: "https://detailr.online/og-image.jpg" },
+      { name: "twitter:image:alt", content: "Detailr Auto Detailing Quote Software" },
     ],
   }),
   component: Landing,

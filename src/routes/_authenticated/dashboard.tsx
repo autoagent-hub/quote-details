@@ -19,6 +19,7 @@ import {
   Plus,
   Search,
   Send,
+  Share2,
   Sparkles,
   Trash2,
   TrendingUp,
@@ -940,7 +941,7 @@ function BusinessProfileCard({ profile }: { profile: Profile }) {
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="logo_url" className="text-xs">
             Logo / Avatar URL
           </Label>
@@ -963,8 +964,43 @@ function BusinessProfileCard({ profile }: { profile: Profile }) {
             />
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Shown next to your quote link, on your customer quote form, and in Telegram alerts.
+            Shown next to your quote link, on your customer quote form, in Telegram alerts, and as
+            your preview card image when sharing your link on social media.
           </p>
+
+          {/* Social media share card preview */}
+          <div className="rounded-lg border border-border/70 bg-surface/50 p-2.5 text-xs space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1 font-semibold text-foreground">
+                <Share2 className="size-3 text-primary" />
+                Social Media Share Preview
+              </span>
+              <span className="text-[10px]">iMessage • WhatsApp • X • Facebook</span>
+            </div>
+            <div className="flex items-center gap-3 rounded-md border border-border/80 bg-background p-2 shadow-2xs">
+              <img
+                src={form.logo_url || "/favicon.png"}
+                alt="Social preview thumbnail"
+                referrerPolicy="no-referrer"
+                className="size-12 rounded-lg border border-border/80 bg-surface object-contain p-1 shrink-0"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/favicon.png";
+                }}
+              />
+              <div className="min-w-0 flex-1 leading-tight">
+                <p className="truncate text-xs font-bold text-foreground">
+                  {form.business_name || "Your Business"} — Instant Auto Detailing Quote
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  {form.tagline ||
+                    "Select vehicle type and get an instant mobile detailing estimate."}
+                </p>
+                <p className="truncate text-[10px] text-primary/90 mt-0.5 font-mono">
+                  detailr.online/{form.slug || "your-link"}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end pt-1">

@@ -33,52 +33,6 @@ import {
   type ServiceItem,
 } from "@/lib/pricing";
 
-export const Route = createFileRoute("/$business_slug")({
-  validateSearch: (search: Record<string, unknown>): { test?: boolean } =>
-    search["test"] === "1" || search["test"] === true ? { test: true } : {},
-  head: ({ params }) => {
-    const cleanName = params.business_slug
-      .replace(/[-_]+/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-    const canonicalUrl = `https://detailr.online/${params.business_slug}`;
-
-    return {
-      meta: [
-        { title: `${cleanName} — Instant Mobile Auto Detailing Quote` },
-        {
-          name: "description",
-          content: `Get an instant auto detailing estimate from ${cleanName}. Select your vehicle type, choose exterior or interior packages, and book online in seconds.`,
-        },
-        {
-          name: "keywords",
-          content: `${cleanName}, mobile auto detailing quote, car detailing estimate, ceramic coating, paint correction, interior detail`,
-        },
-        { name: "robots", content: "index, follow" },
-        { property: "og:site_name", content: "Detailr" },
-        { property: "og:title", content: `${cleanName} — Instant Auto Detailing Quote` },
-        {
-          property: "og:description",
-          content: `Get your instant vehicle detailing price quote from ${cleanName} on Detailr.`,
-        },
-        { property: "og:url", content: canonicalUrl },
-        { property: "og:type", content: "website" },
-        { property: "og:image", content: "https://detailr.online/og-image.jpg" },
-        { property: "og:image:width", content: "1200" },
-        { property: "og:image:height", content: "630" },
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: `${cleanName} — Instant Auto Detailing Quote` },
-        {
-          name: "twitter:description",
-          content: `Select your vehicle and options to get an instant detailing price from ${cleanName}.`,
-        },
-        { name: "twitter:image", content: "https://detailr.online/og-image.jpg" },
-      ],
-      links: [{ rel: "canonical", href: canonicalUrl }],
-    };
-  },
-  component: QuoteForm,
-});
-
 type PublicProfile = {
   id: string;
   business_name: string;
@@ -93,11 +47,101 @@ type PublicProfile = {
   vehicle_categories: unknown;
 };
 
+export const Route = createFileRoute("/$business_slug")({
+  validateSearch: (search: Record<string, unknown>): { test?: boolean } =>
+    search["test"] === "1" || search["test"] === true ? { test: true } : {},
+  loader: async ({ params }): Promise<PublicProfile | null> => {
+    try {
+      const { data, error } = await supabase.rpc("get_public_pricing", {
+        _slug: params.business_slug,
+      });
+      if (!error && data && data.length > 0) {
+        return (data[0] as PublicProfile) ?? null;
+      }
+      const { data: directData } = await supabase
+        .from("profiles")
+        .select(
+          "id, business_name, slug, tagline, phone, logo_url, currency, allow_photos, services, packages, vehicle_categories",
+        )
+        .eq("slug", params.business_slug)
+        .maybeSingle();
+      return (directData as PublicProfile) ?? null;
+    } catch {
+      return null;
+    }
+  },
+  head: ({ params, loaderData }) => {
+    const profile = loaderData as PublicProfile | null | undefined;
+    const cleanName = params.business_slug
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    const businessName = profile?.business_name?.trim() || cleanName;
+    const canonicalUrl = `https://detailr.online/${params.business_slug}`;
+
+    const rawLogo = profile?.logo_url?.trim();
+    let shareImage = "https://detailr.online/og-image.jpg";
+    let isCustomLogo = false;
+
+    if (rawLogo) {
+      if (rawLogo.startsWith("http://") || rawLogo.startsWith("https://")) {
+        shareImage = rawLogo;
+        isCustomLogo = true;
+      } else if (rawLogo.startsWith("/")) {
+        shareImage = `https://detailr.online${rawLogo}`;
+        isCustomLogo = true;
+      } else {
+        shareImage = `https://detailr.online/${rawLogo}`;
+        isCustomLogo = true;
+      }
+    }
+
+    const description = profile?.tagline?.trim()
+      ? `${profile.tagline}. Instant auto detailing price quote from ${businessName}.`
+      : `Get an instant auto detailing estimate from ${businessName}. Select your vehicle type, choose exterior or interior packages, and book online in seconds.`;
+
+    return {
+      meta: [
+        { title: `${businessName} — Instant Auto Detailing Quote` },
+        { name: "description", content: description },
+        {
+          name: "keywords",
+          content: `${businessName}, mobile auto detailing quote, car detailing estimate, ceramic coating, paint correction, interior detail`,
+        },
+        { name: "robots", content: "index, follow" },
+        { property: "og:site_name", content: "Detailr" },
+        { property: "og:title", content: `${businessName} — Instant Auto Detailing Quote` },
+        { property: "og:description", content: description },
+        { property: "og:url", content: canonicalUrl },
+        { property: "og:type", content: "website" },
+        { property: "og:image", content: shareImage },
+        { property: "og:image:secure_url", content: shareImage },
+        {
+          property: "og:image:alt",
+          content: isCustomLogo
+            ? `${businessName} Logo`
+            : `${businessName} — Instant Auto Detailing Quote on Detailr`,
+        },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: `${businessName} — Instant Auto Detailing Quote` },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: shareImage },
+        {
+          name: "twitter:image:alt",
+          content: isCustomLogo ? `${businessName} Logo` : `${businessName} Auto Detailing Quote`,
+        },
+      ],
+      links: [{ rel: "canonical", href: canonicalUrl }],
+    };
+  },
+  component: QuoteForm,
+});
+
 const MAX_PHOTOS = 5;
 
 function QuoteForm() {
   const { business_slug } = Route.useParams();
   const { test: isTest } = Route.useSearch();
+  const initialProfile = Route.useLoaderData();
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const [vehicleDesc, setVehicleDesc] = useState("");
   const [packageKey, setPackageKey] = useState<string | null>(null);
@@ -111,8 +155,9 @@ function QuoteForm() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile = initialProfile, isLoading } = useQuery({
     queryKey: ["public-pricing", business_slug],
+    initialData: initialProfile ?? undefined,
     queryFn: async (): Promise<PublicProfile | null> => {
       try {
         const { data, error } = await supabase.rpc("get_public_pricing", { _slug: business_slug });
