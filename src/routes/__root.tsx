@@ -186,6 +186,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/favicon.png" },
       { rel: "manifest", href: "/manifest.json" },
     ],
+    scripts: [{ src: "https://accounts.google.com/gsi/client", async: true, defer: true }],
   }),
 
   shellComponent: RootShell,
