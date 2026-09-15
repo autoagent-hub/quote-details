@@ -864,32 +864,59 @@ function Landing() {
             <div className="space-y-4">
               <QuoteFlowLogo size="md" linkToHome />
               <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
-                The modern, instant quote software built specifically for mobile auto detailers to close leads in seconds.
+                The modern, instant quote software built specifically for mobile auto detailers to
+                close leads in seconds.
               </p>
             </div>
 
             {/* Links */}
             <div className="space-y-4">
-              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">Product</h4>
+              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">
+                Product
+              </h4>
               <ul className="space-y-2 text-xs">
-                <li><a href="#features" className="hover:text-primary transition-colors">Features</a></li>
-                <li><a href="#calculator" className="hover:text-primary transition-colors">Interactive Demo</a></li>
-                <li><a href="#pricing" className="hover:text-primary transition-colors">Pricing</a></li>
+                <li>
+                  <a href="#features" className="hover:text-primary transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#calculator" className="hover:text-primary transition-colors">
+                    Interactive Demo
+                  </a>
+                </li>
+                <li>
+                  <a href="#pricing" className="hover:text-primary transition-colors">
+                    Pricing
+                  </a>
+                </li>
               </ul>
             </div>
 
             {/* Company */}
             <div className="space-y-4">
-              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">Company</h4>
+              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">
+                Company
+              </h4>
               <ul className="space-y-2 text-xs">
-                <li><Link to="/login" className="hover:text-primary transition-colors">Detailer Log In</Link></li>
-                <li><Link to="/signup" className="hover:text-primary transition-colors">Start Free Trial</Link></li>
+                <li>
+                  <Link to="/login" className="hover:text-primary transition-colors">
+                    Detailer Log In
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/signup" className="hover:text-primary transition-colors">
+                    Start Free Trial
+                  </Link>
+                </li>
               </ul>
             </div>
 
             {/* Status */}
             <div className="space-y-4">
-              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">System</h4>
+              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">
+                System
+              </h4>
               <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium">
                 <span className="size-2 rounded-full bg-emerald-500" />
                 <span>All Systems Operational</span>
@@ -900,7 +927,8 @@ function Landing() {
           <div className="mt-16 border-t border-border/60 pt-8 text-center text-xs text-muted-foreground flex flex-col items-center gap-4">
             <p>
               © {new Date().getFullYear()}{" "}
-              <strong className="font-semibold text-foreground">Nerochaze</strong> · Detailr · Built for mobile auto detailers.
+              <strong className="font-semibold text-foreground">Nerochaze</strong> · Detailr · Built
+              for mobile auto detailers.
             </p>
           </div>
         </div>

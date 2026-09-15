@@ -1,0 +1,430 @@
+import { useState } from "react";
+import { Car, Clock, FileText, MessageSquare, Phone, Search, Sparkles, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  money,
+  formatWhen,
+  vehicleLabel,
+  addonLabel,
+  type ServiceItem,
+  type VehicleCategory,
+} from "@/lib/pricing";
+import type { Quote } from "./types";
+import { PhotoDialog } from "./PhotoDialog";
+
+export function QuoteHistoryCard({
+  quotes,
+  currency,
+  timezone,
+  services,
+  categories,
+}: {
+  quotes: Quote[];
+  currency: string;
+  timezone: string;
+  services: ServiceItem[];
+  categories: VehicleCategory[];
+}) {
+  const [showTests, setShowTests] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const testCount = quotes.filter((q) => q.is_test).length;
+  const realQuotes = quotes.filter((q) => !q.is_test);
+  const visible = showTests ? quotes : realQuotes;
+
+  const filtered = visible.filter((q) => {
+    if (!searchQuery.trim()) return true;
+    const term = searchQuery.toLowerCase();
+    return (
+      q.customer_name?.toLowerCase().includes(term) ||
+      q.customer_phone?.toLowerCase().includes(term) ||
+      q.vehicle_desc?.toLowerCase().includes(term) ||
+      q.vehicle_type?.toLowerCase().includes(term) ||
+      q.service_label?.toLowerCase().includes(term)
+    );
+  });
+
+  return (
+    <Card className="border-border/60 bg-card/50 shadow-sm backdrop-blur-sm overflow-hidden">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 px-6">
+        <div className="space-y-1">
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            Incoming Leads
+            <Badge
+              variant="secondary"
+              className="font-mono text-[10px] py-0 h-4 px-1.5 bg-muted/80"
+            >
+              {filtered.length}
+            </Badge>
+          </CardTitle>
+          <CardDescription className="text-xs font-medium text-muted-foreground/80">
+            Real-time customer vehicle specs, package choices, and 1-tap contact.
+          </CardDescription>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {testCount > 0 && (
+            <label className="flex items-center gap-2.5 text-[11px] font-bold text-muted-foreground cursor-pointer select-none">
+              <span className="opacity-70 uppercase tracking-wider">Show tests ({testCount})</span>
+              <Switch
+                checked={showTests}
+                aria-label="Show test requests"
+                onCheckedChange={setShowTests}
+                className="scale-75"
+              />
+            </label>
+          )}
+        </div>
+      </CardHeader>
+
+      {/* Filter bar */}
+      <div className="border-y border-border/40 px-6 py-3 bg-muted/10 backdrop-blur-sm">
+        <div className="relative max-w-sm">
+          <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
+          <Input
+            type="search"
+            placeholder="Search leads, cars, or phone numbers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-9 pl-9 text-xs bg-background/50 border-border/60 rounded-xl focus-visible:ring-primary/20"
+          />
+        </div>
+      </div>
+
+      <CardContent className="p-0">
+        {filtered.length === 0 ? (
+          <div className="px-6 py-16 text-center">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground/60 shadow-inner">
+              <Users className="size-6" />
+            </div>
+            <p className="mt-4 text-sm font-bold text-foreground">
+              {searchQuery ? "No matching leads found" : "Your lead queue is empty"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground/80 max-w-[240px] mx-auto leading-relaxed">
+              {searchQuery
+                ? "Refine your search term to find a specific customer record."
+                : "Share your quote link on social media to start receiving instant quotes."}
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile & Tablet Flexible Card Grid (< lg) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:hidden gap-4 p-4 bg-muted/5">
+              {filtered.map((q) => (
+                <div
+                  key={q.id}
+                  className={`rounded-2xl border border-border/70 bg-card p-4 shadow-xs space-y-3.5 transition-all hover:border-border ${
+                    q.is_test ? "opacity-80 bg-muted/20" : ""
+                  }`}
+                >
+                  {/* Top Header: Customer Name & Received Time & Price */}
+                  <div className="flex items-start justify-between gap-3 border-b border-border/40 pb-3">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-sm tracking-tight text-foreground truncate">
+                          {q.customer_name || "Anonymous Customer"}
+                        </h3>
+                        {q.is_test && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] py-0 h-4 px-1.5 font-mono"
+                          >
+                            TEST
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[10px] font-medium text-muted-foreground flex items-center gap-1.5">
+                        <Clock className="size-3 opacity-60" />
+                        {formatWhen(q.created_at || new Date().toISOString(), timezone)}
+                      </p>
+                    </div>
+
+                    {/* Total Estimate Tag */}
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                        Estimate
+                      </span>
+                      <span className="font-display font-bold text-base text-emerald-600">
+                        {money(Number(q.estimated_price), q.currency || currency)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Flexible Grid of Vehicle, Package */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                    {/* Vehicle Details */}
+                    <div className="rounded-xl bg-muted/30 p-2.5 border border-border/30 space-y-1">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                        <Car className="size-3 opacity-70" /> Vehicle
+                      </span>
+                      <p className="font-bold text-foreground text-xs leading-snug">
+                        {q.vehicle_desc || vehicleLabel(q.vehicle_type, categories)}
+                      </p>
+                      {q.vehicle_desc && (
+                        <p className="text-[10px] text-muted-foreground font-medium">
+                          {vehicleLabel(q.vehicle_type, categories)}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Selected Package */}
+                    <div className="rounded-xl bg-muted/30 p-2.5 border border-border/30 space-y-1">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                        <Sparkles className="size-3 opacity-70" /> Package
+                      </span>
+                      <p className="font-bold text-foreground text-xs leading-snug">
+                        {q.service_label || "Base Detail"}
+                      </p>
+                      {q.service_price ? (
+                        <p className="text-[10px] text-muted-foreground font-medium">
+                          {money(Number(q.service_price), q.currency || currency)}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Add-ons Requested Pills */}
+                  {q.addons && q.addons.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                        Add-ons Requested:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {q.addons.map((a, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 rounded-lg bg-surface border border-border/60 px-2 py-0.5 text-[11px] font-medium text-foreground shadow-xs"
+                          >
+                            {addonLabel(a, services)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Customer Notes & Vehicle Photos */}
+                  {(q.notes?.trim() || q.photo_urls?.length) && (
+                    <div className="rounded-xl border border-border/40 bg-background/50 p-2.5 space-y-2 text-xs">
+                      {q.notes?.trim() && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                            <FileText className="size-3 opacity-70" /> Customer Notes:
+                          </span>
+                          <p className="text-xs text-foreground/90 font-medium italic leading-relaxed">
+                            "{q.notes}"
+                          </p>
+                        </div>
+                      )}
+                      {q.photo_urls?.length ? (
+                        <div className="pt-1 flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-muted-foreground">
+                            {q.photo_urls.length} vehicle photo{q.photo_urls.length > 1 ? "s" : ""}
+                          </span>
+                          <PhotoDialog
+                            paths={q.photo_urls}
+                            customer={q.customer_name || "Customer"}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+
+                  {/* 1-Tap Action Footer (Call & SMS) */}
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40">
+                    <Button
+                      asChild
+                      variant="secondary"
+                      size="sm"
+                      className="h-9 rounded-xl bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 font-bold text-xs gap-2 border border-emerald-500/20"
+                    >
+                      <a href={`tel:${q.customer_phone}`}>
+                        <Phone className="size-3.5" /> Call
+                      </a>
+                    </Button>
+                    <Button
+                      asChild
+                      variant="secondary"
+                      size="sm"
+                      className="h-9 rounded-xl bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 font-bold text-xs gap-2 border border-blue-500/20"
+                    >
+                      <a href={`sms:${q.customer_phone}`}>
+                        <MessageSquare className="size-3.5" /> SMS Text
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View (>= lg) */}
+            <div className="hidden lg:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-border/40 bg-muted/5">
+                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest px-6">
+                      Customer
+                    </TableHead>
+                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest">
+                      Connect
+                    </TableHead>
+                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest">
+                      Vehicle
+                    </TableHead>
+                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest">
+                      Package
+                    </TableHead>
+                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest">
+                      Add-ons
+                    </TableHead>
+                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest">
+                      Details
+                    </TableHead>
+                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest text-right">
+                      Estimate
+                    </TableHead>
+                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest text-right px-6">
+                      Received
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((q) => (
+                    <TableRow
+                      key={q.id}
+                      className={`border-border/40 transition-colors hover:bg-muted/5 ${q.is_test ? "opacity-70 grayscale-[0.2]" : ""}`}
+                    >
+                      <TableCell className="font-bold text-xs py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate max-w-[140px]">{q.customer_name}</span>
+                          {q.is_test && (
+                            <Badge
+                              variant="secondary"
+                              className="text-[9px] py-0 h-4 px-1 bg-muted/80 font-mono tracking-tight shrink-0"
+                            >
+                              TEST
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Button
+                            asChild
+                            variant="secondary"
+                            size="sm"
+                            className="h-8 rounded-lg bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 border-0 shadow-none px-3 text-[11px] font-bold"
+                          >
+                            <a href={`tel:${q.customer_phone}`} title={`Call ${q.customer_name}`}>
+                              <Phone className="size-3 mr-1.5" /> Call
+                            </a>
+                          </Button>
+                          <Button
+                            asChild
+                            variant="secondary"
+                            size="sm"
+                            className="h-8 rounded-lg bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 border-0 shadow-none px-3 text-[11px] font-bold"
+                          >
+                            <a href={`sms:${q.customer_phone}`} title={`SMS ${q.customer_name}`}>
+                              <MessageSquare className="size-3 mr-1.5" /> SMS
+                            </a>
+                          </Button>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-xs py-4">
+                        <div className="space-y-0.5 max-w-[180px]">
+                          <span className="block font-bold text-foreground leading-snug">
+                            {q.vehicle_desc || vehicleLabel(q.vehicle_type, categories)}
+                          </span>
+                          {q.vehicle_desc && (
+                            <span className="text-[10px] font-medium text-muted-foreground opacity-70 block">
+                              {vehicleLabel(q.vehicle_type, categories)}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-xs py-4">
+                        <div className="space-y-0.5 max-w-[150px]">
+                          <span className="font-bold text-foreground block leading-snug">
+                            {q.service_label || "—"}
+                          </span>
+                          {q.service_price ? (
+                            <span className="block text-[10px] font-medium text-muted-foreground opacity-70">
+                              {money(Number(q.service_price), q.currency || currency)}
+                            </span>
+                          ) : null}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-[11px] font-medium text-muted-foreground/80 py-4 max-w-[180px]">
+                        <div className="flex flex-wrap gap-1">
+                          {q.addons.length
+                            ? q.addons.map((a, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-block bg-muted/40 px-1.5 py-0.5 rounded text-[10px] font-medium text-foreground/80"
+                                >
+                                  {addonLabel(a, services)}
+                                </span>
+                              ))
+                            : "—"}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-xs py-4">
+                        <div className="flex items-center gap-2">
+                          {q.photo_urls?.length ? (
+                            <PhotoDialog
+                              paths={q.photo_urls}
+                              customer={q.customer_name || "Customer"}
+                            />
+                          ) : null}
+                          {q.notes?.trim() ? (
+                            <div
+                              className="max-w-[140px] truncate text-[11px] font-medium text-muted-foreground bg-muted/30 px-2 py-0.5 rounded cursor-help"
+                              title={q.notes}
+                            >
+                              {q.notes}
+                            </div>
+                          ) : (
+                            !q.photo_urls?.length && (
+                              <span className="text-muted-foreground/40 text-[11px]">—</span>
+                            )
+                          )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-right py-4">
+                        <span className="font-display font-bold text-sm text-emerald-600">
+                          {money(Number(q.estimated_price), q.currency || currency)}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="text-right text-[10px] font-bold text-muted-foreground px-6 py-4 opacity-70 whitespace-nowrap">
+                        {formatWhen(q.created_at || new Date().toISOString(), timezone)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
