@@ -34,7 +34,7 @@ export function DetailrLogo({
       className={`inline-flex items-center ${config.container} font-display font-bold tracking-tight ${className}`}
     >
       <img
-        src="/favicon.png"
+        src="/logo.svg"
         alt="Detailr logo"
         className={`${config.img} shrink-0 rounded-lg object-contain shadow-xs transition-transform hover:scale-105 ${imgClassName}`}
         loading="eager"
