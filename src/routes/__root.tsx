@@ -8,7 +8,10 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { toast } from "sonner";
+import { WifiOff, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "../components/ui/sonner";
@@ -181,6 +184,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/favicon.png" },
+      { rel: "manifest", href: "/manifest.json" },
     ],
   }),
 
@@ -347,6 +351,52 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const navigate = useNavigate();
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true,
+  );
+
+  // Register service worker and handle offline/online network status
+  useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((reg) => {
+            console.log("[ServiceWorker] Registered with scope:", reg.scope);
+          })
+          .catch((err) => {
+            console.warn("[ServiceWorker] Registration failed:", err);
+          });
+      });
+    }
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success("Connection Restored", {
+        description: "Back online. Automatically syncing any pending quote requests...",
+        id: "network-status",
+      });
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.info("Working Offline", {
+        description:
+          "Form progress is saved locally on your device and will auto-submit upon reconnecting.",
+        icon: <WifiOff className="size-4 text-amber-500" />,
+        duration: 7000,
+        id: "network-status",
+      });
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -369,6 +419,38 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      {/* Modern Glassmorphic Offline Indicator */}
+      <AnimatePresence>
+        {!isOnline && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-amber-500/25 bg-background/90 px-4 py-2.5 shadow-xl shadow-black/10 backdrop-blur-xl dark:bg-card/90 max-w-[90vw] sm:max-w-md"
+          >
+            <div className="relative flex size-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+              <WifiOff className="size-4" />
+              <span className="absolute -top-0.5 -right-0.5 flex size-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex size-2 rounded-full bg-amber-500"></span>
+              </span>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-foreground">Working Offline</span>
+                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  Auto-Sync Ready
+                </span>
+              </div>
+              <span className="text-[11px] text-muted-foreground truncate">
+                Form progress saved locally • Will auto-submit on reconnect
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-center" richColors />

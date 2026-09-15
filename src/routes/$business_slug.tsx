@@ -301,12 +301,91 @@ function QuoteForm() {
     return paths;
   };
 
+  // Automatic sync for offline quotes when network connection is restored
+  useEffect(() => {
+    const syncOfflineQuotes = async () => {
+      try {
+        const stored = localStorage.getItem("detailr_pending_quotes");
+        if (!stored) return;
+        const pending = JSON.parse(stored);
+        if (!Array.isArray(pending) || pending.length === 0) return;
+
+        toast.info("Syncing Offline Quotes...", { id: "offline-sync" });
+        for (const item of pending) {
+          const { error } = await supabase.from("quotes").insert(item);
+          if (!error) {
+            void sendQuoteAlert({
+              data: {
+                detailerId: item.detailer_id,
+                customerName: item.customer_name,
+                customerPhone: item.customer_phone,
+                vehicle: item.vehicle_desc || item.vehicle_type,
+                service: { label: item.service_label, price: item.service_price },
+                addons: item.addons.map((k: string) => ({ label: k, price: 0 })),
+                estimate: item.estimated_price,
+                notes: item.notes + " (Submitted via Offline Sync)",
+                photoPaths: [],
+                isTest: item.is_test,
+              },
+            }).catch(() => undefined);
+          }
+        }
+        localStorage.removeItem("detailr_pending_quotes");
+        toast.success("Offline Quotes Submitted!", { id: "offline-sync" });
+      } catch (err) {
+        console.warn("Failed to sync offline quotes:", err);
+      }
+    };
+
+    window.addEventListener("online", syncOfflineQuotes);
+    if (typeof navigator !== "undefined" && navigator.onLine) {
+      void syncOfflineQuotes();
+    }
+    return () => window.removeEventListener("online", syncOfflineQuotes);
+  }, []);
+
   const ready = !!categoryKey && !!packageKey && !!name.trim() && !!phone.trim();
 
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!profile || !ready || !chosenPackage) return;
     setSubmitting(true);
+
+    // Offline mode save fallback
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const offlineLead = {
+        detailer_id: profile.id,
+        customer_name: name.trim(),
+        customer_phone: fullPhone,
+        vehicle_type: categoryKey!,
+        vehicle_desc: vehicleDesc.trim(),
+        service_key: chosenPackage.key,
+        service_label: chosenPackage.label,
+        service_price: quote.servicePrice,
+        addons,
+        notes: notes.trim(),
+        currency,
+        estimated_price: quote.total,
+        is_test: !!isTest,
+        created_at: new Date().toISOString(),
+      };
+      try {
+        const existing = JSON.parse(localStorage.getItem("detailr_pending_quotes") || "[]");
+        existing.push(offlineLead);
+        localStorage.setItem("detailr_pending_quotes", JSON.stringify(existing));
+        toast.success("Quote Saved Offline!", {
+          description:
+            "Your request is saved and will be sent automatically when you're back online.",
+        });
+        setDone(true);
+      } catch {
+        toast.error("Could not save offline quote");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
     try {
       const photoPaths = photos.length ? await uploadPhotos(profile.id) : [];
 
