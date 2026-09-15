@@ -11,10 +11,10 @@ export async function sendWelcomeEmail(to: string) {
     process.env["PUBLIC_APP_URL"] || process.env["RENDER_EXTERNAL_URL"] || "https://detailr.online";
   const appUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
-  const logoUrl = `${appUrl.replace(/\/$/, "")}/favicon.png`;
-  const banner1Url = `${appUrl.replace(/\/$/, "")}/detailr-branding-card.png`;
-  const banner2Url = `${appUrl.replace(/\/$/, "")}/og-image.jpg`;
-  const banner3Url = `${appUrl.replace(/\/$/, "")}/detailr-official.jpg`;
+  const logoUrl = `${appUrl.replace(/\/$/, "")}/logo.png`;
+  const banner1Url = `${appUrl.replace(/\/$/, "")}/step1-pricing-matrix.jpg`;
+  const banner2Url = `${appUrl.replace(/\/$/, "")}/step2-telegram-connect.jpg`;
+  const banner3Url = `${appUrl.replace(/\/$/, "")}/step3-share-quote-link.jpg`;
   const dashboardUrl = `${appUrl.replace(/\/$/, "")}/dashboard`;
 
   const subject = "Welcome to Detailr — Your Getting Started Guide & Next Steps";
@@ -81,7 +81,7 @@ export async function sendWelcomeEmail(to: string) {
                       Set your business name, adjust your service tiers (e.g., Ceramic Coating, Full Interior Detail, Maintenance Wash), and set vehicle size multipliers in your dashboard.
                     </p>
                     <div style="border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;background-color:#f8fafc;">
-                      <img src="${banner1Url}" alt="Step 1 Pricing Matrix" width="528" style="display:block;width:100%;height:auto;max-height:240px;object-fit:cover;" />
+                      <img src="${banner1Url}" alt="Step 1 Dashboard Pricing Matrix Screenshot" width="528" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />
                     </div>
                   </td>
                 </tr>
@@ -101,7 +101,7 @@ export async function sendWelcomeEmail(to: string) {
                       Never miss a client quote! Link your Telegram bot with one click so every customer request, vehicle photo, and price breakdown drops directly into your phone instantly.
                     </p>
                     <div style="border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;background-color:#f8fafc;">
-                      <img src="${banner2Url}" alt="Step 2 Telegram Alerts" width="528" style="display:block;width:100%;height:auto;max-height:240px;object-fit:cover;" />
+                      <img src="${banner2Url}" alt="Step 2 Telegram Alert Integration Screenshot" width="528" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />
                     </div>
                   </td>
                 </tr>
@@ -121,7 +121,7 @@ export async function sendWelcomeEmail(to: string) {
                       Add your personalized booking link (e.g. <strong style="color:#0f172a;">detailr.online/your-business</strong>) to your Instagram bio, Google Business profile, and text messages.
                     </p>
                     <div style="border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;background-color:#f8fafc;">
-                      <img src="${banner3Url}" alt="Step 3 Share Your Link" width="528" style="display:block;width:100%;height:auto;max-height:240px;object-fit:cover;" />
+                      <img src="${banner3Url}" alt="Step 3 Live Quote Link & QR Code Screenshot" width="528" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />
                     </div>
                   </td>
                 </tr>
