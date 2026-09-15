@@ -104,6 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "mobile auto detailing software, car detailing quote calculator, detailer instant estimate, telegram lead alerts, auto detailing CRM, ceramic coating quote builder, mobile detailer booking, detailr online",
       },
       { name: "author", content: "Detailr" },
+      { name: "google-site-verification", content: "googlebacb443d597b691d" },
       {
         name: "robots",
         content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
@@ -230,6 +231,65 @@ function RootShell({ children }: { children: ReactNode }) {
     "@context": "https://schema.org",
     "@graph": [
       {
+        "@type": "WebSite",
+        "@id": "https://detailr.online/#website",
+        url: "https://detailr.online",
+        name: "Detailr",
+        description: "Instant Mobile Auto Detailing Quotes & Real-Time Lead Alerts",
+        publisher: { "@id": "https://detailr.online/#organization" },
+        hasPart: [
+          {
+            "@type": "WebPage",
+            "@id": "https://detailr.online/signup",
+            name: "Start 7-Day Free Trial",
+            url: "https://detailr.online/signup",
+            description: "Create your mobile detailing quote link in under 2 minutes.",
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://detailr.online/login",
+            name: "Detailer Dashboard Login",
+            url: "https://detailr.online/login",
+            description: "Sign in to manage your custom detailing packages, leads, and alerts.",
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://detailr.online/demo",
+            name: "Live Customer Quote Demo",
+            url: "https://detailr.online/demo",
+            description: "Test the mobile detailing instant pricing estimate calculator.",
+          },
+        ],
+      },
+      {
+        "@type": "ItemList",
+        "@id": "https://detailr.online/#sitelinks",
+        name: "Detailr Navigation",
+        itemListElement: [
+          {
+            "@type": "SiteNavigationElement",
+            position: 1,
+            name: "Start 7-Day Free Trial",
+            description: "Sign up for Detailr mobile auto detailing software",
+            url: "https://detailr.online/signup",
+          },
+          {
+            "@type": "SiteNavigationElement",
+            position: 2,
+            name: "Detailer Portal Login",
+            description: "Sign in to access your pricing setup and lead alerts",
+            url: "https://detailr.online/login",
+          },
+          {
+            "@type": "SiteNavigationElement",
+            position: 3,
+            name: "Live Instant Quote Demo",
+            description: "Experience how customers build quotes on Detailr",
+            url: "https://detailr.online/demo",
+          },
+        ],
+      },
+      {
         "@type": "WebApplication",
         "@id": "https://detailr.online/#webapp",
         name: "Detailr",
@@ -238,7 +298,7 @@ function RootShell({ children }: { children: ReactNode }) {
         operatingSystem: "All",
         browserRequirements: "Requires JavaScript. Requires HTML5.",
         description:
-          "Instant customer quote builder and real-time Telegram lead alerts designed specifically for mobile auto detailers.",
+          "Instant customer quote builder and real-time lead alerts designed specifically for mobile auto detailers.",
         image: "https://detailr.online/og-image.jpg",
         offers: {
           "@type": "Offer",

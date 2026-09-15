@@ -755,3 +755,31 @@ export const updateAdminCheckoutUrl = createServerFn({ method: "POST" })
       message: url ? "Checkout link updated successfully!" : "Checkout link reset to default.",
     };
   });
+
+/**
+ * Triggers an automated HTTP ping request to Google Search Indexing engine
+ */
+export const pingGoogleSearchEngine = createServerFn({ method: "POST" }).handler(async () => {
+  const sitemapUrl = "https://detailr.online/sitemap.xml";
+  const googlePingEndpoint = `https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`;
+  const bingPingEndpoint = `https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`;
+
+  try {
+    await Promise.allSettled([fetch(googlePingEndpoint), fetch(bingPingEndpoint)]);
+
+    await logAdminAction({
+      action: "PING_GOOGLE_INDEX",
+      details: { sitemapUrl, timestamp: new Date().toISOString() },
+    });
+
+    return {
+      success: true,
+      message:
+        "Index ping signal broadcasted to Googlebot & Bingbot for detailr.online/sitemap.xml!",
+      timestamp: new Date().toISOString(),
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to ping search engines";
+    return { success: false, error: message };
+  }
+});

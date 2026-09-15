@@ -86,6 +86,7 @@ import {
   adminFlagUserSuspicious,
   type AdminAlertSeverity,
 } from "@/lib/admin-telegram.functions";
+import { KeywordDiscoveryEngine } from "@/components/admin/KeywordDiscoveryEngine";
 
 export const Route = createFileRoute("/admin/")({
   ssr: false,
@@ -102,7 +103,9 @@ function AdminDashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<"users" | "quotes" | "security" | "tools">("users");
+  const [activeTab, setActiveTab] = useState<
+    "users" | "quotes" | "security" | "tools" | "keywords"
+  >("users");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [selectedDetailerForQuotes, setSelectedDetailerForQuotes] =
@@ -629,6 +632,16 @@ function AdminDashboardPage() {
             }`}
           >
             <Layers className="size-4" /> System Health & Cron
+          </button>
+          <button
+            onClick={() => setActiveTab("keywords")}
+            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 font-semibold transition-colors whitespace-nowrap ${
+              activeTab === "keywords"
+                ? "border-primary text-white"
+                : "border-transparent hover:text-slate-200"
+            }`}
+          >
+            <Sparkles className="size-4 text-emerald-400" /> Keyword Discovery Engine (10k+)
           </button>
         </div>
 
@@ -1749,6 +1762,9 @@ function AdminDashboardPage() {
             </div>
           </div>
         )}
+
+        {/* TAB 5: KEYWORD DISCOVERY ENGINE */}
+        {activeTab === "keywords" && <KeywordDiscoveryEngine />}
       </main>
 
       {/* INSPECT DETAIL QUOTES MODAL / DRAWER */}
