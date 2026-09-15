@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
 import { SkeletonQuoteForm } from "@/components/skeletons/SkeletonQuoteForm";
+import { SeoHead } from "@/components/seo/SeoHead";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -371,6 +372,8 @@ function QuoteForm() {
         <img
           src="/favicon.png"
           alt="Detailr"
+          loading="lazy"
+          decoding="async"
           className="size-12 rounded-xl object-contain shadow-xs"
         />
         <h1 className="text-xl font-bold">Quote form not found</h1>
@@ -424,6 +427,32 @@ function QuoteForm() {
 
   return (
     <div className="min-h-screen bg-surface pb-32">
+      <SeoHead
+        title={`${profile.business_name} — Instant Auto Detailing Quote`}
+        description={
+          profile.tagline?.trim()
+            ? `${profile.tagline}. Instant car detailing price estimate builder.`
+            : `Get an instant auto detailing estimate from ${profile.business_name}. Choose packages, add vehicle photos, and book online in seconds.`
+        }
+        canonicalUrl={`https://detailr.online/${profile.slug}`}
+        keywords={[
+          profile.business_name,
+          "mobile auto detailing quote",
+          "car detailing price calculator",
+          "ceramic coating estimate",
+          "interior detailing booking",
+        ]}
+        ogImage={profile.logo_url || "https://detailr.online/og-image.jpg"}
+        businessDetails={{
+          name: profile.business_name,
+          description: profile.tagline || undefined,
+          url: `https://detailr.online/${profile.slug}`,
+          phone: profile.phone || undefined,
+          image: profile.logo_url || undefined,
+          priceRange: "$$",
+          servicesOffered: services.map((s) => s.name),
+        }}
+      />
       {isTest && (
         <div className="bg-slate-900 text-white px-4 py-2.5 shadow-xs border-b border-amber-500/40 sticky top-0 z-40">
           <div className="mx-auto flex max-w-md items-center justify-between gap-3 text-xs">
@@ -472,6 +501,8 @@ function QuoteForm() {
                 src={profile.logo_url}
                 alt={`${profile.business_name} logo`}
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
                 className="size-11 shrink-0 rounded-xl border border-border object-contain bg-background shadow-xs"
               />
             ) : (
@@ -479,6 +510,8 @@ function QuoteForm() {
                 src="/favicon.png"
                 alt="Detailr"
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
                 className="size-11 shrink-0 rounded-xl border border-border bg-background p-1.5 object-contain shadow-xs"
               />
             )}

@@ -104,7 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "mobile auto detailing software, car detailing quote calculator, detailer instant estimate, telegram lead alerts, auto detailing CRM, ceramic coating quote builder, mobile detailer booking, detailr online",
       },
       { name: "author", content: "Detailr" },
-      { name: "google-site-verification", content: "googlebacb443d597b691d" },
+      { name: "google-site-verification", content: "KcgCWTCmUyxEVd1lRMq6xabTrWkbMo0rsUFleV8q2m0" },
       {
         name: "robots",
         content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",

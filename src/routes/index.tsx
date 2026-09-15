@@ -22,11 +22,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
+import { SeoHead } from "@/components/seo/SeoHead";
 import heroImage from "@/assets/hero-detailer.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { name: "google-site-verification", content: "KcgCWTCmUyxEVd1lRMq6xabTrWkbMo0rsUFleV8q2m0" },
       { title: "Detailr — Instant Quotes & Telegram Alerts for Mobile Detailers (detailr.online)" },
       {
         name: "description",
@@ -171,6 +173,21 @@ function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-primary">
+      <SeoHead
+        title="Detailr — Instant Detailing Quotes & Real-Time Telegram Alerts (detailr.online)"
+        description="Detailr (detailr.online) is the software built specifically for mobile auto detailers. Give customers instant car pricing estimates and receive new qualified leads in Telegram."
+        canonicalUrl="https://detailr.online/"
+        keywords={[
+          "mobile auto detailing software",
+          "car detailing quote calculator",
+          "detailer instant estimate",
+          "telegram lead alerts",
+          "auto detailing crm",
+          "ceramic coating price builder",
+          "detailr online",
+        ]}
+        ogImage="https://detailr.online/og-image.jpg"
+      />
       {/* Floating Modern Header */}
       <header className="sticky top-3 z-50 px-4">
         <div className="mx-auto flex h-15 max-w-6xl items-center justify-between rounded-2xl border border-border/80 bg-background/85 px-4 shadow-lg shadow-black/5 backdrop-blur-md sm:px-6">
@@ -290,6 +307,8 @@ function Landing() {
                   <img
                     src={heroImage}
                     alt="Mobile auto detailer polishing a car"
+                    loading="lazy"
+                    decoding="async"
                     className="aspect-video w-full object-cover brightness-95"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />

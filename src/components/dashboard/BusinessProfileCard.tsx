@@ -140,6 +140,8 @@ export function BusinessProfileCard({ profile }: { profile: Profile }) {
                 src={form.logo_url || "/favicon.png"}
                 alt="Logo preview"
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
                 className="size-12 rounded-xl border border-border bg-background p-1 object-contain shrink-0 shadow-sm transition-transform group-hover:scale-105"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = "/favicon.png";
@@ -172,6 +174,8 @@ export function BusinessProfileCard({ profile }: { profile: Profile }) {
                 src={form.logo_url || "/favicon.png"}
                 alt="Social preview thumbnail"
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
                 className="size-10 rounded-lg border border-border/80 bg-surface object-contain p-1 shrink-0"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = "/favicon.png";

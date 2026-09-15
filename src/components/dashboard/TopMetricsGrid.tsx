@@ -95,6 +95,8 @@ export function TopMetricsGrid({
               src={profile.logo_url || "/favicon.png"}
               alt={profile.business_name}
               referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
               className="size-7 rounded-lg border border-border/80 bg-background object-contain shrink-0 shadow-sm"
             />
             <span className="font-mono text-[11px] font-semibold truncate text-foreground flex-1">
