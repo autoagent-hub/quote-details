@@ -699,3 +699,59 @@ export const getAdminAuditLogs = createServerFn({ method: "GET" }).handler(async
     createdAt: String(row["created_at"] || ""),
   }));
 });
+
+/**
+ * Fetch current admin configured checkout URL
+ */
+export const getAdminCheckoutUrl = createServerFn({ method: "GET" }).handler(async () => {
+  const admin = getAdminClient();
+  const defaultUrl =
+    process.env["WHOP_CHECKOUT_URL"] ?? "https://whop.com/checkout/plan_IrzVc4vCnCiQ1";
+  if (!admin) return { checkoutUrl: defaultUrl, isDefault: true };
+
+  const { data: user } = await admin.auth.admin.getUserById("3c7f1a25-615e-4cfc-9c23-a049bafe9337");
+  const customUrl = user?.user?.user_metadata?.["custom_checkout_url"] as string | undefined;
+
+  if (customUrl && customUrl.trim()) {
+    return { checkoutUrl: customUrl.trim(), isDefault: false };
+  }
+
+  return { checkoutUrl: defaultUrl, isDefault: true };
+});
+
+/**
+ * Update global checkout URL from admin dashboard
+ */
+export const updateAdminCheckoutUrl = createServerFn({ method: "POST" })
+  .validator((data: { checkoutUrl: string }) => data)
+  .handler(async ({ data }) => {
+    const admin = getAdminClient();
+    if (!admin) return { success: false, error: "Admin database client unavailable" };
+
+    const url = data.checkoutUrl.trim();
+    if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
+      return { success: false, error: "Checkout URL must start with http:// or https://" };
+    }
+
+    const { data: user } = await admin.auth.admin.getUserById(
+      "3c7f1a25-615e-4cfc-9c23-a049bafe9337",
+    );
+    const meta = user?.user?.user_metadata || {};
+
+    await admin.auth.admin.updateUserById("3c7f1a25-615e-4cfc-9c23-a049bafe9337", {
+      user_metadata: {
+        ...meta,
+        custom_checkout_url: url || null,
+      },
+    });
+
+    await logAdminAction({
+      action: "UPDATE_CHECKOUT_URL",
+      details: { newCheckoutUrl: url || "reset_to_default" },
+    });
+
+    return {
+      success: true,
+      message: url ? "Checkout link updated successfully!" : "Checkout link reset to default.",
+    };
+  });

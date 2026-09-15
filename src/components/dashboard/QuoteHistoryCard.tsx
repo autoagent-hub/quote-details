@@ -1,5 +1,17 @@
 import { useState } from "react";
-import { Car, Clock, FileText, MessageSquare, Phone, Search, Sparkles, Users } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Car,
+  Clock,
+  FileText,
+  MessageSquare,
+  Phone,
+  Search,
+  Sparkles,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +25,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
 import {
   money,
   formatWhen,
@@ -37,8 +60,14 @@ export function QuoteHistoryCard({
   services: ServiceItem[];
   categories: VehicleCategory[];
 }) {
+  const queryClient = useQueryClient();
   const [showTests, setShowTests] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Confirmation dialog state
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [confirmClearTests, setConfirmClearTests] = useState(false);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
 
   const testCount = quotes.filter((q) => q.is_test).length;
   const realQuotes = quotes.filter((q) => !q.is_test);
@@ -54,6 +83,62 @@ export function QuoteHistoryCard({
       q.vehicle_type?.toLowerCase().includes(term) ||
       q.service_label?.toLowerCase().includes(term)
     );
+  });
+
+  // Mutations for deletion
+  const deleteSingleMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("quotes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Lead record deleted");
+      void queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      setDeleteTarget(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Could not delete lead record");
+    },
+  });
+
+  const clearTestsMutation = useMutation({
+    mutationFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("quotes")
+        .delete()
+        .eq("detailer_id", uid)
+        .eq("is_test", true);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("All test leads cleared");
+      void queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      setConfirmClearTests(false);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Could not clear test leads");
+    },
+  });
+
+  const clearAllMutation = useMutation({
+    mutationFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) throw new Error("Not authenticated");
+      const { error } = await supabase.from("quotes").delete().eq("detailer_id", uid);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Quote history cleared");
+      void queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      setConfirmClearAll(false);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Could not clear quote history");
+    },
   });
 
   return (
@@ -74,10 +159,34 @@ export function QuoteHistoryCard({
           </CardDescription>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
           {testCount > 0 && (
-            <label className="flex items-center gap-2.5 text-[11px] font-bold text-muted-foreground cursor-pointer select-none">
-              <span className="opacity-70 uppercase tracking-wider">Show tests ({testCount})</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-[10px] font-bold text-amber-600 hover:text-amber-700 bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/30 rounded-lg gap-1.5"
+              onClick={() => setConfirmClearTests(true)}
+            >
+              <Trash2 className="size-3" />
+              Clear Tests ({testCount})
+            </Button>
+          )}
+
+          {quotes.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-[10px] font-bold text-muted-foreground hover:text-destructive hover:bg-destructive/10 border-border/60 rounded-lg gap-1.5"
+              onClick={() => setConfirmClearAll(true)}
+            >
+              <Trash2 className="size-3" />
+              Clear All
+            </Button>
+          )}
+
+          {testCount > 0 && (
+            <label className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground cursor-pointer select-none border-l border-border/40 pl-3">
+              <span className="opacity-70 uppercase tracking-wider">Show tests</span>
               <Switch
                 checked={showTests}
                 aria-label="Show test requests"
@@ -241,13 +350,13 @@ export function QuoteHistoryCard({
                     </div>
                   )}
 
-                  {/* 1-Tap Action Footer (Call & SMS) */}
-                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40">
+                  {/* 1-Tap Action Footer (Call, SMS, & Delete) */}
+                  <div className="flex items-center gap-2 pt-1 border-t border-border/40">
                     <Button
                       asChild
                       variant="secondary"
                       size="sm"
-                      className="h-9 rounded-xl bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 font-bold text-xs gap-2 border border-emerald-500/20"
+                      className="h-9 flex-1 rounded-xl bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 font-bold text-xs gap-2 border border-emerald-500/20"
                     >
                       <a href={`tel:${q.customer_phone}`}>
                         <Phone className="size-3.5" /> Call
@@ -257,11 +366,22 @@ export function QuoteHistoryCard({
                       asChild
                       variant="secondary"
                       size="sm"
-                      className="h-9 rounded-xl bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 font-bold text-xs gap-2 border border-blue-500/20"
+                      className="h-9 flex-1 rounded-xl bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 font-bold text-xs gap-2 border border-blue-500/20"
                     >
                       <a href={`sms:${q.customer_phone}`}>
                         <MessageSquare className="size-3.5" /> SMS Text
                       </a>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 rounded-xl text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
+                      onClick={() =>
+                        setDeleteTarget({ id: q.id, name: q.customer_name || "this customer" })
+                      }
+                      title="Delete lead record"
+                    >
+                      <Trash2 className="size-4" />
                     </Button>
                   </div>
                 </div>
@@ -296,6 +416,9 @@ export function QuoteHistoryCard({
                     </TableHead>
                     <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest text-right px-6">
                       Received
+                    </TableHead>
+                    <TableHead className="text-[10px] h-10 font-bold uppercase tracking-widest text-right px-4">
+                      Action
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -417,6 +540,20 @@ export function QuoteHistoryCard({
                       <TableCell className="text-right text-[10px] font-bold text-muted-foreground px-6 py-4 opacity-70 whitespace-nowrap">
                         {formatWhen(q.created_at || new Date().toISOString(), timezone)}
                       </TableCell>
+
+                      <TableCell className="text-right py-4 px-4">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                          onClick={() =>
+                            setDeleteTarget({ id: q.id, name: q.customer_name || "this customer" })
+                          }
+                          title="Delete lead record"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -425,6 +562,95 @@ export function QuoteHistoryCard({
           </>
         )}
       </CardContent>
+
+      {/* Single Lead Delete Confirmation Modal */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className="max-w-md rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg font-bold">Delete Lead Record?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              Are you sure you want to delete the quote request from{" "}
+              <strong className="text-foreground">{deleteTarget?.name}</strong>? This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 pt-2">
+            <AlertDialogCancel className="h-9 rounded-xl text-xs font-bold">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="h-9 rounded-xl text-xs font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteSingleMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteTarget) deleteSingleMutation.mutate(deleteTarget.id);
+              }}
+            >
+              {deleteSingleMutation.isPending ? "Deleting..." : "Delete Lead"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear Test Leads Confirmation Modal */}
+      <AlertDialog open={confirmClearTests} onOpenChange={setConfirmClearTests}>
+        <AlertDialogContent className="max-w-md rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg font-bold">Clear All Test Leads?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              This will permanently delete all{" "}
+              <strong className="text-foreground">{testCount} test quotes</strong> from your
+              dashboard history.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 pt-2">
+            <AlertDialogCancel className="h-9 rounded-xl text-xs font-bold">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="h-9 rounded-xl text-xs font-bold bg-amber-600 text-white hover:bg-amber-700"
+              disabled={clearTestsMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                clearTestsMutation.mutate();
+              }}
+            >
+              {clearTestsMutation.isPending ? "Clearing..." : "Clear Test Leads"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear All History Confirmation Modal */}
+      <AlertDialog open={confirmClearAll} onOpenChange={setConfirmClearAll}>
+        <AlertDialogContent className="max-w-md rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg font-bold">
+              Clear Entire Quote History?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              Are you sure you want to delete all{" "}
+              <strong className="text-foreground">{quotes.length} leads</strong> from your database?
+              This will clear all customer quote requests permanently.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 pt-2">
+            <AlertDialogCancel className="h-9 rounded-xl text-xs font-bold">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="h-9 rounded-xl text-xs font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={clearAllMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                clearAllMutation.mutate();
+              }}
+            >
+              {clearAllMutation.isPending ? "Clearing All..." : "Delete All Leads"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

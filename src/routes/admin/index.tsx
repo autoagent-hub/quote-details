@@ -38,6 +38,9 @@ import {
   ShieldAlert,
   Check,
   Settings,
+  Link as LinkIcon,
+  Save,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +73,8 @@ import {
   adminTriggerSummaryEmail,
   adminGetRecentQuotesStream,
   getAdminAuditLogs,
+  getAdminCheckoutUrl,
+  updateAdminCheckoutUrl,
   type AdminDetailerSummary,
 } from "@/lib/admin-dashboard.functions";
 import { adminSendWelcomeEmailToAllActiveUsers } from "@/lib/weekly-summary.functions";
@@ -195,6 +200,36 @@ function AdminDashboardPage() {
     queryFn: () => getAdminAuditLogs(),
     enabled: !!adminUser && activeTab === "security",
     refetchInterval: 10000,
+  });
+
+  // 8. Fetch & manage global checkout URL
+  const [checkoutUrlInput, setCheckoutUrlInput] = useState("");
+
+  const { data: checkoutUrlData, refetch: refetchCheckoutUrl } = useQuery({
+    queryKey: ["admin", "checkout-url"],
+    queryFn: () => getAdminCheckoutUrl(),
+    enabled: !!adminUser,
+  });
+
+  useEffect(() => {
+    if (checkoutUrlData?.checkoutUrl) {
+      setCheckoutUrlInput(checkoutUrlData.checkoutUrl);
+    }
+  }, [checkoutUrlData]);
+
+  const updateCheckoutUrlMutation = useMutation({
+    mutationFn: (payload: { checkoutUrl: string }) => updateAdminCheckoutUrl({ data: payload }),
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success(res.message);
+        void refetchCheckoutUrl();
+      } else {
+        toast.error(res.error || "Failed to update checkout URL");
+      }
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to update checkout URL");
+    },
   });
 
   const capturedErrors = getCapturedErrors();
@@ -1588,6 +1623,86 @@ function AdminDashboardPage() {
               </Button>
             </div>
 
+            {/* Platform Checkout Link Configuration */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 font-semibold text-white">
+                  <LinkIcon className="size-5 text-emerald-400" /> Global Checkout & Upgrade Link
+                </div>
+                {!checkoutUrlData?.isDefault ? (
+                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] font-mono">
+                    CUSTOM LINK ACTIVE
+                  </Badge>
+                ) : (
+                  <Badge className="bg-slate-800 text-slate-400 border-slate-700 text-[10px] font-mono">
+                    DEFAULT WHOP LINK
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-slate-400">
+                Set the checkout URL used when detailers click &quot;Upgrade to Pro&quot; or
+                &quot;Activate Subscription&quot; across the app. Detailer metadata (ID & email)
+                will be appended automatically.
+              </p>
+
+              <div className="space-y-3 pt-1">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                    <span>Checkout Destination URL</span>
+                    {checkoutUrlData?.isDefault && (
+                      <span className="text-slate-500 lowercase font-normal">
+                        (using system default)
+                      </span>
+                    )}
+                  </label>
+                  <Input
+                    value={checkoutUrlInput}
+                    onChange={(e) => setCheckoutUrlInput(e.target.value)}
+                    placeholder="https://whop.com/checkout/plan_..."
+                    className="bg-slate-950 border-slate-800 text-xs font-mono text-slate-100 placeholder:text-slate-600 focus:border-primary h-10"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <Button
+                    onClick={() =>
+                      updateCheckoutUrlMutation.mutate({ checkoutUrl: checkoutUrlInput })
+                    }
+                    disabled={updateCheckoutUrlMutation.isPending}
+                    className="gap-1.5 rounded-xl bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Save className="size-3.5" />
+                    {updateCheckoutUrlMutation.isPending ? "Saving..." : "Save Checkout Link"}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCheckoutUrlInput("");
+                      updateCheckoutUrlMutation.mutate({ checkoutUrl: "" });
+                    }}
+                    disabled={updateCheckoutUrlMutation.isPending || checkoutUrlData?.isDefault}
+                    className="gap-1.5 rounded-xl border-slate-800 bg-slate-950 text-xs font-semibold text-slate-400 hover:text-white"
+                  >
+                    <RotateCcw className="size-3.5" />
+                    Reset to Default
+                  </Button>
+
+                  {checkoutUrlInput.trim() && (
+                    <a
+                      href={checkoutUrlInput.trim()}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-auto inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                    >
+                      <ExternalLink className="size-3.5" />
+                      Test Link
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Whop Webhook Health & Security */}
             <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6 space-y-4">
               <div className="flex items-center gap-2 font-semibold text-white">
@@ -1618,14 +1733,16 @@ function AdminDashboardPage() {
                   <strong className="text-emerald-400">{metrics?.subscribedCount || 0}</strong>
                 </span>
                 <span>
-                  Whop Checkout:{" "}
+                  Active Checkout:{" "}
                   <a
-                    href="https://whop.com/checkout/plan_IrzVc4vCnCiQ1"
+                    href={
+                      checkoutUrlData?.checkoutUrl || "https://whop.com/checkout/plan_IrzVc4vCnCiQ1"
+                    }
                     target="_blank"
                     rel="noreferrer"
                     className="text-primary hover:underline"
                   >
-                    Plan Link
+                    Launch Link
                   </a>
                 </span>
               </div>

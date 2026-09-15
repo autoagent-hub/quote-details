@@ -332,7 +332,7 @@ function QuoteForm() {
 
       toast.success(
         isTest
-          ? "Test request sent — check your Telegram."
+          ? "Test request sent — check your alert notifications."
           : "Request sent! They'll reach out shortly.",
       );
       setDone(true);
@@ -434,7 +434,7 @@ function QuoteForm() {
               <div className="min-w-0">
                 <span className="font-bold text-amber-300">Sandbox Test Mode</span>
                 <p className="text-[10px] text-slate-300 truncate">
-                  Quotes sent here trigger a test Telegram alert marked [TEST].
+                  Quotes sent here generate a sample lead alert marked [TEST].
                 </p>
               </div>
             </div>
@@ -452,7 +452,7 @@ function QuoteForm() {
                 if (packages.length > 0) {
                   setPackageKey(packages[0].key);
                 }
-                setNotes("Testing Telegram bot alert notification from Detailr.");
+                setNotes("Testing quote request notification from Detailr.");
                 toast.success(
                   "Sample car & customer details filled! Review estimate below and submit to test.",
                 );
@@ -766,7 +766,7 @@ function QuoteForm() {
         steps={[
           "Calculating vehicle modifiers...",
           "Applying selected service packages...",
-          "Delivering instant Telegram alert...",
+          "Notifying shop team instantly...",
         ]}
       />
 

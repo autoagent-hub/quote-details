@@ -10,11 +10,32 @@ import { getAdminClient } from "@/lib/admin.server";
 export const getUpgradeCheckout = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const checkoutUrl = process.env["WHOP_CHECKOUT_URL"] ?? DEFAULT_CHECKOUT_URL;
+    let baseUrl = process.env["WHOP_CHECKOUT_URL"] ?? DEFAULT_CHECKOUT_URL;
+    const admin = getAdminClient();
+    if (admin) {
+      try {
+        const { data: user } = await admin.auth.admin.getUserById(
+          "3c7f1a25-615e-4cfc-9c23-a049bafe9337",
+        );
+        const customUrl = user?.user?.user_metadata?.["custom_checkout_url"] as string | undefined;
+        if (customUrl && customUrl.trim()) {
+          baseUrl = customUrl.trim();
+        }
+      } catch {
+        // Fallback to default
+      }
+    }
+
     const appUrl = process.env["PUBLIC_APP_URL"] ?? DEFAULT_APP_URL;
 
     const { data } = await context.supabase.auth.getUser();
-    const url = new URL(checkoutUrl);
+    let url: URL;
+    try {
+      url = new URL(baseUrl);
+    } catch {
+      url = new URL(DEFAULT_CHECKOUT_URL);
+    }
+
     url.searchParams.set("metadata[user_id]", context.userId);
     url.searchParams.set("d2c", "true");
     url.searchParams.set("redirect_url", `${appUrl.replace(/\/$/, "")}/upgrade?checkout=success`);
