@@ -145,6 +145,49 @@ const testimonials = [
   },
 ];
 
+const homepageFaqs = [
+  {
+    question: "What is Detailr and how does it help mobile auto detailers?",
+    answer:
+      "Detailr (detailr.online) is instant quote software built specifically for mobile car detailers. It allows customers to calculate instant detailing estimates directly on your website or social media bio link and alerts you instantly in Telegram with customer details and photos.",
+    keywordsLink: "https://detailr.online/keywords.txt",
+  },
+  {
+    question: "How do instant quotes work for car detailing packages?",
+    answer:
+      "Customers select their vehicle size (Sedan, SUV, Truck/Van), choose a detailing package (e.g. Express Clean, Full Interior & Exterior, Ceramic Coating), select add-ons (pet hair removal, stain extraction), and get an exact calculated price instantly.",
+  },
+  {
+    question: "How fast do I receive lead alerts when a customer requests a quote?",
+    answer:
+      "Instantly! As soon as a customer submits a quote request, a Telegram notification lands on your phone in under 2 seconds with customer phone, vehicle specs, chosen services, estimate total, and vehicle photos.",
+  },
+  {
+    question: "Does Detailr charge commission fees on my detailing jobs?",
+    answer:
+      "No! Detailr is a flat $9.99/month with zero commission fees and unlimited leads. You keep 100% of your earnings from all detailing jobs.",
+  },
+  {
+    question: "How do I share my quote calculator with customers?",
+    answer:
+      "When you sign up, you receive a dedicated branded link (e.g. detailr.online/your-shop). You can place this link directly in your Instagram bio, Google Business Profile, Facebook page, or truck decals.",
+  },
+];
+
+const faqJsonLd = {
+  "@type": "FAQPage",
+  mainEntity: homepageFaqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text:
+        faq.answer +
+        (faq.keywordsLink ? ` View our official SEO keyword index at ${faq.keywordsLink}.` : ""),
+    },
+  })),
+};
+
 function Landing() {
   // Interactive Calculator State
   const [vehicle, setVehicle] = useState<"sedan" | "suv" | "truck">("suv");
@@ -187,6 +230,7 @@ function Landing() {
           "detailr online",
         ]}
         ogImage="https://detailr.online/og-image.jpg"
+        additionalJsonLd={faqJsonLd}
       />
       {/* Floating Modern Header */}
       <header className="sticky top-3 z-50 px-4">
@@ -872,6 +916,65 @@ function Landing() {
               </CardContent>
             </Card>
           </motion.div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="border-t border-border/80 bg-surface/30 py-20">
+        <div className="mx-auto max-w-4xl px-5">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
+          >
+            <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
+              Frequently Asked Questions
+            </span>
+            <h2 className="mt-3 font-display text-3xl font-bold text-foreground sm:text-4xl">
+              Everything You Need to Know About Detailr
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Learn how mobile detailers use instant quotes to capture more leads.
+            </p>
+          </motion.div>
+
+          <div className="space-y-4">
+            {homepageFaqs.map((faq, idx) => (
+              <motion.div
+                key={faq.question}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-30px" }}
+                transition={{ duration: 0.4, delay: idx * 0.08 }}
+                className="rounded-2xl border border-border/80 bg-card p-6 shadow-2xs"
+              >
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                    ?
+                  </span>
+                  {faq.question}
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground pl-8">
+                  {faq.answer}
+                </p>
+                {faq.keywordsLink && (
+                  <div className="mt-3 pl-8">
+                    <a
+                      href={faq.keywordsLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                    >
+                      <span>Explore detailr.online SEO keywords index</span>
+                      <ExternalLink className="size-3" />
+                    </a>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 

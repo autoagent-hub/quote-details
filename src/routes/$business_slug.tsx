@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Camera,
   Car,
@@ -10,6 +11,11 @@ import {
   Loader2,
   X,
   AlertOctagon,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -178,10 +184,21 @@ function QuoteForm() {
   const [countryChoice, setCountryChoice] = useState<string | null>(null);
 
   const [notes, setNotes] = useState("");
+  const [activeStep, setActiveStep] = useState<number>(1);
+  const [nameTouched, setNameTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [isSuspended, setIsSuspended] = useState(false);
   const [suspensionReason, setSuspensionReason] = useState("");
+
+  const digitsOnly = phone.replace(/\D/g, "");
+  const isNameValid = name.trim().length >= 2;
+  const isPhoneValid = digitsOnly.length >= 7;
+
+  const nameError = nameTouched && !isNameValid ? "Full name must be at least 2 characters." : null;
+  const phoneError =
+    phoneTouched && !isPhoneValid ? "Phone number must contain at least 7 digits." : null;
 
   // Record link visit and activate 7-day trial on first customer visit
   useEffect(() => {
@@ -541,245 +558,522 @@ function QuoteForm() {
         </div>
       </header>
 
-      <form onSubmit={submit} className="mx-auto max-w-md space-y-7 px-5 py-6">
-        <section>
-          <StepLabel step={1} title="Your vehicle" />
-          <div className="mt-3 space-y-2.5">
-            {categories.map((c) => {
-              const active = categoryKey === c.key;
-              return (
-                <button
-                  key={c.key}
-                  type="button"
-                  onClick={() => setCategoryKey(c.key)}
-                  aria-pressed={active}
-                  className={`flex w-full cursor-pointer items-center justify-between rounded-xl border p-4 text-left transition-all ${
-                    active
-                      ? "border-primary bg-accent shadow-card"
-                      : "border-border bg-card hover:border-input"
-                  }`}
-                >
-                  <span>
-                    <span className="block text-sm font-semibold">{c.label}</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{c.sub}</span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    {c.uplift !== 0 && (
-                      <span className="font-display text-sm font-bold text-muted-foreground">
-                        {c.uplift > 0 ? "+" : "−"}
-                        {money(Math.abs(c.uplift), currency)}
-                      </span>
-                    )}
-                    {active && <Check className="size-4 text-primary" />}
-                  </span>
-                </button>
-              );
-            })}
+      <form onSubmit={submit} className="mx-auto max-w-md px-5 py-6 space-y-6">
+        {/* Visual Progress Stepper Header */}
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
+          <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground mb-2">
+            <span>Step {activeStep} of 4</span>
+            <span className="font-mono text-primary font-bold">
+              {Math.round((activeStep / 4) * 100)}% Completed
+            </span>
           </div>
-          <div className="mt-3 space-y-1.5">
-            <Label htmlFor="vehicle_desc">Year, make & model (optional)</Label>
-            <Input
-              id="vehicle_desc"
-              value={vehicleDesc}
-              onChange={(e) => setVehicleDesc(e.target.value)}
-              placeholder="2023 Mercedes GLE"
+          <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+            <motion.div
+              className="h-full bg-primary rounded-full"
+              initial={false}
+              animate={{ width: `${(activeStep / 4) * 100}%` }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
             />
           </div>
-        </section>
 
-        <section>
-          <StepLabel step={2} title="Service" />
-          <div className="mt-3 space-y-2.5">
-            {packages.map((p) => {
-              const active = packageKey === p.key;
+          {/* Stepper Navigation Buttons */}
+          <div className="mt-3 grid grid-cols-4 gap-1.5 text-center text-[11px] font-bold">
+            {[
+              { id: 1, label: "Vehicle", icon: Car, isDone: !!categoryKey },
+              { id: 2, label: "Services", icon: Sparkles, isDone: !!packageKey },
+              { id: 3, label: "Photos", icon: Camera, isDone: photos.length > 0 },
+              { id: 4, label: "Contact", icon: User, isDone: isNameValid && isPhoneValid },
+            ].map((s) => {
+              const isActive = activeStep === s.id;
+              const IconComp = s.icon;
               return (
                 <button
-                  key={p.key}
+                  key={s.id}
                   type="button"
-                  onClick={() => setPackageKey(p.key)}
-                  aria-pressed={active}
-                  className={`flex w-full cursor-pointer items-center justify-between rounded-xl border p-4 text-left transition-all ${
-                    active
-                      ? "border-primary bg-accent shadow-card"
-                      : "border-border bg-card hover:border-input"
+                  onClick={() => setActiveStep(s.id)}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : s.isDone
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        : "bg-secondary/60 text-muted-foreground hover:bg-secondary"
                   }`}
                 >
-                  <span>
-                    <span className="block text-sm font-semibold">{p.label}</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{p.sub}</span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="font-display text-base font-bold">
-                      {money(p.price, currency)}
-                    </span>
-                    {active && <Check className="size-4 text-primary" />}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    {s.isDone && !isActive ? (
+                      <Check className="size-3.5 text-emerald-600 dark:text-emerald-400 font-bold" />
+                    ) : (
+                      <IconComp className="size-3.5" />
+                    )}
+                  </div>
+                  <span className="truncate max-w-full">{s.label}</span>
                 </button>
               );
             })}
           </div>
-        </section>
+        </div>
 
-        <section>
-          <StepLabel step={3} title="Add-ons" />
-          <div className="mt-3 space-y-2.5">
-            {addonList.map((a) => {
-              const active = addons.includes(a.key);
-              return (
-                <label
-                  key={a.key}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${
-                    active
-                      ? "border-primary bg-accent shadow-card"
-                      : "border-border bg-card hover:border-input"
-                  }`}
-                >
-                  <Checkbox checked={active} onCheckedChange={() => toggleAddon(a.key)} />
-                  <span className="flex-1">
-                    <span className="block text-sm font-semibold">{a.label}</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{a.sub}</span>
-                  </span>
-                  <span className="font-display text-sm font-bold text-primary">
-                    +{money(a.price, currency)}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </section>
-
-        {profile.allow_photos !== false && (
-          <section>
-            <StepLabel step={4} title="Photos (optional)" />
-            <p className="mt-2 text-sm text-muted-foreground">
-              Snap the messiest spots so the quote is accurate. Up to {MAX_PHOTOS}.
-            </p>
-            <div className="mt-3 grid grid-cols-3 gap-2.5">
-              {photos.map((file, i) => (
-                <div
-                  key={`${file.name}-${i}`}
-                  className="relative aspect-square overflow-hidden rounded-xl border border-border bg-card"
-                >
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={`Vehicle photo ${i + 1}`}
-                    className="size-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    aria-label="Remove photo"
-                    onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="absolute top-1.5 right-1.5 flex size-6 cursor-pointer items-center justify-center rounded-full bg-foreground/80 text-background"
-                  >
-                    <X className="size-3.5" />
-                  </button>
+        {/* Animated Page Transitions for Steps */}
+        <AnimatePresence mode="wait">
+          {activeStep === 1 && (
+            <motion.div
+              key="step-1"
+              initial={{ opacity: 0, x: 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -18 }}
+              transition={{ duration: 0.22, ease: "easeInOut" }}
+              className="space-y-5"
+            >
+              <section>
+                <StepLabel step={1} title="Select Your Vehicle" />
+                <div className="mt-3 space-y-2.5">
+                  {categories.map((c) => {
+                    const active = categoryKey === c.key;
+                    return (
+                      <button
+                        key={c.key}
+                        type="button"
+                        onClick={() => {
+                          setCategoryKey(c.key);
+                        }}
+                        aria-pressed={active}
+                        className={`flex w-full cursor-pointer items-center justify-between rounded-xl border p-4 text-left transition-all ${
+                          active
+                            ? "border-primary bg-accent shadow-card"
+                            : "border-border bg-card hover:border-input"
+                        }`}
+                      >
+                        <span>
+                          <span className="block text-sm font-semibold">{c.label}</span>
+                          <span className="mt-0.5 block text-xs text-muted-foreground">
+                            {c.sub}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          {c.uplift !== 0 && (
+                            <span className="font-display text-sm font-bold text-muted-foreground">
+                              {c.uplift > 0 ? "+" : "−"}
+                              {money(Math.abs(c.uplift), currency)}
+                            </span>
+                          )}
+                          {active && <Check className="size-4 text-primary" />}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
-              {photos.length < MAX_PHOTOS && (
-                <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-input bg-card text-muted-foreground hover:border-primary hover:text-primary">
-                  <Camera className="size-5" />
-                  <span className="text-[11px] font-medium">Add photo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => addPhotos(e.target.files)}
+                <div className="mt-4 space-y-1.5">
+                  <Label htmlFor="vehicle_desc">Year, make & model (optional)</Label>
+                  <Input
+                    id="vehicle_desc"
+                    value={vehicleDesc}
+                    onChange={(e) => setVehicleDesc(e.target.value)}
+                    placeholder="e.g. 2024 Tesla Model Y"
                   />
-                </label>
-              )}
-            </div>
-          </section>
-        )}
+                </div>
+              </section>
 
-        <section>
-          <StepLabel step={5} title="Your estimate" />
-          <div className="gradient-ink mt-3 rounded-xl p-5 text-primary-foreground shadow-card">
-            <p className="text-xs tracking-widest uppercase opacity-70">Estimated total</p>
-            <p className="mt-1 font-display text-4xl font-bold">{money(quote.total, currency)}</p>
-            <div className="mt-3 space-y-1 text-xs opacity-80">
-              {chosenPackage ? (
-                <p>
-                  {chosenPackage.label} ({chosenCategory?.label}) —{" "}
-                  {money(quote.servicePrice, currency)}
-                </p>
-              ) : (
-                <p>Pick a vehicle and service to see your price.</p>
-              )}
-              {addons.map((key) => {
-                const a = addonList.find((item) => item.key === key);
-                return (
-                  <p key={key}>
-                    {a?.label ?? key} — {money(Number(a?.price) || 0, currency)}
-                  </p>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <StepLabel step={6} title="Where should we reach you?" />
-          <div className="mt-3 space-y-4 rounded-xl border border-border bg-card p-5">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Full name</Label>
-              <Input
-                id="name"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Sarah Williams"
-                autoComplete="name"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">Phone number</Label>
-              <div className="flex gap-2">
-                <Select value={selectedCountry.code} onValueChange={setCountryChoice}>
-                  <SelectTrigger className="w-[128px] shrink-0" aria-label="Country code">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {COUNTRIES.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
-                        <span className="mr-1">{c.flag}</span>
-                        {c.dial}
-                        <span className="ml-1 text-muted-foreground">{c.code}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  id="phone"
-                  required
-                  type="tel"
-                  inputMode="tel"
-                  className="flex-1"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="555 123 4567"
-                  autoComplete="tel-national"
-                />
+              <div className="pt-2">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!categoryKey && categories[0]) {
+                      setCategoryKey(categories[0].key);
+                    }
+                    setActiveStep(2);
+                  }}
+                  className="w-full justify-between font-bold h-12 text-sm shadow-sm cursor-pointer"
+                >
+                  <span>Continue to Packages</span>
+                  <ChevronRight className="size-4" />
+                </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                We'll text or call you at {selectedCountry.dial} {phone.trim() || "…"}
-              </p>
-            </div>
+            </motion.div>
+          )}
 
-            <div className="space-y-1.5">
-              <Label htmlFor="notes">Notes (optional)</Label>
-              <Textarea
-                id="notes"
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Dog hair in the back, kids spilled juice on the second row…"
-              />
-            </div>
-          </div>
-        </section>
+          {activeStep === 2 && (
+            <motion.div
+              key="step-2"
+              initial={{ opacity: 0, x: 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -18 }}
+              transition={{ duration: 0.22, ease: "easeInOut" }}
+              className="space-y-6"
+            >
+              <section>
+                <StepLabel step={2} title="Select Service Package" />
+                {!packageKey && (
+                  <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5">
+                    <AlertCircle className="size-3.5 shrink-0" />
+                    Please select a package to calculate your instant estimate.
+                  </p>
+                )}
+                <div className="mt-3 space-y-2.5">
+                  {packages.map((p) => {
+                    const active = packageKey === p.key;
+                    return (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() => setPackageKey(p.key)}
+                        aria-pressed={active}
+                        className={`flex w-full cursor-pointer items-center justify-between rounded-xl border p-4 text-left transition-all ${
+                          active
+                            ? "border-primary bg-accent shadow-card"
+                            : "border-border bg-card hover:border-input"
+                        }`}
+                      >
+                        <span>
+                          <span className="block text-sm font-semibold">{p.label}</span>
+                          <span className="mt-0.5 block text-xs text-muted-foreground">
+                            {p.sub}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className="font-display text-base font-bold">
+                            {money(p.price, currency)}
+                          </span>
+                          {active && <Check className="size-4 text-primary" />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
 
-        <div className="pt-2 pb-6 flex flex-col items-center justify-center gap-1">
+              <section>
+                <StepLabel step={3} title="Optional Service Add-ons" />
+                <div className="mt-3 space-y-2.5">
+                  {addonList.map((a) => {
+                    const active = addons.includes(a.key);
+                    return (
+                      <label
+                        key={a.key}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${
+                          active
+                            ? "border-primary bg-accent shadow-card"
+                            : "border-border bg-card hover:border-input"
+                        }`}
+                      >
+                        <Checkbox checked={active} onCheckedChange={() => toggleAddon(a.key)} />
+                        <span className="flex-1">
+                          <span className="block text-sm font-semibold">{a.label}</span>
+                          <span className="mt-0.5 block text-xs text-muted-foreground">
+                            {a.sub}
+                          </span>
+                        </span>
+                        <span className="font-display text-sm font-bold text-primary">
+                          +{money(a.price, currency)}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <div className="flex gap-2.5 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setActiveStep(1)}
+                  className="gap-1 font-semibold h-12 cursor-pointer"
+                >
+                  <ChevronLeft className="size-4" /> Back
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!packageKey && packages[0]) {
+                      setPackageKey(packages[0].key);
+                    }
+                    setActiveStep(3);
+                  }}
+                  className="flex-1 justify-between font-bold h-12 text-sm shadow-sm cursor-pointer"
+                >
+                  <span>Continue to Photos</span>
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {activeStep === 3 && (
+            <motion.div
+              key="step-3"
+              initial={{ opacity: 0, x: 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -18 }}
+              transition={{ duration: 0.22, ease: "easeInOut" }}
+              className="space-y-6"
+            >
+              {profile.allow_photos !== false ? (
+                <section>
+                  <StepLabel step={4} title="Vehicle Photos (Optional)" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Snap the messiest spots so the detailer gives you an accurate service quote. Up
+                    to {MAX_PHOTOS}.
+                  </p>
+                  <div className="mt-3 grid grid-cols-3 gap-2.5">
+                    {photos.map((file, i) => (
+                      <div
+                        key={`${file.name}-${i}`}
+                        className="relative aspect-square overflow-hidden rounded-xl border border-border bg-card"
+                      >
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Vehicle photo ${i + 1}`}
+                          className="size-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Remove photo"
+                          onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="absolute top-1.5 right-1.5 flex size-6 cursor-pointer items-center justify-center rounded-full bg-foreground/80 text-background"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    {photos.length < MAX_PHOTOS && (
+                      <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-input bg-card text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                        <Camera className="size-5" />
+                        <span className="text-[11px] font-medium">Add photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => addPhotos(e.target.files)}
+                        />
+                      </label>
+                    )}
+                  </div>
+                </section>
+              ) : (
+                <div className="rounded-xl border border-border bg-card p-6 text-center space-y-2">
+                  <Camera className="size-8 mx-auto text-muted-foreground/60" />
+                  <h3 className="text-sm font-bold text-foreground">Photo Upload Skipped</h3>
+                  <p className="text-xs text-muted-foreground">
+                    This detailing shop doesn't require photo uploads for estimates.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-2.5 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setActiveStep(2)}
+                  className="gap-1 font-semibold h-12 cursor-pointer"
+                >
+                  <ChevronLeft className="size-4" /> Back
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setActiveStep(4)}
+                  className="flex-1 justify-between font-bold h-12 text-sm shadow-sm cursor-pointer"
+                >
+                  <span>Continue to Contact Info</span>
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {activeStep === 4 && (
+            <motion.div
+              key="step-4"
+              initial={{ opacity: 0, x: 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -18 }}
+              transition={{ duration: 0.22, ease: "easeInOut" }}
+              className="space-y-6"
+            >
+              {/* Estimate Summary Box */}
+              <section>
+                <StepLabel step={5} title="Your Calculated Estimate" />
+                <div className="gradient-ink mt-3 rounded-xl p-5 text-primary-foreground shadow-card">
+                  <p className="text-xs tracking-widest uppercase opacity-70">Estimated total</p>
+                  <p className="mt-1 font-display text-4xl font-bold">
+                    {money(quote.total, currency)}
+                  </p>
+                  <div className="mt-3 space-y-1 text-xs opacity-80">
+                    {chosenPackage ? (
+                      <p>
+                        {chosenPackage.label} ({chosenCategory?.label}) —{" "}
+                        {money(quote.servicePrice, currency)}
+                      </p>
+                    ) : (
+                      <p>Pick a vehicle and service to see your price.</p>
+                    )}
+                    {addons.map((key) => {
+                      const a = addonList.find((item) => item.key === key);
+                      return (
+                        <p key={key}>
+                          {a?.label ?? key} — {money(Number(a?.price) || 0, currency)}
+                        </p>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+
+              {/* Contact Details Form with Real-Time Validation */}
+              <section>
+                <StepLabel step={6} title="Where Should We Send Your Quote?" />
+                <div className="mt-3 space-y-4 rounded-xl border border-border bg-card p-5 shadow-2xs">
+                  {/* Name Input with Real-time Validation */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="name" className="font-semibold">
+                        Full Name *
+                      </Label>
+                      {nameTouched && (
+                        <span
+                          className={`text-[11px] font-bold flex items-center gap-1 ${isNameValid ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}
+                        >
+                          {isNameValid ? (
+                            <CheckCircle2 className="size-3" />
+                          ) : (
+                            <AlertCircle className="size-3" />
+                          )}
+                          {isNameValid ? "Valid name" : "Required"}
+                        </span>
+                      )}
+                    </div>
+                    <Input
+                      id="name"
+                      required
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        if (!nameTouched) setNameTouched(true);
+                      }}
+                      onBlur={() => setNameTouched(true)}
+                      placeholder="e.g. Sarah Williams"
+                      autoComplete="name"
+                      className={`transition-colors ${
+                        nameTouched
+                          ? isNameValid
+                            ? "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/10"
+                            : "border-red-500 focus-visible:ring-red-500 bg-red-50/10"
+                          : ""
+                      }`}
+                    />
+                    {nameTouched && nameError && (
+                      <p className="text-xs text-red-500 font-medium flex items-center gap-1 mt-1">
+                        <AlertCircle className="size-3.5 shrink-0" />
+                        {nameError}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Phone Input with Real-time Validation */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="phone" className="font-semibold">
+                        Phone Number *
+                      </Label>
+                      {phoneTouched && (
+                        <span
+                          className={`text-[11px] font-bold flex items-center gap-1 ${isPhoneValid ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}
+                        >
+                          {isPhoneValid ? (
+                            <CheckCircle2 className="size-3" />
+                          ) : (
+                            <AlertCircle className="size-3" />
+                          )}
+                          {isPhoneValid ? "Valid phone" : "Required"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Select value={selectedCountry.code} onValueChange={setCountryChoice}>
+                        <SelectTrigger className="w-[128px] shrink-0" aria-label="Country code">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-72">
+                          {COUNTRIES.map((c) => (
+                            <SelectItem key={c.code} value={c.code}>
+                              <span className="mr-1">{c.flag}</span>
+                              {c.dial}
+                              <span className="ml-1 text-muted-foreground">{c.code}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        id="phone"
+                        required
+                        type="tel"
+                        inputMode="tel"
+                        className={`flex-1 transition-colors ${
+                          phoneTouched
+                            ? isPhoneValid
+                              ? "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/10"
+                              : "border-red-500 focus-visible:ring-red-500 bg-red-50/10"
+                            : ""
+                        }`}
+                        value={phone}
+                        onChange={(e) => {
+                          setPhone(e.target.value);
+                          if (!phoneTouched) setPhoneTouched(true);
+                        }}
+                        onBlur={() => setPhoneTouched(true)}
+                        placeholder="555 123 4567"
+                        autoComplete="tel-national"
+                      />
+                    </div>
+                    {phoneTouched && phoneError ? (
+                      <p className="text-xs text-red-500 font-medium flex items-center gap-1 mt-1">
+                        <AlertCircle className="size-3.5 shrink-0" />
+                        {phoneError}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {profile.business_name} will send details to {selectedCountry.dial}{" "}
+                        {phone.trim() || "…"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="notes">Notes or Special Requests (optional)</Label>
+                    <Textarea
+                      id="notes"
+                      rows={3}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Dog hair in back seat, spilled coffee on passenger side..."
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <div className="flex gap-2.5 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setActiveStep(3)}
+                  className="gap-1 font-semibold h-12 cursor-pointer"
+                >
+                  <ChevronLeft className="size-4" /> Back
+                </Button>
+                <Button
+                  type="submit"
+                  variant="hero"
+                  disabled={!ready || submitting}
+                  className="flex-1 font-bold h-12 text-sm shadow-lift cursor-pointer"
+                >
+                  {submitting && <Loader2 className="size-4 animate-spin" />}
+                  Request Instant Quote
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="pt-4 pb-6 flex flex-col items-center justify-center gap-1">
           <QuoteFlowLogo
             size="xs"
             linkToHome
