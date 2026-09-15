@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureWelcomeEmail } from "@/lib/auth-codes.functions";
 
 export const Route = createFileRoute("/auth/callback")({
   ssr: false,
@@ -12,7 +13,10 @@ function AuthCallbackPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      if (session?.user) {
+        void ensureWelcomeEmail({
+          data: { userId: session.user.id, email: session.user.email },
+        }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
         navigate({ to: "/dashboard" });
       } else {
         navigate({ to: "/auth", search: { mode: "signin" } });

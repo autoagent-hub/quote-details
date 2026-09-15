@@ -251,48 +251,27 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
       const googleClientId =
         win?.__PUBLIC_CONFIG__?.VITE_GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-      if (googleClientId && win?.google?.accounts?.id) {
-        // Direct Client-Side Google Identity flow (remains strictly on detailr.online)
-        win.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response: { credential?: string }) => {
-            if (!response.credential) {
-              setGoogleLoading(false);
-              return;
-            }
-            try {
-              const { error } = await supabase.auth.signInWithIdToken({
-                provider: "google",
-                token: response.credential,
-              });
-              if (error) throw error;
-              toast.success("Logged in with Google!");
-              navigate({ to: "/dashboard" });
-            } catch (err: unknown) {
-              const e = err as Error;
-              toast.error(e.message || "Google ID Token authentication failed");
-              setGoogleLoading(false);
-            }
-          },
-        });
-        win.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // Fallback to standard OAuth redirect if prompt is suppressed
-            void supabase.auth.signInWithOAuth({
-              provider: "google",
-              options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-              },
-            });
-          }
-        });
+      if (googleClientId && typeof window !== "undefined") {
+        const callbackUrl = `${window.location.origin}/auth/v1/callback`;
+        const googleAuthUrl =
+          `https://accounts.google.com/o/oauth2/v2/auth?` +
+          new URLSearchParams({
+            client_id: googleClientId,
+            redirect_uri: callbackUrl,
+            response_type: "code",
+            scope: "openid email profile",
+            prompt: "select_account",
+            access_type: "online",
+          }).toString();
+
+        window.location.href = googleAuthUrl;
         return;
       }
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/v1/callback`,
         },
       });
       if (error) throw error;

@@ -298,3 +298,58 @@ export const verifyRecoveryCode = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+export const ensureWelcomeEmail = createServerFn({ method: "POST" })
+  .inputValidator((input: { email?: string; userId?: string }) => input)
+  .handler(async ({ data }) => {
+    const { getAdminClient } = await import("@/lib/admin.server");
+    const admin = getAdminClient();
+    if (!admin) return { ok: false, reason: "No admin client available" };
+
+    let userEmail = data.email?.trim().toLowerCase();
+    const userId = data.userId;
+    let userMetadata: Record<string, unknown> = {};
+
+    if (userId) {
+      const { data: userData, error: userErr } = await admin.auth.admin.getUserById(userId);
+      if (!userErr && userData?.user) {
+        userEmail = userEmail || userData.user.email?.toLowerCase();
+        userMetadata = (userData.user.user_metadata as Record<string, unknown>) || {};
+      }
+    }
+
+    if (!userEmail) return { ok: false, reason: "No email provided" };
+
+    // Skip if welcome email was already sent to this user
+    if (userMetadata.welcome_email_sent === true) {
+      return { ok: true, sent: false, alreadySent: true };
+    }
+
+    // Dispatch welcome email
+    try {
+      await sendWelcomeEmail(userEmail);
+
+      // Dispatch real-time Telegram notification to Admin for new signups
+      sendAdminTelegramAlert({
+        type: "NEW_SIGNUP",
+        userEmail,
+      }).catch((err) => console.warn("[admin-telegram] Signup alert failed:", err));
+
+      // Update user metadata so welcome email is sent only once
+      if (userId) {
+        await admin.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...userMetadata,
+            welcome_email_sent: true,
+            welcome_email_sent_at: new Date().toISOString(),
+          },
+        });
+      }
+
+      return { ok: true, sent: true };
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.error("[welcome-email] Failed to dispatch welcome email:", e);
+      return { ok: false, error: e.message };
+    }
+  });
