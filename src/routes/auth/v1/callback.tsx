@@ -15,6 +15,21 @@ function AuthV1CallbackPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    let unmounted = false;
+
+    // Listen for auth state changes (e.g. session established from hash or PKCE exchange)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user && !unmounted) {
+        void ensureWelcomeEmail({
+          data: { userId: session.user.id, email: session.user.email },
+        }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
+        toast.success("Successfully signed in with Google!");
+        navigate({ to: "/dashboard" });
+      }
+    });
+
     const handleOAuthCallback = async () => {
       try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -26,26 +41,52 @@ function AuthV1CallbackPage() {
           throw new Error(errorDescription || error || "Google authentication was cancelled");
         }
 
-        // Check hash parameters for direct implicit flow or id_token
+        // 1. Try standard Supabase PKCE code exchange first
+        if (code) {
+          try {
+            const { data: exchangeData, error: exchangeError } =
+              await supabase.auth.exchangeCodeForSession(code);
+            if (!exchangeError && exchangeData?.session?.user) {
+              if (unmounted) return;
+              void ensureWelcomeEmail({
+                data: {
+                  userId: exchangeData.session.user.id,
+                  email: exchangeData.session.user.email,
+                },
+              }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
+              toast.success("Successfully signed in with Google!");
+              navigate({ to: "/dashboard" });
+              return;
+            }
+          } catch (pkceErr) {
+            console.warn("[auth] Supabase code exchange skipped or failed:", pkceErr);
+          }
+        }
+
+        // 2. Check hash parameters for direct implicit flow or id_token
         const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
         const idTokenFromHash = hashParams.get("id_token");
         const accessTokenFromHash = hashParams.get("access_token");
 
         let idToken = idTokenFromHash;
 
+        // 3. If code was not a Supabase code and idToken is missing, try direct Google code exchange
         if (!idToken && code) {
-          const redirectUri = `${window.location.origin}/auth/v1/callback`;
-          const res = await fetch("/api/public/google-callback", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code, redirectUri }),
-          });
+          try {
+            const redirectUri = `${window.location.origin}/auth/v1/callback`;
+            const res = await fetch("/api/public/google-callback", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code, redirectUri }),
+            });
 
-          const data = (await res.json()) as { id_token?: string; error?: string };
-          if (!res.ok || !data.id_token) {
-            throw new Error(data.error || "Failed to exchange Google OAuth code for session token");
+            const data = (await res.json()) as { id_token?: string; error?: string };
+            if (res.ok && data.id_token) {
+              idToken = data.id_token;
+            }
+          } catch (googleCodeErr) {
+            console.warn("[auth] Direct Google code exchange failed:", googleCodeErr);
           }
-          idToken = data.id_token;
         }
 
         if (idToken) {
@@ -60,6 +101,7 @@ function AuthV1CallbackPage() {
           }
 
           if (authData?.user) {
+            if (unmounted) return;
             void ensureWelcomeEmail({
               data: { userId: authData.user.id, email: authData.user.email },
             }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
@@ -70,30 +112,48 @@ function AuthV1CallbackPage() {
           return;
         }
 
-        // Fallback: Check existing session if available
+        // 4. Fallback: Check existing active session
         const {
           data: { session },
         } = await supabase.auth.getSession();
         if (session?.user) {
+          if (unmounted) return;
           void ensureWelcomeEmail({
             data: { userId: session.user.id, email: session.user.email },
           }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
           navigate({ to: "/dashboard" });
-        } else {
-          navigate({ to: "/login" });
+          return;
         }
+
+        // Give a short 1-second grace window for background token parsing before redirecting to login
+        setTimeout(async () => {
+          if (unmounted) return;
+          const { data: retrySession } = await supabase.auth.getSession();
+          if (retrySession?.session?.user) {
+            navigate({ to: "/dashboard" });
+          } else {
+            navigate({ to: "/login" });
+          }
+        }, 1200);
       } catch (err: unknown) {
         const e = err as Error;
         console.error("Direct Google OAuth callback error:", e);
-        setErrorMsg(e.message || "Failed to complete Google authentication");
-        toast.error(e.message || "Failed to sign in with Google");
-        setTimeout(() => {
-          navigate({ to: "/login" });
-        }, 3000);
+        if (!unmounted) {
+          setErrorMsg(e.message || "Failed to complete Google authentication");
+          toast.error(e.message || "Failed to sign in with Google");
+          setTimeout(() => {
+            if (!unmounted) navigate({ to: "/login" });
+          }, 2500);
+        }
       }
     };
 
     void handleOAuthCallback();
+
+    return () => {
+      unmounted = true;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   return (

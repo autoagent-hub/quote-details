@@ -12,16 +12,60 @@ function AuthCallbackPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
+    let unmounted = false;
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user && !unmounted) {
         void ensureWelcomeEmail({
           data: { userId: session.user.id, email: session.user.email },
         }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
         navigate({ to: "/dashboard" });
-      } else {
-        navigate({ to: "/auth", search: { mode: "signin" } });
       }
     });
+
+    const checkSession = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get("code");
+      if (code) {
+        try {
+          await supabase.auth.exchangeCodeForSession(code);
+        } catch (err) {
+          console.warn("OAuth code exchange:", err);
+        }
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.user) {
+        if (!unmounted) {
+          void ensureWelcomeEmail({
+            data: { userId: session.user.id, email: session.user.email },
+          }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
+          navigate({ to: "/dashboard" });
+        }
+      } else {
+        setTimeout(async () => {
+          if (unmounted) return;
+          const { data: retry } = await supabase.auth.getSession();
+          if (retry?.session?.user) {
+            navigate({ to: "/dashboard" });
+          } else {
+            navigate({ to: "/login" });
+          }
+        }, 1000);
+      }
+    };
+
+    void checkSession();
+
+    return () => {
+      unmounted = true;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   return (
