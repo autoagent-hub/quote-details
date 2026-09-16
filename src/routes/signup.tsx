@@ -13,17 +13,17 @@ export const Route = createFileRoute("/signup")({
   },
   head: () => ({
     meta: [
-      { title: "Create Account — Detailr Free Trial (detailr.online)" },
+      { title: "Start Free Trial — Detailr Online" },
       {
         name: "description",
         content:
-          "Start your 7-day free trial of Detailr on detailr.online. Instant web quotes and Telegram alerts for mobile detailers.",
+          "Start your 7-day free trial of Detailr Online. Instant web quotes and Telegram alerts for mobile detailers.",
       },
-      { property: "og:title", content: "Create Account — Detailr (detailr.online)" },
+      { property: "og:title", content: "Start Free Trial — Detailr Online" },
       {
         property: "og:description",
         content:
-          "7-day free trial. Start closing detailing leads with instant pricing on detailr.online.",
+          "7-day free trial. Start closing detailing leads with instant pricing on Detailr Online.",
       },
     ],
   }),

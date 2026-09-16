@@ -13,13 +13,13 @@ export const Route = createFileRoute("/login")({
   },
   head: () => ({
     meta: [
-      { title: "Log In — Detailr (detailr.online)" },
+      { title: "Log In — Detailr Online" },
       {
         name: "description",
         content:
-          "Sign in to your Detailr mobile detailer dashboard to manage pricing, quotes, and alerts on detailr.online.",
+          "Sign in to your Detailr Online mobile detailer dashboard to manage pricing, quotes, and alerts.",
       },
-      { property: "og:title", content: "Log In — Detailr (detailr.online)" },
+      { property: "og:title", content: "Log In — Detailr Online" },
       { property: "og:description", content: "Access your Detailr mobile detailer dashboard." },
     ],
   }),

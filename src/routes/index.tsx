@@ -29,13 +29,13 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { name: "google-site-verification", content: "KcgCWTCmUyxEVd1lRMq6xabTrWkbMo0rsUFleV8q2m0" },
-      { title: "Detailr — Instant Quotes & Telegram Alerts for Mobile Detailers (detailr.online)" },
+      { title: "Detailr Online — Instant Quotes & Telegram Alerts for Mobile Detailers" },
       {
         name: "description",
         content:
-          "Never lose a detailing lead while mid-wash. Detailr (detailr.online) sends customers an instant price estimate and pings you on Telegram the second a quote lands.",
+          "Never lose a detailing lead while mid-wash. Detailr Online sends customers an instant price estimate and pings you on Telegram the second a quote lands.",
       },
-      { property: "og:site_name", content: "Detailr" },
+      { property: "og:site_name", content: "Detailr Online" },
       {
         property: "og:title",
         content: "Detailr — Instant Quotes & Telegram Alerts for Mobile Detailers (detailr.online)",

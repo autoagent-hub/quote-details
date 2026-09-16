@@ -106,23 +106,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "mobile auto detailing software, car detailing quote calculator, detailer instant estimate, telegram lead alerts, auto detailing CRM, ceramic coating quote builder, mobile detailer booking, detailr online",
       },
-      { name: "author", content: "Detailr" },
+      { name: "author", content: "Detailr Online" },
       { name: "google-site-verification", content: "KcgCWTCmUyxEVd1lRMq6xabTrWkbMo0rsUFleV8q2m0" },
       {
         name: "robots",
         content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
       },
       { name: "theme-color", content: "#0284c7" },
-      { name: "application-name", content: "Detailr" },
-      { name: "apple-mobile-web-app-title", content: "Detailr" },
+      { name: "application-name", content: "Detailr Online" },
+      { name: "apple-mobile-web-app-title", content: "Detailr Online" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
 
       // Open Graph / Facebook / LinkedIn
-      { property: "og:site_name", content: "Detailr" },
+      { property: "og:site_name", content: "Detailr Online" },
       {
         property: "og:title",
-        content: "Detailr — Instant Mobile Detailing Quotes & Telegram Alerts",
+        content: "Detailr Online — Instant Mobile Detailing Quotes & Telegram Alerts",
       },
       {
         property: "og:description",
@@ -140,7 +140,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image:height", content: "630" },
       {
         property: "og:image:alt",
-        content: "Detailr — Instant Quotes & Telegram Alerts for Mobile Auto Detailers",
+        content: "Detailr Online — Instant Quotes & Telegram Alerts for Mobile Auto Detailers",
       },
 
       // Twitter Cards
@@ -149,7 +149,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:creator", content: "@detailronline" },
       {
         name: "twitter:title",
-        content: "Detailr — Instant Detailing Quotes & Real-Time Telegram Alerts",
+        content: "Detailr Online — Instant Detailing Quotes & Real-Time Telegram Alerts",
       },
       {
         name: "twitter:description",
@@ -158,10 +158,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "twitter:image", content: "https://detailr.online/og-image.jpg" },
       { name: "twitter:image:src", content: "https://detailr.online/og-image.jpg" },
-      { name: "twitter:image:alt", content: "Detailr Auto Detailing Quote Software" },
+      { name: "twitter:image:alt", content: "Detailr Online Auto Detailing Quote Software" },
 
       // Schema.org itemprops for crawlers
-      { name: "itemprop:name", content: "Detailr" },
+      { name: "itemprop:name", content: "Detailr Online" },
       {
         name: "itemprop:description",
         content:
@@ -243,8 +243,8 @@ function RootShell({ children }: { children: ReactNode }) {
         "@type": "WebSite",
         "@id": "https://detailr.online/#website",
         url: "https://detailr.online",
-        name: "Detailr",
-        alternateName: ["Detailr Software", "Detailr Online", "Detailr Mobile Detailing"],
+        name: "Detailr Online",
+        alternateName: ["Detailr", "Detailr Software", "Detailr Mobile Detailing"],
         description: "Instant Mobile Auto Detailing Quotes & Real-Time Lead Alerts",
         publisher: { "@id": "https://detailr.online/#organization" },
         inLanguage: "en-US",
@@ -328,7 +328,7 @@ function RootShell({ children }: { children: ReactNode }) {
       {
         "@type": "SoftwareApplication",
         "@id": "https://detailr.online/#webapp",
-        name: "Detailr",
+        name: "Detailr Online",
         url: "https://detailr.online",
         applicationCategory: "BusinessApplication",
         operatingSystem: "All",
@@ -353,7 +353,7 @@ function RootShell({ children }: { children: ReactNode }) {
       {
         "@type": "Organization",
         "@id": "https://detailr.online/#organization",
-        name: "Detailr",
+        name: "Detailr Online",
         url: "https://detailr.online",
         logo: "https://detailr.online/logo.png",
         image: "https://detailr.online/logo.png",
