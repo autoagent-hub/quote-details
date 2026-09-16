@@ -247,31 +247,23 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
   const handleGoogleAuth = async () => {
     setGoogleLoading(true);
     try {
-      const win = typeof window !== "undefined" ? (window as CustomWindow) : undefined;
-      const googleClientId =
-        win?.__PUBLIC_CONFIG__?.VITE_GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      const redirectUri = `${window.location.origin}/auth/v1/callback`;
 
-      if (googleClientId && typeof window !== "undefined") {
-        const callbackUrl = `${window.location.origin}/auth/v1/callback`;
-        const googleAuthUrl =
-          `https://accounts.google.com/o/oauth2/v2/auth?` +
-          new URLSearchParams({
-            client_id: googleClientId,
-            redirect_uri: callbackUrl,
-            response_type: "code",
-            scope: "openid email profile",
-            prompt: "select_account",
-            access_type: "online",
-          }).toString();
-
-        window.location.href = googleAuthUrl;
-        return;
+      // 1. Try Lovable Cloud Auth provider
+      try {
+        const res = await lovable.auth.signInWithOAuth("google", {
+          redirect_uri: redirectUri,
+        });
+        if (res?.redirected) return;
+      } catch (lErr) {
+        console.warn("Lovable cloud auth fallback to standard Supabase OAuth:", lErr);
       }
 
+      // 2. Standard Supabase OAuth
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/v1/callback`,
+          redirectTo: redirectUri,
         },
       });
       if (error) throw error;

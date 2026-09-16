@@ -32,6 +32,20 @@ function AuthV1CallbackPage() {
 
     const handleOAuthCallback = async () => {
       try {
+        // 0. Immediate check: if user already has an active Supabase session, redirect to dashboard right away
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+        if (currentSession?.user) {
+          if (unmounted) return;
+          void ensureWelcomeEmail({
+            data: { userId: currentSession.user.id, email: currentSession.user.email },
+          }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
+          toast.success("Welcome back!");
+          navigate({ to: "/dashboard" });
+          return;
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
         const error = urlParams.get("error");
