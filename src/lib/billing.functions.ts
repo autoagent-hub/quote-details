@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const DEFAULT_CHECKOUT_URL = "https://whop.com/checkout/plan_IrzVc4vCnCiQ1";
-const DEFAULT_APP_URL = "https://quote-details.lovable.app";
+const DEFAULT_APP_URL = "https://detailr.online";
 
 import { getAdminClient } from "@/lib/admin.server";
 
