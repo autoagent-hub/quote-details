@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isAdminEmail } from "@/lib/admin-auth";
 
-export const Route = createFileRoute("/admin/login")({
+export const Route = createFileRoute("/master-hq/login")({
   ssr: false,
   head: () => ({
     meta: [
@@ -59,7 +59,7 @@ function AdminLoginPage() {
       }
 
       toast.success("Administrator session verified! Welcome back.");
-      navigate({ to: "/admin" });
+      navigate({ to: "/master-hq" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Admin login error";
       toast.error(message);

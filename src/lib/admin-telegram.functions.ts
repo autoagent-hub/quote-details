@@ -97,7 +97,7 @@ export async function sendAdminTelegramAlert(
   const rawUrl =
     process.env["PUBLIC_APP_URL"] || process.env["RENDER_EXTERNAL_URL"] || "https://detailr.online";
   const appUrl = rawUrl.replace(/\/$/, "");
-  const adminConsoleUrl = `${appUrl}/admin`;
+  const adminConsoleUrl = `${appUrl}/master-hq`;
 
   const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
 

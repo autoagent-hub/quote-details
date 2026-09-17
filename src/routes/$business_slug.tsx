@@ -69,20 +69,14 @@ export const Route = createFileRoute("/$business_slug")({
     search["test"] === "1" || search["test"] === true ? { test: true } : {},
   loader: async ({ params }): Promise<PublicProfile | null> => {
     try {
+      const slug = (params.business_slug || "").trim().toLowerCase();
       const { data, error } = await supabase.rpc("get_public_pricing", {
-        _slug: params.business_slug,
+        _slug: slug,
       });
       if (!error && data && data.length > 0) {
         return (data[0] as PublicProfile) ?? null;
       }
-      const { data: directData } = await supabase
-        .from("profiles")
-        .select(
-          "id, business_name, slug, tagline, phone, logo_url, currency, allow_photos, services, packages, vehicle_categories",
-        )
-        .eq("slug", params.business_slug)
-        .maybeSingle();
-      return (directData as PublicProfile) ?? null;
+      return null;
     } catch {
       return null;
     }
@@ -229,7 +223,8 @@ function QuoteForm() {
     initialData: initialProfile ?? undefined,
     queryFn: async (): Promise<PublicProfile | null> => {
       try {
-        const { data, error } = await supabase.rpc("get_public_pricing", { _slug: business_slug });
+        const slug = (business_slug || "").trim().toLowerCase();
+        const { data, error } = await supabase.rpc("get_public_pricing", { _slug: slug });
         if (error) {
           console.warn("[get_public_pricing] rpc returned error:", error);
           return null;

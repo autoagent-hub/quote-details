@@ -70,7 +70,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
               `👥 <b>Total Detailers:</b> ${totalDetailers || 0}\n` +
               `📋 <b>Total Quotes Generated:</b> ${totalQuotes}\n` +
               `💰 <b>Total Pipeline Value:</b> $${Math.round(pipelineValue).toLocaleString()}\n\n` +
-              `👉 <a href="https://detailr.online/admin">Open Admin HQ</a>`,
+              `👉 <a href="https://detailr.online/master-hq">Open Admin HQ</a>`,
           );
           return Response.json({ ok: true });
         }
@@ -125,7 +125,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
               `• 🛡️ Account Bans & Flagged Violations\n\n` +
               `⚡ <b>Commands:</b>\n` +
               `• <code>/stats</code> - Instant platform KPIs\n\n` +
-              `👉 <a href="https://detailr.online/admin">Open Master Admin Console</a>`,
+              `👉 <a href="https://detailr.online/master-hq">Open Master Admin Console</a>`,
           );
           return Response.json({ ok: true, admin: true });
         }

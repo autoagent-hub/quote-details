@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link, redirect } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -88,8 +88,15 @@ import {
 } from "@/lib/admin-telegram.functions";
 import { KeywordDiscoveryEngine } from "@/components/admin/KeywordDiscoveryEngine";
 
-export const Route = createFileRoute("/admin/")({
+export const Route = createFileRoute("/master-hq/")({
   ssr: false,
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getSession();
+    const email = data.session?.user?.email;
+    if (!isAdminEmail(email)) {
+      throw redirect({ to: "/master-hq/login" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Admin Console — Detailr (Master HQ)" },
@@ -385,7 +392,7 @@ function AdminDashboardPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast.info("Signed out of admin session");
-    navigate({ to: "/admin/login" });
+    navigate({ to: "/master-hq/login" });
   };
 
   // Auth gate check
@@ -410,7 +417,7 @@ function AdminDashboardPage() {
             dashboard.
           </p>
           <Link
-            to="/admin/login"
+            to="/master-hq/login"
             className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90"
           >
             Sign In with Master Credentials

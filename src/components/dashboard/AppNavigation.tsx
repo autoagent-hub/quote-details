@@ -254,7 +254,7 @@ export function AppNavigation({
                   size="sm"
                   className="h-8 rounded-xl px-2.5 border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-all font-bold text-[10px] uppercase tracking-wider"
                 >
-                  <Link to="/admin">
+                  <Link to="/master-hq">
                     <Shield className="size-3.5 mr-1" />
                     <span>Admin</span>
                   </Link>
