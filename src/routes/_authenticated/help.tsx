@@ -28,12 +28,13 @@ import type { Profile } from "@/components/dashboard/types";
 export const Route = createFileRoute("/_authenticated/help")({
   head: () => ({
     meta: [
-      { title: "Help & Documentation — Detailr (detailr.online)" },
+      { title: "Help & Documentation — Detailr Online" },
       {
         name: "description",
         content:
-          "Guides, tutorials, FAQs, and support for your Detailr auto detailing quote system.",
+          "Guides, tutorials, FAQs, and support for your Detailr Online auto detailing quote system.",
       },
+      { property: "og:title", content: "Help & Documentation — Detailr Online" },
     ],
   }),
   component: HelpPage,

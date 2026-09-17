@@ -13,11 +13,12 @@ import type { Profile } from "@/components/dashboard/types";
 export const Route = createFileRoute("/_authenticated/pricing")({
   head: () => ({
     meta: [
-      { title: "Services & Prices — Detailr (detailr.online)" },
+      { title: "Services & Prices — Detailr Online" },
       {
         name: "description",
-        content: "Configure your vehicle categories, packages, and add-on rates.",
+        content: "Configure your vehicle categories, packages, and add-on rates on Detailr Online.",
       },
+      { property: "og:title", content: "Services & Prices — Detailr Online" },
     ],
   }),
   component: PricingPage,

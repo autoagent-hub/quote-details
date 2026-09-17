@@ -24,14 +24,14 @@ export const Route = createFileRoute("/auth/")({
   },
   head: () => ({
     meta: [
-      { title: "Sign In or Create Account — Detailr (detailr.online)" },
+      { title: "Sign In or Create Account — Detailr Online" },
       {
         name: "description",
         content:
-          "Sign in or create your Detailr account to manage detailing pricing and quotes on detailr.online.",
+          "Sign in or create your Detailr account to manage detailing pricing and quotes on Detailr Online.",
       },
-      { property: "og:title", content: "Sign In or Create Account — Detailr (detailr.online)" },
-      { property: "og:description", content: "Access your Detailr detailer dashboard." },
+      { property: "og:title", content: "Sign In or Create Account — Detailr Online" },
+      { property: "og:description", content: "Access your Detailr Online detailer dashboard." },
     ],
   }),
   component: AuthPage,

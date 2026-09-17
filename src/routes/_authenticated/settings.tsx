@@ -34,11 +34,13 @@ import type { Profile } from "@/components/dashboard/types";
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Account & App Settings — Detailr (detailr.online)" },
+      { title: "Account & App Settings — Detailr Online" },
       {
         name: "description",
-        content: "Manage your Detailr account settings, security, and application preferences.",
+        content:
+          "Manage your Detailr Online account settings, security, and application preferences.",
       },
+      { property: "og:title", content: "Account & App Settings — Detailr Online" },
     ],
   }),
   component: SettingsPage,

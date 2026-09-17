@@ -13,17 +13,17 @@ import { getUpgradeCheckout } from "@/lib/billing.functions";
 export const Route = createFileRoute("/_authenticated/upgrade")({
   head: () => ({
     meta: [
-      { title: "Upgrade to Detailr Pro — $9.99/month (detailr.online)" },
+      { title: "Upgrade to Detailr Pro — Detailr Online" },
       {
         name: "description",
         content:
           "Move from your free Detailr trial to the $9.99/month plan and keep unlimited quote requests and real-time Telegram alerts on detailr.online.",
       },
-      { property: "og:title", content: "Upgrade to Detailr Pro — $9.99/month" },
+      { property: "og:title", content: "Upgrade to Detailr Pro — Detailr Online" },
       {
         property: "og:description",
         content:
-          "Unlimited quote requests, Telegram alerts and your branded quote link for $9.99/month on detailr.online.",
+          "Unlimited quote requests, Telegram alerts and your branded quote link for $9.99/month on Detailr Online.",
       },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "https://detailr.online/og-image.jpg" },

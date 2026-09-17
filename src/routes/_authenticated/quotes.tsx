@@ -16,12 +16,13 @@ import type { Profile, Quote } from "@/components/dashboard/types";
 export const Route = createFileRoute("/_authenticated/quotes")({
   head: () => ({
     meta: [
-      { title: "Customer Leads & Quotes — Detailr (detailr.online)" },
+      { title: "Customer Leads & Quotes — Detailr Online" },
       {
         name: "description",
         content:
-          "View all customer detailing quote requests, customer phone numbers, and job requests.",
+          "View all customer detailing quote requests, customer phone numbers, and job requests on Detailr Online.",
       },
+      { property: "og:title", content: "Customer Leads & Quotes — Detailr Online" },
     ],
   }),
   component: QuotesPage,

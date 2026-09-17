@@ -15,12 +15,13 @@ import type { Profile } from "@/components/dashboard/types";
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "Shop Profile — Detailr (detailr.online)" },
+      { title: "Shop Profile — Detailr Online" },
       {
         name: "description",
         content:
-          "Manage your auto detailing company profile, quote URL slug, currency, and branding.",
+          "Manage your auto detailing company profile, quote URL slug, currency, and branding on Detailr Online.",
       },
+      { property: "og:title", content: "Shop Profile — Detailr Online" },
     ],
   }),
   component: ProfilePage,

@@ -13,12 +13,13 @@ import type { Profile } from "@/components/dashboard/types";
 export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({
     meta: [
-      { title: "Telegram Alerts — Detailr (detailr.online)" },
+      { title: "Telegram Alerts — Detailr Online" },
       {
         name: "description",
         content:
-          "Configure real-time Telegram alerts for instant incoming customer detailing quotes.",
+          "Configure real-time Telegram alerts for instant incoming customer detailing quotes on Detailr Online.",
       },
+      { property: "og:title", content: "Telegram Alerts — Detailr Online" },
     ],
   }),
   component: NotificationsPage,

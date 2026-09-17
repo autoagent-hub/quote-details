@@ -38,7 +38,7 @@ export const Route = createFileRoute("/")({
       { property: "og:site_name", content: "Detailr Online" },
       {
         property: "og:title",
-        content: "Detailr — Instant Quotes & Telegram Alerts for Mobile Detailers (detailr.online)",
+        content: "Detailr Online — Instant Quotes & Telegram Alerts for Mobile Detailers",
       },
       {
         property: "og:description",
@@ -55,14 +55,14 @@ export const Route = createFileRoute("/")({
       { property: "og:image:height", content: "630" },
       {
         property: "og:image:alt",
-        content: "Detailr — Instant Quotes & Telegram Alerts for Mobile Auto Detailers",
+        content: "Detailr Online — Instant Quotes & Telegram Alerts for Mobile Auto Detailers",
       },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@detailronline" },
       { name: "twitter:creator", content: "@detailronline" },
       {
         name: "twitter:title",
-        content: "Detailr — Instant Detailing Quotes & Real-Time Telegram Alerts",
+        content: "Detailr Online — Instant Detailing Quotes & Real-Time Telegram Alerts",
       },
       {
         name: "twitter:description",
@@ -71,8 +71,8 @@ export const Route = createFileRoute("/")({
       },
       { name: "twitter:image", content: "https://detailr.online/og-image.jpg" },
       { name: "twitter:image:src", content: "https://detailr.online/og-image.jpg" },
-      { name: "twitter:image:alt", content: "Detailr Auto Detailing Quote Software" },
-      { name: "itemprop:name", content: "Detailr" },
+      { name: "twitter:image:alt", content: "Detailr Online Auto Detailing Quote Software" },
+      { name: "itemprop:name", content: "Detailr Online" },
       {
         name: "itemprop:description",
         content: "Instant web quotes and real-time Telegram alerts for mobile auto detailers.",
@@ -217,8 +217,8 @@ function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-primary">
       <SeoHead
-        title="Detailr — Instant Detailing Quotes & Real-Time Telegram Alerts (detailr.online)"
-        description="Detailr (detailr.online) is the software built specifically for mobile auto detailers. Give customers instant car pricing estimates and receive new qualified leads in Telegram."
+        title="Detailr Online — Instant Quotes & Telegram Alerts for Mobile Detailers"
+        description="Detailr Online (detailr.online) is the software built specifically for mobile auto detailers. Give customers instant car pricing estimates and receive new qualified leads in Telegram."
         canonicalUrl="https://detailr.online/"
         keywords={[
           "mobile auto detailing software",

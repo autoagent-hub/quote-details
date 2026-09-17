@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Detailr — Instant Mobile Detailing Quotes",
-  "short_name": "Detailr",
-  "description": "Instant customer quote calculator and real-time Telegram lead alerts for mobile auto detailers.",
+  "name": "Detailr Online — Instant Mobile Detailing Quotes",
+  "short_name": "Detailr Online",
+  "description": "Instant customer quote calculator and real-time Telegram lead alerts for mobile auto detailers at detailr.online.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

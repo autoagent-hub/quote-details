@@ -279,7 +279,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=5" },
-      { title: "Detailr — Instant Detailing Quotes & Real-Time Telegram Alerts (detailr.online)" },
+      { title: "Detailr Online — Instant Detailing Quotes & Real-Time Telegram Alerts" },
       {
         name: "description",
         content:

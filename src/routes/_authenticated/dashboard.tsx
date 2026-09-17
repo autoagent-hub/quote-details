@@ -23,11 +23,13 @@ import { DashboardWelcomeHero } from "@/components/dashboard/DashboardWelcomeHer
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Detailr (detailr.online)" },
+      { title: "Dashboard — Detailr Online" },
       {
         name: "description",
-        content: "Manage your auto detailing quote requests, pricing rates, and Telegram alerts.",
+        content:
+          "Manage your auto detailing quote requests, pricing rates, and Telegram alerts on Detailr Online.",
       },
+      { property: "og:title", content: "Dashboard — Detailr Online" },
     ],
   }),
   component: DashboardPage,
