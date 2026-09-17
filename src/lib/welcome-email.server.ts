@@ -12,9 +12,9 @@ export async function sendWelcomeEmail(to: string) {
   const appUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
   const logoUrl = `${appUrl.replace(/\/$/, "")}/logo.png`;
-  const banner1Url = `${appUrl.replace(/\/$/, "")}/step1-pricing-matrix.jpg`;
-  const banner2Url = `${appUrl.replace(/\/$/, "")}/step2-telegram-connect.jpg`;
-  const banner3Url = `${appUrl.replace(/\/$/, "")}/step3-share-quote-link.jpg`;
+  const banner1Url = `${appUrl.replace(/\/$/, "")}/detailr-branding-card.png`;
+  const banner2Url = `${appUrl.replace(/\/$/, "")}/dashboard-telegram-setup.png`;
+  const banner3Url = `${appUrl.replace(/\/$/, "")}/og-image.png`;
   const dashboardUrl = `${appUrl.replace(/\/$/, "")}/dashboard`;
 
   const subject = "Welcome to Detailr — Your Getting Started Guide & Next Steps";

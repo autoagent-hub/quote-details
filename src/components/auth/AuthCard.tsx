@@ -400,6 +400,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
     return () => {
       mounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
   // Password strength helper
