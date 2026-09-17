@@ -18,6 +18,7 @@ import { Toaster } from "../components/ui/sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { QuoteFlowLogo } from "../components/QuoteFlowLogo";
 import { supabase } from "../integrations/supabase/client";
+import { HelmetProvider } from "react-helmet-async";
 
 function NotFoundComponent() {
   return (
@@ -397,6 +398,21 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const theme = localStorage.getItem('detailr-theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (theme === 'dark' || (!theme && prefersDark)) {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
         {children}
@@ -476,42 +492,44 @@ function RootComponent() {
   }, [navigate]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {/* Modern Glassmorphic Offline Indicator */}
-      <AnimatePresence>
-        {!isOnline && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-amber-500/25 bg-background/90 px-4 py-2.5 shadow-xl shadow-black/10 backdrop-blur-xl dark:bg-card/90 max-w-[90vw] sm:max-w-md"
-          >
-            <div className="relative flex size-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
-              <WifiOff className="size-4" />
-              <span className="absolute -top-0.5 -right-0.5 flex size-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex size-2 rounded-full bg-amber-500"></span>
-              </span>
-            </div>
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-foreground">Working Offline</span>
-                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  Auto-Sync Ready
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        {/* Modern Glassmorphic Offline Indicator */}
+        <AnimatePresence>
+          {!isOnline && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl border border-amber-500/25 bg-background/90 px-4 py-2.5 shadow-xl shadow-black/10 backdrop-blur-xl dark:bg-card/90 max-w-[90vw] sm:max-w-md"
+            >
+              <div className="relative flex size-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                <WifiOff className="size-4" />
+                <span className="absolute -top-0.5 -right-0.5 flex size-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex size-2 rounded-full bg-amber-500"></span>
                 </span>
               </div>
-              <span className="text-[11px] text-muted-foreground truncate">
-                Form progress saved locally • Will auto-submit on reconnect
-              </span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-foreground">Working Offline</span>
+                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    Auto-Sync Ready
+                  </span>
+                </div>
+                <span className="text-[11px] text-muted-foreground truncate">
+                  Form progress saved locally • Will auto-submit on reconnect
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-      <Toaster position="top-center" richColors />
-    </QueryClientProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <Toaster position="top-center" richColors />
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }

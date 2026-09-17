@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -280,18 +281,25 @@ export function AppNavigation({
               >
                 <LogOut className="size-3.5 mr-1 opacity-60" /> Exit
               </Button>
+
+              <div className="ml-1">
+                <ThemeToggle />
+              </div>
             </div>
 
-            {/* Mobile Hamburger Button */}
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-9 rounded-xl md:hidden border-border/60"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle navigation menu"
-            >
-              {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-            </Button>
+            {/* Mobile Actions */}
+            <div className="flex items-center gap-2 md:hidden">
+              <ThemeToggle />
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-9 rounded-xl border-border/60"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle navigation menu"
+              >
+                {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              </Button>
+            </div>
           </div>
         </div>
 
