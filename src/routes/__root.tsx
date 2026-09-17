@@ -44,12 +44,25 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
-  const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+function ErrorComponent({ error, reset }: { error: Error | null; reset: () => void }) {
+  if (typeof window !== "undefined") {
+    console.error("[detailr-error]", error);
+    try {
+      reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleReset = () => {
+    try {
+      reset();
+    } catch {
+      if (typeof window !== "undefined") {
+        window.location.reload();
+      }
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
@@ -70,10 +83,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
+            onClick={handleReset}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Try again
@@ -89,6 +99,180 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     </div>
   );
 }
+
+function getPublicConfig() {
+  const clientConfig =
+    typeof window !== "undefined"
+      ? (
+          window as unknown as {
+            __PUBLIC_CONFIG__?: {
+              supabaseUrl?: string;
+              supabaseAnonKey?: string;
+              googleClientId?: string;
+            };
+          }
+        ).__PUBLIC_CONFIG__
+      : undefined;
+
+  return {
+    supabaseUrl:
+      clientConfig?.supabaseUrl ||
+      import.meta.env.VITE_SUPABASE_URL ||
+      import.meta.env["SUPABASE_URL"] ||
+      (typeof process !== "undefined"
+        ? process.env["VITE_SUPABASE_URL"] ||
+          process.env["SUPABASE_URL"] ||
+          process.env["EXTERNAL_SUPABASE_URL"]
+        : "") ||
+      "",
+    googleClientId:
+      clientConfig?.googleClientId ||
+      import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+      (typeof process !== "undefined"
+        ? process.env["VITE_GOOGLE_CLIENT_ID"] || process.env["GOOGLE_CLIENT_ID"]
+        : "") ||
+      "",
+    supabaseAnonKey:
+      clientConfig?.supabaseAnonKey ||
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      import.meta.env["VITE_SUPABASE_ANON_KEY"] ||
+      import.meta.env["SUPABASE_PUBLISHABLE_KEY"] ||
+      import.meta.env["SUPABASE_ANON_KEY"] ||
+      (typeof process !== "undefined"
+        ? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+          process.env["VITE_SUPABASE_ANON_KEY"] ||
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+          process.env["SUPABASE_ANON_KEY"]
+        : "") ||
+      "",
+  };
+}
+
+const schemaJson = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://detailr.online/#website",
+      url: "https://detailr.online",
+      name: "Detailr Online",
+      alternateName: ["Detailr", "Detailr Software", "Detailr Mobile Detailing"],
+      description: "Instant Mobile Auto Detailing Quotes & Real-Time Lead Alerts",
+      publisher: { "@id": "https://detailr.online/#organization" },
+      inLanguage: "en-US",
+      hasPart: [
+        {
+          "@type": "WebPage",
+          "@id": "https://detailr.online/signup",
+          name: "Start 7-Day Free Trial",
+          url: "https://detailr.online/signup",
+          description:
+            "Create your mobile detailing quote link in under 2 minutes. No credit card required.",
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://detailr.online/login",
+          name: "Detailer Portal Login",
+          url: "https://detailr.online/login",
+          description:
+            "Sign in to manage your custom detailing packages, leads, and real-time Telegram alerts.",
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://detailr.online/demo",
+          name: "Live Customer Quote Demo",
+          url: "https://detailr.online/demo",
+          description: "Test the mobile detailing instant pricing estimate calculator.",
+        },
+      ],
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "@id": "https://detailr.online/#nav-signup",
+      name: "Start 7-Day Free Trial",
+      url: "https://detailr.online/signup",
+      description: "Launch your instant detailing quote link in under 3 minutes.",
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "@id": "https://detailr.online/#nav-login",
+      name: "Log In to Dashboard",
+      url: "https://detailr.online/login",
+      description: "Sign in to your Detailr mobile detailer portal.",
+    },
+    {
+      "@type": "SiteNavigationElement",
+      "@id": "https://detailr.online/#nav-demo",
+      name: "Try Live Quote Demo",
+      url: "https://detailr.online/demo",
+      description: "See how your customers build instant quotes.",
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://detailr.online/#breadcrumbs",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://detailr.online/",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Start Free Trial",
+          item: "https://detailr.online/signup",
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: "Detailer Login",
+          item: "https://detailr.online/login",
+        },
+        {
+          "@type": "ListItem",
+          position: 4,
+          name: "Quote Demo",
+          item: "https://detailr.online/demo",
+        },
+      ],
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://detailr.online/#webapp",
+      name: "Detailr Online",
+      url: "https://detailr.online",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "All",
+      browserRequirements: "Requires JavaScript. Requires HTML5.",
+      description:
+        "Instant customer quote builder and real-time lead alerts designed specifically for mobile auto detailers.",
+      image: "https://detailr.online/logo.png",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+      },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "5.0",
+        ratingCount: "48",
+        bestRating: "5",
+        worstRating: "1",
+      },
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://detailr.online/#organization",
+      name: "Detailr Online",
+      url: "https://detailr.online",
+      logo: "https://detailr.online/logo.png",
+      image: "https://detailr.online/logo.png",
+      sameAs: ["https://detailr.online"],
+    },
+  ],
+};
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -190,7 +374,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/logo.png" },
       { rel: "manifest", href: "/manifest.json" },
     ],
-    scripts: [{ src: "https://accounts.google.com/gsi/client", async: true, defer: true }],
+    scripts: [
+      {
+        children: `window.__PUBLIC_CONFIG__ = ${JSON.stringify(getPublicConfig())};`,
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(schemaJson),
+      },
+      { src: "https://accounts.google.com/gsi/client", async: true, defer: true },
+    ],
   }),
 
   shellComponent: RootShell,
@@ -200,184 +393,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  // Priority: 1. Injected window.__PUBLIC_CONFIG__ (client runtime), 2. Vite import.meta.env, 3. process.env (Node SSR)
-  const clientConfig =
-    typeof window !== "undefined"
-      ? (
-          window as unknown as {
-            __PUBLIC_CONFIG__?: { supabaseUrl?: string; supabaseAnonKey?: string };
-          }
-        ).__PUBLIC_CONFIG__
-      : undefined;
-
-  const publicConfig = {
-    supabaseUrl:
-      clientConfig?.supabaseUrl ||
-      import.meta.env.VITE_SUPABASE_URL ||
-      import.meta.env["SUPABASE_URL"] ||
-      (typeof process !== "undefined"
-        ? process.env["VITE_SUPABASE_URL"] ||
-          process.env["SUPABASE_URL"] ||
-          process.env["EXTERNAL_SUPABASE_URL"]
-        : "") ||
-      "",
-    supabaseAnonKey:
-      clientConfig?.supabaseAnonKey ||
-      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-      import.meta.env["VITE_SUPABASE_ANON_KEY"] ||
-      import.meta.env["SUPABASE_PUBLISHABLE_KEY"] ||
-      import.meta.env["SUPABASE_ANON_KEY"] ||
-      (typeof process !== "undefined"
-        ? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-          process.env["VITE_SUPABASE_ANON_KEY"] ||
-          process.env["SUPABASE_PUBLISHABLE_KEY"] ||
-          process.env["SUPABASE_ANON_KEY"]
-        : "") ||
-      "",
-  };
-
-  const schemaJson = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebSite",
-        "@id": "https://detailr.online/#website",
-        url: "https://detailr.online",
-        name: "Detailr Online",
-        alternateName: ["Detailr", "Detailr Software", "Detailr Mobile Detailing"],
-        description: "Instant Mobile Auto Detailing Quotes & Real-Time Lead Alerts",
-        publisher: { "@id": "https://detailr.online/#organization" },
-        inLanguage: "en-US",
-        hasPart: [
-          {
-            "@type": "WebPage",
-            "@id": "https://detailr.online/signup",
-            name: "Start 7-Day Free Trial",
-            url: "https://detailr.online/signup",
-            description:
-              "Create your mobile detailing quote link in under 2 minutes. No credit card required.",
-          },
-          {
-            "@type": "WebPage",
-            "@id": "https://detailr.online/login",
-            name: "Detailer Portal Login",
-            url: "https://detailr.online/login",
-            description:
-              "Sign in to manage your custom detailing packages, leads, and real-time Telegram alerts.",
-          },
-          {
-            "@type": "WebPage",
-            "@id": "https://detailr.online/demo",
-            name: "Live Customer Quote Demo",
-            url: "https://detailr.online/demo",
-            description: "Test the mobile detailing instant pricing estimate calculator.",
-          },
-        ],
-      },
-      {
-        "@type": "SiteNavigationElement",
-        "@id": "https://detailr.online/#nav-signup",
-        name: "Start 7-Day Free Trial",
-        url: "https://detailr.online/signup",
-        description: "Launch your instant detailing quote link in under 3 minutes.",
-      },
-      {
-        "@type": "SiteNavigationElement",
-        "@id": "https://detailr.online/#nav-login",
-        name: "Log In to Dashboard",
-        url: "https://detailr.online/login",
-        description: "Sign in to your Detailr mobile detailer portal.",
-      },
-      {
-        "@type": "SiteNavigationElement",
-        "@id": "https://detailr.online/#nav-demo",
-        name: "Try Live Quote Demo",
-        url: "https://detailr.online/demo",
-        description: "See how your customers build instant quotes.",
-      },
-      {
-        "@type": "BreadcrumbList",
-        "@id": "https://detailr.online/#breadcrumbs",
-        itemListElement: [
-          {
-            "@type": "ListItem",
-            position: 1,
-            name: "Home",
-            item: "https://detailr.online/",
-          },
-          {
-            "@type": "ListItem",
-            position: 2,
-            name: "Start Free Trial",
-            item: "https://detailr.online/signup",
-          },
-          {
-            "@type": "ListItem",
-            position: 3,
-            name: "Detailer Login",
-            item: "https://detailr.online/login",
-          },
-          {
-            "@type": "ListItem",
-            position: 4,
-            name: "Quote Demo",
-            item: "https://detailr.online/demo",
-          },
-        ],
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://detailr.online/#webapp",
-        name: "Detailr Online",
-        url: "https://detailr.online",
-        applicationCategory: "BusinessApplication",
-        operatingSystem: "All",
-        browserRequirements: "Requires JavaScript. Requires HTML5.",
-        description:
-          "Instant customer quote builder and real-time lead alerts designed specifically for mobile auto detailers.",
-        image: "https://detailr.online/logo.png",
-        offers: {
-          "@type": "Offer",
-          price: "0",
-          priceCurrency: "USD",
-          availability: "https://schema.org/InStock",
-        },
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: "5.0",
-          ratingCount: "48",
-          bestRating: "5",
-          worstRating: "1",
-        },
-      },
-      {
-        "@type": "Organization",
-        "@id": "https://detailr.online/#organization",
-        name: "Detailr Online",
-        url: "https://detailr.online",
-        logo: "https://detailr.online/logo.png",
-        image: "https://detailr.online/logo.png",
-        sameAs: ["https://detailr.online"],
-      },
-    ],
-  };
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `window.__PUBLIC_CONFIG__ = ${JSON.stringify(publicConfig)};`,
-          }}
-        />
-        <script
-          suppressHydrationWarning
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(schemaJson),
-          }}
-        />
         <HeadContent />
       </head>
       <body suppressHydrationWarning>

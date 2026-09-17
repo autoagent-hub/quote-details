@@ -224,7 +224,10 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
 
   interface CustomWindow extends Window {
     __PUBLIC_CONFIG__?: {
+      googleClientId?: string;
       VITE_GOOGLE_CLIENT_ID?: string;
+      supabaseUrl?: string;
+      supabaseAnonKey?: string;
     };
     google?: {
       accounts?: {
@@ -232,7 +235,21 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
           initialize: (config: {
             client_id: string;
             callback: (response: { credential?: string }) => void;
+            auto_select?: boolean;
+            cancel_on_tap_outside?: boolean;
           }) => void;
+          renderButton: (
+            element: HTMLElement,
+            options: {
+              type?: string;
+              theme?: string;
+              size?: string;
+              text?: string;
+              shape?: string;
+              logo_alignment?: string;
+              width?: number | string;
+            },
+          ) => void;
           prompt: (
             notificationHandler?: (notification: {
               isNotDisplayed: () => boolean;
@@ -240,39 +257,241 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
             }) => void,
           ) => void;
         };
+        oauth2?: {
+          initCodeClient: (config: {
+            client_id: string;
+            scope: string;
+            ux_mode?: "popup" | "redirect";
+            callback: (response: { code?: string; error?: string }) => void;
+          }) => {
+            requestCode: () => void;
+          };
+        };
       };
     };
   }
 
-  const handleGoogleAuth = async () => {
+  const handleGoogleCredentialResponse = async (response: { credential?: string }) => {
+    if (!response?.credential) {
+      toast.error("No credential received from Google");
+      return;
+    }
+
     setGoogleLoading(true);
     try {
-      const redirectUri = `${window.location.origin}/auth/v1/callback`;
-
-      // 1. Try Lovable Cloud Auth provider
+      // 1. First try Supabase signInWithIdToken
       try {
-        const res = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: redirectUri,
+        const { data: idAuthData, error: idAuthError } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: response.credential,
         });
-        if (res?.redirected) return;
-      } catch (lErr) {
-        console.warn("Lovable cloud auth fallback to standard Supabase OAuth:", lErr);
+
+        if (!idAuthError && idAuthData?.user) {
+          void ensureWelcomeEmail({
+            data: { userId: idAuthData.user.id, email: idAuthData.user.email },
+          }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
+          toast.success("Successfully signed in with Google!");
+          navigate({ to: "/dashboard" });
+          return;
+        }
+      } catch (directErr) {
+        console.warn(
+          "[google-auth] Direct signInWithIdToken error, attempting server exchange:",
+          directErr,
+        );
       }
 
-      // 2. Standard Supabase OAuth
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUri,
-        },
+      // 2. Server verification fallback (generates verified magiclink token_hash)
+      const res = await fetch("/api/public/google-callback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: response.credential }),
       });
-      if (error) throw error;
-    } catch (error: unknown) {
-      const e = error as Error;
-      toast.error(e.message || "Google authentication failed.");
+
+      const data = (await res.json()) as {
+        token_hash?: string;
+        id_token?: string;
+        email?: string;
+        error?: string;
+      };
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Google authentication failed");
+      }
+
+      if (data.token_hash) {
+        const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: data.token_hash,
+          type: "magiclink",
+        });
+
+        if (otpError) throw otpError;
+
+        if (otpData?.user) {
+          void ensureWelcomeEmail({
+            data: { userId: otpData.user.id, email: otpData.user.email },
+          }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
+          toast.success("Successfully signed in with Google!");
+          navigate({ to: "/dashboard" });
+          return;
+        }
+      }
+
+      throw new Error("Unable to establish authenticated session");
+    } catch (err: unknown) {
+      const e = err as Error;
+      toast.error(e.message || "Failed to sign in with Google");
+    } finally {
       setGoogleLoading(false);
     }
   };
+
+  const handleGoogleAuth = () => {
+    const customWin =
+      typeof window !== "undefined" ? (window as unknown as CustomWindow) : undefined;
+    const clientId =
+      customWin?.__PUBLIC_CONFIG__?.googleClientId ||
+      customWin?.__PUBLIC_CONFIG__?.VITE_GOOGLE_CLIENT_ID ||
+      import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+    if (!clientId) {
+      toast.error("Google Client ID is not configured");
+      return;
+    }
+
+    setGoogleLoading(true);
+
+    // If Google OAuth2 popup code client is available
+    if (customWin?.google?.accounts?.oauth2?.initCodeClient) {
+      const codeClient = customWin.google.accounts.oauth2.initCodeClient({
+        client_id: clientId,
+        scope: "openid email profile",
+        ux_mode: "popup",
+        callback: async (response) => {
+          if (response.code) {
+            try {
+              const res = await fetch("/api/public/google-callback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: response.code, redirectUri: "postmessage" }),
+              });
+              const data = (await res.json()) as {
+                token_hash?: string;
+                id_token?: string;
+                error?: string;
+              };
+
+              if (data.token_hash) {
+                const { error: verifyErr } = await supabase.auth.verifyOtp({
+                  token_hash: data.token_hash,
+                  type: "magiclink",
+                });
+                if (verifyErr) throw verifyErr;
+                toast.success("Successfully signed in with Google!");
+                navigate({ to: "/dashboard" });
+                return;
+              } else if (data.id_token) {
+                const { error: idErr } = await supabase.auth.signInWithIdToken({
+                  provider: "google",
+                  token: data.id_token,
+                });
+                if (idErr) throw idErr;
+                toast.success("Successfully signed in with Google!");
+                navigate({ to: "/dashboard" });
+                return;
+              }
+              throw new Error(data.error || "Google authentication exchange failed");
+            } catch (err: unknown) {
+              const e = err as Error;
+              toast.error(e.message || "Google sign-in failed");
+            } finally {
+              setGoogleLoading(false);
+            }
+          } else {
+            setGoogleLoading(false);
+          }
+        },
+      });
+      codeClient.requestCode();
+      return;
+    }
+
+    // Trigger GSI One-Tap prompt if available
+    if (customWin?.google?.accounts?.id?.prompt) {
+      customWin.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          setGoogleLoading(false);
+        }
+      });
+      return;
+    }
+
+    setGoogleLoading(false);
+    toast.error("Google authentication service is initializing. Please try again.");
+  };
+
+  useEffect(() => {
+    if (mode === "forgot") return;
+
+    let mounted = true;
+    const customWin =
+      typeof window !== "undefined" ? (window as unknown as CustomWindow) : undefined;
+    const clientId =
+      customWin?.__PUBLIC_CONFIG__?.googleClientId ||
+      customWin?.__PUBLIC_CONFIG__?.VITE_GOOGLE_CLIENT_ID ||
+      import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+    if (!clientId) return;
+
+    const renderWidget = () => {
+      if (!mounted) return;
+      if (customWin?.google?.accounts?.id) {
+        try {
+          customWin.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: handleGoogleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+
+          const container = document.getElementById("google-embedded-btn-container");
+          if (container) {
+            container.innerHTML = "";
+            customWin.google.accounts.id.renderButton(container, {
+              type: "standard",
+              theme: "outline",
+              size: "large",
+              text: mode === "signup" ? "signup_with" : "continue_with",
+              shape: "rectangular",
+              logo_alignment: "left",
+              width: 320,
+            });
+          }
+        } catch (initErr) {
+          console.warn("[google-gsi] Widget render failed:", initErr);
+        }
+      }
+    };
+
+    if (customWin?.google?.accounts?.id) {
+      renderWidget();
+    } else {
+      const interval = setInterval(() => {
+        if (customWin?.google?.accounts?.id) {
+          clearInterval(interval);
+          renderWidget();
+        }
+      }, 250);
+      return () => {
+        mounted = false;
+        clearInterval(interval);
+      };
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [mode]);
 
   // Password strength helper
   const passwordStrength = (pass: string) => {
@@ -683,7 +902,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
                 </Button>
               </form>
 
-              {/* Google OAuth Button at Bottom of Form */}
+              {/* Google Embedded Widget & OAuth at Bottom of Form */}
               {mode !== "forgot" && (
                 <div className="space-y-4 pt-1">
                   <div className="relative flex items-center justify-center">
@@ -695,23 +914,32 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
                     </span>
                   </div>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="xl"
-                    onClick={handleGoogleAuth}
-                    disabled={loading || googleLoading}
-                    className="flex w-full items-center justify-center gap-3 border-border hover:bg-surface font-semibold"
-                  >
-                    {googleLoading ? (
-                      <Loader2 className="size-5 animate-spin" />
-                    ) : (
-                      <GoogleIcon className="size-5" />
-                    )}
-                    <span>
-                      {mode === "signup" ? "Sign up with Google" : "Continue with Google"}
-                    </span>
-                  </Button>
+                  <div className="flex flex-col items-center justify-center gap-2.5">
+                    {/* Google Embedded Official Widget */}
+                    <div
+                      id="google-embedded-btn-container"
+                      className="flex justify-center w-full min-h-[44px] overflow-hidden"
+                    />
+
+                    {/* Interactive Google Button */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="xl"
+                      onClick={handleGoogleAuth}
+                      disabled={loading || googleLoading}
+                      className="flex w-full items-center justify-center gap-3 border-border hover:bg-surface font-semibold"
+                    >
+                      {googleLoading ? (
+                        <Loader2 className="size-5 animate-spin" />
+                      ) : (
+                        <GoogleIcon className="size-5" />
+                      )}
+                      <span>
+                        {mode === "signup" ? "Sign up with Google" : "Continue with Google"}
+                      </span>
+                    </Button>
+                  </div>
                 </div>
               )}
 

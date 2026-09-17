@@ -20,6 +20,8 @@ import {
   ExternalLink,
   ChevronRight,
   BookOpen,
+  ReceiptText,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -104,21 +106,33 @@ export function AppNavigation({
           </div>
 
           {/* Center Navigation Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-1 rounded-2xl border border-border/40 bg-muted/30 p-1">
-            <button
-              onClick={() => handleNavClick("quotes")}
+          <nav className="hidden lg:flex items-center gap-1 rounded-2xl border border-border/40 bg-muted/30 p-1">
+            <Link
+              to="/dashboard"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === "quotes"
+                activeTab === "quotes" || activeTab === "dashboard"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
               <LayoutDashboard className="size-3.5 opacity-80 text-primary" />
               <span>Dashboard</span>
-            </button>
+            </Link>
 
-            <button
-              onClick={() => handleNavClick("pricing")}
+            <Link
+              to="/quotes"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === "all-quotes"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
+            >
+              <ReceiptText className="size-3.5 opacity-80 text-emerald-500" />
+              <span>Quotes</span>
+            </Link>
+
+            <Link
+              to="/pricing"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 activeTab === "pricing"
                   ? "bg-background text-foreground shadow-sm"
@@ -126,28 +140,61 @@ export function AppNavigation({
               }`}
             >
               <Sliders className="size-3.5 opacity-80 text-amber-500" />
-              <span>Settings & Prices</span>
-            </button>
+              <span>Services</span>
+            </Link>
 
-            <button
-              onClick={() => handleNavClick("settings")}
+            <Link
+              to="/notifications"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === "settings"
+                activeTab === "notifications"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
+            >
+              <Send className="size-3.5 opacity-80 text-blue-500" />
+              <span>Alerts</span>
+              {profile?.telegram_chat_id ? (
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+              ) : (
+                <span className="size-1.5 rounded-full bg-amber-500" />
+              )}
+            </Link>
+
+            <Link
+              to="/profile"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === "profile"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
               <Store className="size-3.5 opacity-80 text-purple-500" />
               <span>Profile</span>
-            </button>
+            </Link>
 
-            <button
-              onClick={() => setHelpOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-background/50 transition-all"
+            <Link
+              to="/settings"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === "settings"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
             >
-              <HelpCircle className="size-3.5 opacity-80 text-blue-500" />
+              <Settings className="size-3.5 opacity-80 text-slate-500" />
+              <span>Settings</span>
+            </Link>
+
+            <Link
+              to="/help"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === "help"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
+            >
+              <HelpCircle className="size-3.5 opacity-80 text-cyan-500" />
               <span>Help</span>
-            </button>
+            </Link>
           </nav>
 
           {/* Right Action Controls */}
@@ -252,10 +299,11 @@ export function AppNavigation({
         {mobileMenuOpen && (
           <div className="md:hidden border-b border-border/60 bg-background px-4 py-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
             <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => handleNavClick("quotes")}
+              <Link
+                to="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-bold text-left border ${
-                  activeTab === "quotes"
+                  activeTab === "quotes" || activeTab === "dashboard"
                     ? "border-primary/30 bg-primary/5 text-foreground"
                     : "border-border/40 bg-muted/20 text-muted-foreground"
                 }`}
@@ -263,14 +311,29 @@ export function AppNavigation({
                 <LayoutDashboard className="size-4 text-primary shrink-0" />
                 <div>
                   <div className="font-bold">Dashboard</div>
-                  <div className="text-[10px] font-normal text-muted-foreground">
-                    Leads & Quotes
-                  </div>
+                  <div className="text-[10px] font-normal text-muted-foreground">Overview</div>
                 </div>
-              </button>
+              </Link>
 
-              <button
-                onClick={() => handleNavClick("pricing")}
+              <Link
+                to="/quotes"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-bold text-left border ${
+                  activeTab === "all-quotes"
+                    ? "border-primary/30 bg-primary/5 text-foreground"
+                    : "border-border/40 bg-muted/20 text-muted-foreground"
+                }`}
+              >
+                <ReceiptText className="size-4 text-emerald-500 shrink-0" />
+                <div>
+                  <div className="font-bold">Quotes & Leads</div>
+                  <div className="text-[10px] font-normal text-muted-foreground">Submissions</div>
+                </div>
+              </Link>
+
+              <Link
+                to="/pricing"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-bold text-left border ${
                   activeTab === "pricing"
                     ? "border-primary/30 bg-primary/5 text-foreground"
@@ -279,43 +342,84 @@ export function AppNavigation({
               >
                 <Sliders className="size-4 text-amber-500 shrink-0" />
                 <div>
-                  <div className="font-bold">Settings</div>
+                  <div className="font-bold">Services & Prices</div>
                   <div className="text-[10px] font-normal text-muted-foreground">
-                    Services & Prices
+                    Packages & Rates
                   </div>
                 </div>
-              </button>
+              </Link>
 
-              <button
-                onClick={() => handleNavClick("settings")}
+              <Link
+                to="/notifications"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-bold text-left border ${
-                  activeTab === "settings"
+                  activeTab === "notifications"
+                    ? "border-primary/30 bg-primary/5 text-foreground"
+                    : "border-border/40 bg-muted/20 text-muted-foreground"
+                }`}
+              >
+                <Send className="size-4 text-blue-500 shrink-0" />
+                <div>
+                  <div className="font-bold">Telegram Alerts</div>
+                  <div className="text-[10px] font-normal text-muted-foreground">
+                    Phone Notifications
+                  </div>
+                </div>
+              </Link>
+
+              <Link
+                to="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-bold text-left border ${
+                  activeTab === "profile"
                     ? "border-primary/30 bg-primary/5 text-foreground"
                     : "border-border/40 bg-muted/20 text-muted-foreground"
                 }`}
               >
                 <Store className="size-4 text-purple-500 shrink-0" />
                 <div>
-                  <div className="font-bold">Profile</div>
+                  <div className="font-bold">Shop Profile</div>
                   <div className="text-[10px] font-normal text-muted-foreground">
-                    Shop & Branding
+                    Slug & Branding
                   </div>
                 </div>
-              </button>
+              </Link>
 
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setHelpOpen(true);
-                }}
-                className="flex items-center gap-2 p-3 rounded-2xl text-xs font-bold text-left border border-border/40 bg-muted/20 text-muted-foreground"
+              <Link
+                to="/settings"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-bold text-left border ${
+                  activeTab === "settings"
+                    ? "border-primary/30 bg-primary/5 text-foreground"
+                    : "border-border/40 bg-muted/20 text-muted-foreground"
+                }`}
               >
-                <HelpCircle className="size-4 text-blue-500 shrink-0" />
+                <Settings className="size-4 text-slate-500 shrink-0" />
                 <div>
-                  <div className="font-bold">Help & Support</div>
-                  <div className="text-[10px] font-normal text-muted-foreground">FAQs & Setup</div>
+                  <div className="font-bold">Settings</div>
+                  <div className="text-[10px] font-normal text-muted-foreground">
+                    Account & Access
+                  </div>
                 </div>
-              </button>
+              </Link>
+
+              <Link
+                to="/help"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`col-span-2 flex items-center gap-2 p-3 rounded-2xl text-xs font-bold text-left border ${
+                  activeTab === "help"
+                    ? "border-primary/30 bg-primary/5 text-foreground"
+                    : "border-border/40 bg-muted/20 text-muted-foreground"
+                }`}
+              >
+                <HelpCircle className="size-4 text-cyan-500 shrink-0" />
+                <div>
+                  <div className="font-bold">Help Center & FAQ</div>
+                  <div className="text-[10px] font-normal text-muted-foreground">
+                    Guides, Setup & Support
+                  </div>
+                </div>
+              </Link>
             </div>
 
             {profile && (

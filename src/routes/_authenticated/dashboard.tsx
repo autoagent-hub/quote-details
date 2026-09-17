@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ensureWelcomeEmail } from "@/lib/auth-codes.functions";
-import { ReceiptText, Sliders, Bell, Store } from "lucide-react";
+import { ReceiptText, Sliders, Bell, Store, ExternalLink, ChevronRight } from "lucide-react";
 
 import { SkeletonDashboard } from "@/components/skeletons/SkeletonDashboard";
 import { Badge } from "@/components/ui/badge";
@@ -165,7 +165,16 @@ function DashboardPage() {
               </div>
 
               {/* Tab 1: Customer Leads */}
-              <TabsContent value="quotes" className="focus-visible:outline-none ring-0">
+              <TabsContent value="quotes" className="focus-visible:outline-none ring-0 space-y-4">
+                <div className="flex justify-end">
+                  <Link
+                    to="/quotes"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1 px-3 rounded-lg bg-muted/40 hover:bg-muted"
+                  >
+                    <span>Open Standalone Leads & Quotes Page</span>
+                    <ExternalLink className="size-3" />
+                  </Link>
+                </div>
                 <QuoteHistoryCard
                   quotes={quotes ?? []}
                   currency={profile.currency}
@@ -176,19 +185,49 @@ function DashboardPage() {
               </TabsContent>
 
               {/* Tab 2: Pricing & Rates */}
-              <TabsContent value="pricing" className="focus-visible:outline-none ring-0">
+              <TabsContent value="pricing" className="focus-visible:outline-none ring-0 space-y-4">
+                <div className="flex justify-end">
+                  <Link
+                    to="/pricing"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1 px-3 rounded-lg bg-muted/40 hover:bg-muted"
+                  >
+                    <span>Open Standalone Services Page</span>
+                    <ExternalLink className="size-3" />
+                  </Link>
+                </div>
                 <PricingCard profile={profile} />
               </TabsContent>
 
               {/* Tab 3: Telegram Phone Alerts */}
-              <TabsContent value="notifications" className="focus-visible:outline-none ring-0">
+              <TabsContent
+                value="notifications"
+                className="focus-visible:outline-none ring-0 space-y-4"
+              >
+                <div className="max-w-3xl mx-auto flex justify-end">
+                  <Link
+                    to="/notifications"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1 px-3 rounded-lg bg-muted/40 hover:bg-muted"
+                  >
+                    <span>Open Standalone Alerts Page</span>
+                    <ExternalLink className="size-3" />
+                  </Link>
+                </div>
                 <div className="max-w-3xl mx-auto">
                   <NotificationSettingsCard profile={profile} />
                 </div>
               </TabsContent>
 
               {/* Tab 4: Shop Profile */}
-              <TabsContent value="settings" className="focus-visible:outline-none ring-0">
+              <TabsContent value="settings" className="focus-visible:outline-none ring-0 space-y-4">
+                <div className="max-w-3xl mx-auto flex justify-end">
+                  <Link
+                    to="/profile"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1 px-3 rounded-lg bg-muted/40 hover:bg-muted"
+                  >
+                    <span>Open Standalone Profile Page</span>
+                    <ExternalLink className="size-3" />
+                  </Link>
+                </div>
                 <div className="max-w-3xl mx-auto">
                   <BusinessProfileCard profile={profile} />
                 </div>

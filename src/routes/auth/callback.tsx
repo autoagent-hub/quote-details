@@ -30,7 +30,22 @@ function AuthCallbackPage() {
       const code = urlParams.get("code");
       if (code) {
         try {
-          await supabase.auth.exchangeCodeForSession(code);
+          const { error: exchErr } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchErr) {
+            // If Supabase exchange failed, try Google callback
+            const redirectUri = `${window.location.origin}/auth/callback`;
+            const res = await fetch("/api/public/google-callback", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code, redirectUri }),
+            });
+            const data = (await res.json()) as { token_hash?: string; id_token?: string };
+            if (data.token_hash) {
+              await supabase.auth.verifyOtp({ token_hash: data.token_hash, type: "magiclink" });
+            } else if (data.id_token) {
+              await supabase.auth.signInWithIdToken({ provider: "google", token: data.id_token });
+            }
+          }
         } catch (err) {
           console.warn("OAuth code exchange:", err);
         }

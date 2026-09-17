@@ -94,7 +94,28 @@ function AuthV1CallbackPage() {
               body: JSON.stringify({ code, redirectUri }),
             });
 
-            const data = (await res.json()) as { id_token?: string; error?: string };
+            const data = (await res.json()) as {
+              id_token?: string;
+              token_hash?: string;
+              error?: string;
+            };
+
+            if (data.token_hash) {
+              const { data: otpData, error: otpErr } = await supabase.auth.verifyOtp({
+                token_hash: data.token_hash,
+                type: "magiclink",
+              });
+              if (!otpErr && otpData?.user) {
+                if (unmounted) return;
+                void ensureWelcomeEmail({
+                  data: { userId: otpData.user.id, email: otpData.user.email },
+                }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
+                toast.success("Successfully signed in with Google!");
+                navigate({ to: "/dashboard" });
+                return;
+              }
+            }
+
             if (res.ok && data.id_token) {
               idToken = data.id_token;
             }
