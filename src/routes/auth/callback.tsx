@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureWelcomeEmail } from "@/lib/auth-codes.functions";
 
 export const Route = createFileRoute("/auth/callback")({
   ssr: false,
@@ -18,9 +17,6 @@ function AuthCallbackPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user && !unmounted) {
-        void ensureWelcomeEmail({
-          data: { userId: session.user.id, email: session.user.email },
-        }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
         navigate({ to: "/dashboard" });
       }
     });
@@ -57,9 +53,6 @@ function AuthCallbackPage() {
 
       if (session?.user) {
         if (!unmounted) {
-          void ensureWelcomeEmail({
-            data: { userId: session.user.id, email: session.user.email },
-          }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
           navigate({ to: "/dashboard" });
         }
       } else {

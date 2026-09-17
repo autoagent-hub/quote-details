@@ -25,7 +25,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GoogleIcon } from "@/components/GoogleIcon";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
@@ -287,9 +286,6 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
         });
 
         if (!idAuthError && idAuthData?.user) {
-          void ensureWelcomeEmail({
-            data: { userId: idAuthData.user.id, email: idAuthData.user.email },
-          }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
           toast.success("Successfully signed in with Google!");
           navigate({ to: "/dashboard" });
           return;
@@ -328,9 +324,6 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
         if (otpError) throw otpError;
 
         if (otpData?.user) {
-          void ensureWelcomeEmail({
-            data: { userId: otpData.user.id, email: otpData.user.email },
-          }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
           toast.success("Successfully signed in with Google!");
           navigate({ to: "/dashboard" });
           return;
@@ -344,90 +337,6 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
     } finally {
       setGoogleLoading(false);
     }
-  };
-
-  const handleGoogleAuth = () => {
-    const customWin =
-      typeof window !== "undefined" ? (window as unknown as CustomWindow) : undefined;
-    const clientId =
-      customWin?.__PUBLIC_CONFIG__?.googleClientId ||
-      customWin?.__PUBLIC_CONFIG__?.VITE_GOOGLE_CLIENT_ID ||
-      import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-    if (!clientId) {
-      toast.error("Google Client ID is not configured");
-      return;
-    }
-
-    setGoogleLoading(true);
-
-    // If Google OAuth2 popup code client is available
-    if (customWin?.google?.accounts?.oauth2?.initCodeClient) {
-      const codeClient = customWin.google.accounts.oauth2.initCodeClient({
-        client_id: clientId,
-        scope: "openid email profile",
-        ux_mode: "popup",
-        callback: async (response) => {
-          if (response.code) {
-            try {
-              const res = await fetch("/api/public/google-callback", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code: response.code, redirectUri: "postmessage" }),
-              });
-              const data = (await res.json()) as {
-                token_hash?: string;
-                id_token?: string;
-                error?: string;
-              };
-
-              if (data.token_hash) {
-                const { error: verifyErr } = await supabase.auth.verifyOtp({
-                  token_hash: data.token_hash,
-                  type: "magiclink",
-                });
-                if (verifyErr) throw verifyErr;
-                toast.success("Successfully signed in with Google!");
-                navigate({ to: "/dashboard" });
-                return;
-              } else if (data.id_token) {
-                const { error: idErr } = await supabase.auth.signInWithIdToken({
-                  provider: "google",
-                  token: data.id_token,
-                });
-                if (idErr) throw idErr;
-                toast.success("Successfully signed in with Google!");
-                navigate({ to: "/dashboard" });
-                return;
-              }
-              throw new Error(data.error || "Google authentication exchange failed");
-            } catch (err: unknown) {
-              const e = err as Error;
-              toast.error(e.message || "Google sign-in failed");
-            } finally {
-              setGoogleLoading(false);
-            }
-          } else {
-            setGoogleLoading(false);
-          }
-        },
-      });
-      codeClient.requestCode();
-      return;
-    }
-
-    // Trigger GSI One-Tap prompt if available
-    if (customWin?.google?.accounts?.id?.prompt) {
-      customWin.google.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          setGoogleLoading(false);
-        }
-      });
-      return;
-    }
-
-    setGoogleLoading(false);
-    toast.error("Google authentication service is initializing. Please try again.");
   };
 
   useEffect(() => {
@@ -914,31 +823,12 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
                     </span>
                   </div>
 
-                  <div className="flex flex-col items-center justify-center gap-2.5">
+                  <div className="flex justify-center items-center w-full min-h-[44px]">
                     {/* Google Embedded Official Widget */}
                     <div
                       id="google-embedded-btn-container"
                       className="flex justify-center w-full min-h-[44px] overflow-hidden"
                     />
-
-                    {/* Interactive Google Button */}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="xl"
-                      onClick={handleGoogleAuth}
-                      disabled={loading || googleLoading}
-                      className="flex w-full items-center justify-center gap-3 border-border hover:bg-surface font-semibold"
-                    >
-                      {googleLoading ? (
-                        <Loader2 className="size-5 animate-spin" />
-                      ) : (
-                        <GoogleIcon className="size-5" />
-                      )}
-                      <span>
-                        {mode === "signup" ? "Sign up with Google" : "Continue with Google"}
-                      </span>
-                    </Button>
                   </div>
                 </div>
               )}

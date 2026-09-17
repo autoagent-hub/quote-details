@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureWelcomeEmail } from "@/lib/auth-codes.functions";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -22,9 +21,6 @@ function AuthV1CallbackPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user && !unmounted) {
-        void ensureWelcomeEmail({
-          data: { userId: session.user.id, email: session.user.email },
-        }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
         toast.success("Successfully signed in with Google!");
         navigate({ to: "/dashboard" });
       }
@@ -38,9 +34,6 @@ function AuthV1CallbackPage() {
         } = await supabase.auth.getSession();
         if (currentSession?.user) {
           if (unmounted) return;
-          void ensureWelcomeEmail({
-            data: { userId: currentSession.user.id, email: currentSession.user.email },
-          }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
           toast.success("Welcome back!");
           navigate({ to: "/dashboard" });
           return;
@@ -62,12 +55,6 @@ function AuthV1CallbackPage() {
               await supabase.auth.exchangeCodeForSession(code);
             if (!exchangeError && exchangeData?.session?.user) {
               if (unmounted) return;
-              void ensureWelcomeEmail({
-                data: {
-                  userId: exchangeData.session.user.id,
-                  email: exchangeData.session.user.email,
-                },
-              }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
               toast.success("Successfully signed in with Google!");
               navigate({ to: "/dashboard" });
               return;
@@ -107,9 +94,6 @@ function AuthV1CallbackPage() {
               });
               if (!otpErr && otpData?.user) {
                 if (unmounted) return;
-                void ensureWelcomeEmail({
-                  data: { userId: otpData.user.id, email: otpData.user.email },
-                }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
                 toast.success("Successfully signed in with Google!");
                 navigate({ to: "/dashboard" });
                 return;
@@ -135,13 +119,6 @@ function AuthV1CallbackPage() {
             throw sessionError;
           }
 
-          if (authData?.user) {
-            if (unmounted) return;
-            void ensureWelcomeEmail({
-              data: { userId: authData.user.id, email: authData.user.email },
-            }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
-          }
-
           toast.success("Successfully signed in with Google!");
           navigate({ to: "/dashboard" });
           return;
@@ -153,9 +130,6 @@ function AuthV1CallbackPage() {
         } = await supabase.auth.getSession();
         if (session?.user) {
           if (unmounted) return;
-          void ensureWelcomeEmail({
-            data: { userId: session.user.id, email: session.user.email },
-          }).catch((err) => console.warn("[welcome-email] dispatch error:", err));
           navigate({ to: "/dashboard" });
           return;
         }

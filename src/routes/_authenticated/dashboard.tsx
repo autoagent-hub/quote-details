@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ensureWelcomeEmail } from "@/lib/auth-codes.functions";
 import { ReceiptText, Sliders, Bell, Store, ExternalLink, ChevronRight } from "lucide-react";
 
 import { SkeletonDashboard } from "@/components/skeletons/SkeletonDashboard";
@@ -44,14 +43,6 @@ function DashboardPage() {
       return userData.user;
     },
   });
-
-  useEffect(() => {
-    if (user?.id && user?.email) {
-      void ensureWelcomeEmail({
-        data: { userId: user.id, email: user.email },
-      }).catch((err) => console.warn("[welcome-email] auto dispatch error:", err));
-    }
-  }, [user?.id, user?.email]);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile"],

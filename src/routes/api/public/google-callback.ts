@@ -137,6 +137,22 @@ export const Route = createFileRoute("/api/public/google-callback")({
                 });
                 if (!createError && newUser?.user) {
                   existingUser = newUser.user;
+                  try {
+                    const { sendWelcomeEmail } = await import("@/lib/welcome-email.server");
+                    await sendWelcomeEmail(tokenEmail);
+                  } catch (welcomeErr) {
+                    console.warn("[google-callback] sendWelcomeEmail warning:", welcomeErr);
+                  }
+                  try {
+                    const { sendAdminTelegramAlert } =
+                      await import("@/lib/admin-telegram.functions");
+                    await sendAdminTelegramAlert({
+                      type: "NEW_SIGNUP",
+                      userEmail: tokenEmail,
+                    });
+                  } catch (telegramErr) {
+                    console.warn("[google-callback] sendAdminTelegramAlert warning:", telegramErr);
+                  }
                 }
               }
 
