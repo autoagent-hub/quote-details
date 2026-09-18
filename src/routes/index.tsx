@@ -26,6 +26,7 @@ import { SeoHead } from "@/components/seo/SeoHead";
 import heroImage from "@/assets/hero-detailer.jpg";
 
 export const Route = createFileRoute("/")({
+  ssr: false,
   head: () => ({
     meta: [
       { name: "google-site-verification", content: "KcgCWTCmUyxEVd1lRMq6xabTrWkbMo0rsUFleV8q2m0" },

@@ -65,6 +65,7 @@ type PublicProfile = {
 };
 
 export const Route = createFileRoute("/$business_slug")({
+  ssr: false,
   validateSearch: (search: Record<string, unknown>): { test?: boolean } =>
     search["test"] === "1" || search["test"] === true ? { test: true } : {},
   loader: async ({ params }): Promise<PublicProfile | null> => {
@@ -541,7 +542,7 @@ function QuoteForm() {
           phone: profile.phone || undefined,
           image: profile.logo_url || undefined,
           priceRange: "$$",
-          servicesOffered: services.map((s) => s.name),
+          servicesOffered: packages.map((p) => p.label),
         }}
       />
       {isTest && (
