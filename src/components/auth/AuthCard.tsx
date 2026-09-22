@@ -1,5 +1,5 @@
 import { useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import * as React from "react";
 import {
   ArrowRight,
   Bell,
@@ -22,10 +22,12 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { requestAuthCode, verifyRecoveryCode, verifySignupCode } from "@/lib/auth-codes.functions";
 
 export type AuthMode = "signin" | "signup" | "forgot";
@@ -36,29 +38,29 @@ interface AuthCardProps {
 
 export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [step, setStep] = useState<"details" | "code">("details");
+  const [mode, setMode] = React.useState<AuthMode>(initialMode);
+  const [step, setStep] = React.useState<"details" | "code">("details");
 
   // Form fields
-  const [businessName, setBusinessName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [code, setCode] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
+  const [businessName, setBusinessName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [code, setCode] = React.useState("");
+  const [rememberMe, setRememberMe] = React.useState(true);
 
   // Status
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  const [loading, setLoading] = React.useState(false);
+  const [googleLoading, setGoogleLoading] = React.useState(false);
+  const [resendCooldown, setResendCooldown] = React.useState(0);
 
   // If already logged in or auth state changes, redirect to dashboard
-  useEffect(() => {
+  React.useEffect(() => {
     supabase.auth
       .getSession()
       .then(({ data }) => {
         if (data?.session) {
-          window.location.href = "/dashboard";
+          navigate({ to: "/dashboard" });
         }
       })
       .catch((err) => {
@@ -70,7 +72,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((_event, session) => {
         if (session) {
-          window.location.href = "/dashboard";
+          navigate({ to: "/dashboard" });
         }
       });
 
@@ -81,14 +83,14 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
   }, [navigate]);
 
   // Sync mode if initialMode prop changes (e.g. navigation between /login and /signup)
-  useEffect(() => {
+  React.useEffect(() => {
     setMode(initialMode);
     setStep("details");
     setCode("");
   }, [initialMode]);
 
   // Resend cooldown timer
-  useEffect(() => {
+  React.useEffect(() => {
     if (resendCooldown <= 0) return;
     const interval = setInterval(() => {
       setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
@@ -134,7 +136,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
-        window.location.href = "/dashboard";
+        navigate({ to: "/dashboard" });
         return;
       }
 
@@ -195,7 +197,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
       toast.success(
         mode === "signup" ? "Account created! Welcome to Detailr." : "Logged in successfully.",
       );
-      window.location.href = "/dashboard";
+      navigate({ to: "/dashboard" });
     } catch (error) {
       fail(error);
     } finally {
@@ -285,7 +287,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
 
         if (!idAuthError && idAuthData?.user) {
           toast.success("Successfully signed in with Google!");
-          window.location.href = "/dashboard";
+          navigate({ to: "/dashboard" });
           return;
         }
       } catch (directErr) {
@@ -323,7 +325,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
 
         if (otpData?.user) {
           toast.success("Successfully signed in with Google!");
-          window.location.href = "/dashboard";
+          navigate({ to: "/dashboard" });
           return;
         }
       }
@@ -398,6 +400,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
     return () => {
       mounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
   // Password strength helper

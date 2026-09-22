@@ -325,9 +325,23 @@ export const ensureWelcomeEmail = createServerFn({ method: "POST" })
       return { ok: true, sent: false, alreadySent: true };
     }
 
-    // Dispatch welcome email
+    // Dispatch welcome email with personalized 4-step widget cards
     try {
-      await sendWelcomeEmail(userEmail);
+      let businessName: string | undefined;
+      let userSlug: string | undefined;
+      if (userId) {
+        const { data: prof } = await admin
+          .from("profiles")
+          .select("business_name, slug")
+          .eq("id", userId)
+          .maybeSingle();
+        if (prof) {
+          businessName = prof.business_name;
+          userSlug = prof.slug;
+        }
+      }
+
+      await sendWelcomeEmail(userEmail, businessName, userSlug);
 
       // Dispatch real-time Telegram notification to Admin for new signups
       sendAdminTelegramAlert({

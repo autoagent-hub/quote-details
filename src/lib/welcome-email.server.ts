@@ -1,4 +1,4 @@
-export async function sendWelcomeEmail(to: string) {
+export async function sendWelcomeEmail(to: string, businessName?: string, slug?: string) {
   const apiKey = process.env["RESEND_API_KEY"];
   if (!apiKey) {
     console.warn("[welcome-email] RESEND_API_KEY not configured, skipping welcome email.");
@@ -12,12 +12,12 @@ export async function sendWelcomeEmail(to: string) {
   const appUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
   const logoUrl = `${appUrl.replace(/\/$/, "")}/logo.png`;
-  const banner1Url = `${appUrl.replace(/\/$/, "")}/detailr-branding-card.png`;
-  const banner2Url = `${appUrl.replace(/\/$/, "")}/dashboard-telegram-setup.png`;
-  const banner3Url = `${appUrl.replace(/\/$/, "")}/og-image.png`;
   const dashboardUrl = `${appUrl.replace(/\/$/, "")}/dashboard`;
+  const shopName = businessName?.trim() || "Detailer";
+  const userSlug = slug?.trim() || "your-shop";
+  const liveQuoteUrl = `${appUrl.replace(/\/$/, "")}/${userSlug}`;
 
-  const subject = "Welcome to Detailr — Your Getting Started Guide & Next Steps";
+  const subject = "Welcome to Detailr — Complete Your 4 Setup Steps";
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -27,32 +27,32 @@ export async function sendWelcomeEmail(to: string) {
   <title>Welcome to Detailr</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Welcome to Detailr — your instant vehicle quote calculator and Telegram lead system is ready!</div>
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Welcome to Detailr! Follow these 4 simple steps to launch your automated quote calculator and Telegram lead alerts.</div>
   
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a;padding:40px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background-color:#ffffff;border-radius:20px;box-shadow:0 10px 25px rgba(0,0,0,0.15);overflow:hidden;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background-color:#ffffff;border-radius:24px;box-shadow:0 12px 30px rgba(0,0,0,0.18);overflow:hidden;">
           
           <!-- Top Header Brand Bar -->
           <tr>
-            <td style="padding:32px 36px 24px 36px;border-bottom:1px solid #f1f5f9;background-color:#ffffff;">
+            <td style="padding:28px 36px 20px 36px;border-bottom:1px solid #f1f5f9;background-color:#ffffff;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr>
                   <td style="vertical-align:middle;">
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="vertical-align:middle;padding-right:12px;">
-                          <img src="${logoUrl}" width="42" height="42" alt="Detailr" style="display:block;border-radius:12px;width:42px;height:42px;object-fit:cover;" />
+                          <img src="${logoUrl}" width="40" height="40" alt="Detailr" style="display:block;border-radius:12px;width:40px;height:40px;object-fit:cover;" />
                         </td>
                         <td style="vertical-align:middle;">
-                          <span style="font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-0.5px;">Detailr<span style="color:#0284c7;">.</span></span>
+                          <span style="font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.5px;">Detailr<span style="color:#0284c7;">.</span></span>
                         </td>
                       </tr>
                     </table>
                   </td>
                   <td align="right" style="vertical-align:middle;">
-                    <a href="${dashboardUrl}" style="display:inline-block;padding:8px 16px;background-color:#f0f9ff;color:#0369a1;font-size:12px;font-weight:700;border-radius:8px;text-decoration:none;">Open Dashboard</a>
+                    <a href="${dashboardUrl}" style="display:inline-block;padding:8px 16px;background-color:#f0f9ff;color:#0369a1;font-size:12px;font-weight:700;border-radius:10px;text-decoration:none;">Open Dashboard →</a>
                   </td>
                 </tr>
               </table>
@@ -61,79 +61,229 @@ export async function sendWelcomeEmail(to: string) {
 
           <!-- Hero Welcome Section -->
           <tr>
-            <td style="padding:40px 36px 30px 36px;background:linear-gradient(135deg,#0284c7 0%,#0369a1 100%);color:#ffffff;text-align:center;">
-              <h1 style="margin:0 0 12px 0;font-size:26px;font-weight:800;letter-spacing:-0.5px;line-height:34px;">You're All Set, Detailer!</h1>
-              <p style="margin:0;font-size:15px;line-height:24px;color:#e0f2fe;max-width:480px;margin-left:auto;margin-right:auto;">
-                Welcome to Detailr. You now have a high-converting instant quote calculator and real-time Telegram lead alerts built exclusively for professional mobile auto detailers.
+            <td style="padding:36px 36px 28px 36px;background:linear-gradient(135deg,#0284c7 0%,#0369a1 100%);color:#ffffff;text-align:center;">
+              <h1 style="margin:0 0 10px 0;font-size:25px;font-weight:800;letter-spacing:-0.5px;line-height:32px;">Welcome back, ${shopName}! 👋</h1>
+              <p style="margin:0;font-size:14px;line-height:22px;color:#e0f2fe;max-width:480px;margin-left:auto;margin-right:auto;">
+                Complete these 4 simple steps to launch your automated quote calculator and capture high-intent customer leads 24/7.
               </p>
             </td>
           </tr>
 
-          <!-- Step 1 -->
+          <!-- STEP 1 WIDGET CARD -->
           <tr>
-            <td style="padding:36px 36px 20px 36px;border-bottom:1px solid #f1f5f9;">
+            <td style="padding:28px 36px;border-bottom:1px solid #f1f5f9;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <span style="display:inline-block;padding:4px 10px;background-color:#e0f2fe;color:#0369a1;font-size:11px;font-weight:800;border-radius:6px;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">Step 1 of 3</span>
-                    <h2 style="margin:0 0 8px 0;font-size:18px;font-weight:700;color:#0f172a;">Configure Your Pricing & Services</h2>
-                    <p style="margin:0 0 18px 0;font-size:14px;line-height:22px;color:#475569;">
-                      Set your business name, adjust your service tiers (e.g., Ceramic Coating, Full Interior Detail, Maintenance Wash), and set vehicle size multipliers in your dashboard.
+                    <!-- Header -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+                      <tr>
+                        <td style="padding-right:8px;">
+                          <span style="display:inline-block;padding:3px 10px;background-color:#f3e8ff;color:#7e22ce;font-size:11px;font-weight:800;border-radius:6px;text-transform:uppercase;letter-spacing:0.5px;">Step 1 of 4</span>
+                        </td>
+                        <td>
+                          <span style="display:inline-block;padding:3px 8px;background-color:#fef3c7;color:#b45309;font-size:10px;font-weight:700;border-radius:6px;">Recommended</span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <h2 style="margin:0 0 6px 0;font-size:18px;font-weight:800;color:#0f172a;">1. Profile Setup</h2>
+                    <p style="margin:0 0 14px 0;font-size:13px;line-height:20px;color:#475569;">
+                      Personalize your shop identity, phone number, and quote URL slug so customers know who they are booking with.
                     </p>
-                    <div style="border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;background-color:#f8fafc;">
-                      <img src="${banner1Url}" alt="Step 1 Dashboard Pricing Matrix Screenshot" width="528" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />
+
+                    <!-- Widget Card Box Component -->
+                    <div style="border:1px solid #e2e8f0;border-radius:16px;background-color:#f8fafc;padding:16px;margin-bottom:14px;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td width="42" style="vertical-align:middle;padding-right:12px;">
+                            <div style="width:40px;height:40px;border-radius:12px;background-color:#e0f2fe;color:#0284c7;font-weight:800;font-size:15px;line-height:40px;text-align:center;">
+                              ${shopName.charAt(0).toUpperCase()}
+                            </div>
+                          </td>
+                          <td style="vertical-align:middle;">
+                            <div style="font-size:13px;font-weight:800;color:#0f172a;">${shopName}</div>
+                            <div style="font-size:11px;color:#64748b;margin-top:2px;">Contact Phone • detailr.online/${userSlug}</div>
+                          </td>
+                          <td align="right" style="vertical-align:middle;">
+                            <span style="font-size:11px;font-weight:700;color:#0284c7;background-color:#e0f2fe;padding:4px 8px;border-radius:6px;">Profile Info</span>
+                          </td>
+                        </tr>
+                      </table>
                     </div>
+
+                    <!-- Call To Action Button -->
+                    <a href="${dashboardUrl}" style="display:inline-block;padding:10px 20px;background-color:#0284c7;color:#ffffff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 3px 8px rgba(2,132,199,0.25);">
+                      Complete Shop Profile →
+                    </a>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Step 2 -->
+          <!-- STEP 2 WIDGET CARD -->
           <tr>
-            <td style="padding:36px 36px 20px 36px;border-bottom:1px solid #f1f5f9;">
+            <td style="padding:28px 36px;border-bottom:1px solid #f1f5f9;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <span style="display:inline-block;padding:4px 10px;background-color:#dcfce7;color:#15803d;font-size:11px;font-weight:800;border-radius:6px;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">Step 2 of 3</span>
-                    <h2 style="margin:0 0 8px 0;font-size:18px;font-weight:700;color:#0f172a;">Connect Telegram for Instant Lead Alerts</h2>
-                    <p style="margin:0 0 18px 0;font-size:14px;line-height:22px;color:#475569;">
-                      Never miss a client quote! Link your Telegram bot with one click so every customer request, vehicle photo, and price breakdown drops directly into your phone instantly.
+                    <!-- Header -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+                      <tr>
+                        <td style="padding-right:8px;">
+                          <span style="display:inline-block;padding:3px 10px;background-color:#fef3c7;color:#b45309;font-size:11px;font-weight:800;border-radius:6px;text-transform:uppercase;letter-spacing:0.5px;">Step 2 of 4</span>
+                        </td>
+                        <td>
+                          <span style="display:inline-block;padding:3px 8px;background-color:#dcfce7;color:#15803d;font-size:10px;font-weight:700;border-radius:6px;">✓ Pre-Loaded Rates</span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <h2 style="margin:0 0 6px 0;font-size:18px;font-weight:800;color:#0f172a;">2. Review Prices & Packages</h2>
+                    <p style="margin:0 0 14px 0;font-size:13px;line-height:20px;color:#475569;">
+                      Standard detailing rates are loaded for Sedans, SUVs, and Trucks with add-ons. Customize your prices anytime.
                     </p>
-                    <div style="border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;background-color:#f8fafc;">
-                      <img src="${banner2Url}" alt="Step 2 Telegram Alert Integration Screenshot" width="528" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />
+
+                    <!-- Widget Card Box Component -->
+                    <div style="border:1px solid #e2e8f0;border-radius:16px;background-color:#f8fafc;padding:16px;margin-bottom:14px;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="vertical-align:middle;">
+                            <div style="font-size:12px;font-weight:800;color:#0f172a;margin-bottom:4px;">
+                              Sedan $150 &nbsp;•&nbsp; SUV $190 &nbsp;•&nbsp; Truck $210
+                            </div>
+                            <div style="font-size:11px;color:#64748b;">
+                              Formula: [Base Package] + [Vehicle Size Fee] + [Selected Add-ons]
+                            </div>
+                          </td>
+                          <td align="right" style="vertical-align:middle;">
+                            <span style="font-size:11px;font-weight:700;color:#15803d;background-color:#dcfce7;padding:4px 8px;border-radius:6px;">Live Formula</span>
+                          </td>
+                        </tr>
+                      </table>
                     </div>
+
+                    <!-- Call To Action Button -->
+                    <a href="${dashboardUrl}" style="display:inline-block;padding:10px 20px;background-color:#0284c7;color:#ffffff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 3px 8px rgba(2,132,199,0.25);">
+                      Review & Customize Rates →
+                    </a>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Step 3 -->
+          <!-- STEP 3 WIDGET CARD -->
           <tr>
-            <td style="padding:36px 36px 30px 36px;">
+            <td style="padding:28px 36px;border-bottom:1px solid #f1f5f9;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <span style="display:inline-block;padding:4px 10px;background-color:#f3e8ff;color:#7e22ce;font-size:11px;font-weight:800;border-radius:6px;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">Step 3 of 3</span>
-                    <h2 style="margin:0 0 8px 0;font-size:18px;font-weight:700;color:#0f172a;">Share Your Quote Link Everywhere</h2>
-                    <p style="margin:0 0 18px 0;font-size:14px;line-height:22px;color:#475569;">
-                      Add your personalized booking link (e.g. <strong style="color:#0f172a;">detailr.online/your-business</strong>) to your Instagram bio, Google Business profile, and text messages.
+                    <!-- Header -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+                      <tr>
+                        <td style="padding-right:8px;">
+                          <span style="display:inline-block;padding:3px 10px;background-color:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:800;border-radius:6px;text-transform:uppercase;letter-spacing:0.5px;">Step 3 of 4</span>
+                        </td>
+                        <td>
+                          <span style="display:inline-block;padding:3px 8px;background-color:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;border-radius:6px;">Takes 30 seconds</span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <h2 style="margin:0 0 6px 0;font-size:18px;font-weight:800;color:#0f172a;">3. Connect Phone Alerts (Telegram)</h2>
+                    <p style="margin:0 0 14px 0;font-size:13px;line-height:20px;color:#475569;">
+                      Receive instant push notifications on your phone for every customer inquiry. No SMS carrier delays or fees.
                     </p>
-                    <div style="border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;background-color:#f8fafc;">
-                      <img src="${banner3Url}" alt="Step 3 Live Quote Link & QR Code Screenshot" width="528" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />
+
+                    <!-- Widget Card Box Component -->
+                    <div style="border:1px solid #e2e8f0;border-radius:16px;background-color:#f8fafc;padding:16px;margin-bottom:14px;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td width="36" style="vertical-align:middle;padding-right:10px;">
+                            <div style="width:34px;height:34px;border-radius:10px;background-color:#e0f2fe;color:#0284c7;font-size:16px;line-height:34px;text-align:center;">
+                              🔔
+                            </div>
+                          </td>
+                          <td style="vertical-align:middle;">
+                            <div style="font-size:12px;font-weight:800;color:#0f172a;">Free Telegram Push Alerts</div>
+                            <div style="font-size:11px;color:#64748b;margin-top:2px;">Client name, phone number, vehicle type & requested service</div>
+                          </td>
+                          <td align="right" style="vertical-align:middle;">
+                            <span style="font-size:11px;font-weight:700;color:#1d4ed8;background-color:#dbeafe;padding:4px 8px;border-radius:6px;">100% Free</span>
+                          </td>
+                        </tr>
+                      </table>
                     </div>
+
+                    <!-- Call To Action Button -->
+                    <a href="${dashboardUrl}" style="display:inline-block;padding:10px 20px;background-color:#0284c7;color:#ffffff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 3px 8px rgba(2,132,199,0.25);">
+                      Connect Free Telegram Bot →
+                    </a>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Call To Action Button -->
+          <!-- STEP 4 WIDGET CARD -->
           <tr>
-            <td align="center" style="padding:10px 36px 40px 36px;">
-              <a href="${dashboardUrl}" style="display:inline-block;background-color:#0284c7;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:12px;box-shadow:0 4px 12px rgba(2,132,199,0.3);">
-                Go to Your Dashboard →
+            <td style="padding:28px 36px 36px 36px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <!-- Header -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+                      <tr>
+                        <td style="padding-right:8px;">
+                          <span style="display:inline-block;padding:3px 10px;background-color:#dcfce7;color:#15803d;font-size:11px;font-weight:800;border-radius:6px;text-transform:uppercase;letter-spacing:0.5px;">Step 4 of 4</span>
+                        </td>
+                        <td>
+                          <span style="display:inline-block;padding:3px 8px;background-color:#dcfce7;color:#15803d;font-size:10px;font-weight:700;border-radius:6px;">Ready for Leads</span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <h2 style="margin:0 0 6px 0;font-size:18px;font-weight:800;color:#0f172a;">4. Your Quote Link is Live</h2>
+                    <p style="margin:0 0 14px 0;font-size:13px;line-height:20px;color:#475569;">
+                      Your automated price calculator is live and ready for customers. Put this link in your Instagram bio or text it to prospects.
+                    </p>
+
+                    <!-- Widget Card Box Component -->
+                    <div style="border:1px solid #e2e8f0;border-radius:16px;background-color:#f8fafc;padding:16px;margin-bottom:14px;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="vertical-align:middle;">
+                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">
+                              Your Public Calculator Link:
+                            </div>
+                            <div style="font-family:monospace;font-size:13px;font-weight:800;color:#0284c7;">
+                              ${liveQuoteUrl.replace(/^https?:\/\//, "")}
+                            </div>
+                          </td>
+                          <td align="right" style="vertical-align:middle;">
+                            <span style="font-size:11px;font-weight:700;color:#15803d;background-color:#dcfce7;padding:4px 8px;border-radius:6px;">● Live</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+
+                    <!-- Call To Action Button -->
+                    <a href="${liveQuoteUrl}" target="_blank" style="display:inline-block;padding:10px 20px;background-color:#0284c7;color:#ffffff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 3px 8px rgba(2,132,199,0.25);">
+                      Open Live Quote Link →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Master Call To Action -->
+          <tr>
+            <td align="center" style="padding:10px 36px 36px 36px;border-top:1px solid #f1f5f9;">
+              <a href="${dashboardUrl}" style="display:inline-block;background-color:#0f172a;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:12px;box-shadow:0 4px 12px rgba(15,23,42,0.25);">
+                Launch Your Detailr Dashboard →
               </a>
             </td>
           </tr>
@@ -143,7 +293,7 @@ export async function sendWelcomeEmail(to: string) {
             <td style="padding:24px 36px;background-color:#f8fafc;border-top:1px solid #f1f5f9;text-align:center;">
               <p style="margin:0 0 6px 0;font-size:12px;font-weight:600;color:#64748b;">Detailr · Instant Vehicle Quotes & Real-Time Telegram Leads</p>
               <p style="margin:0;font-size:11px;color:#94a3b8;">
-                Built for professional mobile auto detailers · <a href="https://detailr.online" style="color:#0284c7;text-decoration:none;">detailr.online</a>
+                Built for professional mobile auto detailers · <a href="${appUrl}" style="color:#0284c7;text-decoration:none;">detailr.online</a>
               </p>
             </td>
           </tr>
@@ -155,18 +305,24 @@ export async function sendWelcomeEmail(to: string) {
 </body>
 </html>`;
 
-  const text = `Welcome to Detailr!
+  const text = `Welcome to Detailr, ${shopName}!
 
-You're all set! You now have a high-converting instant quote calculator and real-time Telegram lead alerts built for professional mobile auto detailers.
+Complete these 4 simple steps to launch your automated quote calculator and capture high-intent leads:
 
-Step 1: Configure Your Pricing & Services
-Set your business name, pricing matrix, add-ons, and vehicle size multipliers in your dashboard.
+Step 1: Profile Setup
+Set your shop name, contact phone number, and quote URL slug.
+Complete profile: ${dashboardUrl}
 
-Step 2: Connect Telegram for Instant Lead Alerts
-Link your Telegram bot so every customer quote request and photo drops directly into your phone instantly.
+Step 2: Review Prices & Packages
+Standard detailing rates (Sedan $150, SUV $190, Truck $210) and vehicle uplift fees are ready. Adjust anytime.
+Review prices: ${dashboardUrl}
 
-Step 3: Share Your Quote Link Everywhere
-Add your personalized booking link (detailr.online/your-business) to your Instagram bio, website, and business cards.
+Step 3: Connect Phone Alerts (Telegram)
+Receive instant push notifications with customer name, phone number, vehicle type, and requested services.
+Connect bot: ${dashboardUrl}
+
+Step 4: Your Quote Link is Live
+Your automated price calculator is live at ${liveQuoteUrl}. Share it in your Instagram bio, Google Profile, or text it to prospects.
 
 Open your dashboard to get started: ${dashboardUrl}
 

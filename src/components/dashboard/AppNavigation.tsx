@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
@@ -26,7 +26,6 @@ import {
 import { toast } from "sonner";
 
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -66,7 +65,18 @@ export function AppNavigation({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
-  const isUserAdmin = isAdminEmail(userEmail);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!userEmail) {
+      supabase.auth.getSession().then(({ data }) => {
+        setSessionEmail(data.session?.user?.email ?? null);
+      });
+    }
+  }, [userEmail]);
+
+  const effectiveEmail = userEmail || sessionEmail;
+  const isUserAdmin = isAdminEmail(effectiveEmail);
 
   const copyQuoteLink = () => {
     if (!profile?.slug) return;
@@ -222,12 +232,12 @@ export function AppNavigation({
                   variant="ghost"
                   size="sm"
                   className="h-8 rounded-xl px-2.5 text-muted-foreground hover:text-foreground text-[11px] font-bold gap-1.5 hidden lg:flex"
-                  title="Preview quote calculator in test sandbox"
+                  title="Test your quote bot"
                 >
-                  <a href={`/${profile.slug}?test=true`} target="_blank" rel="noreferrer">
+                  <Link to="/test-bot">
                     <FlaskConical className="size-3.5 text-amber-500" />
-                    <span>Sandbox</span>
-                  </a>
+                    <span>Test Bot</span>
+                  </Link>
                 </Button>
 
                 <Button
@@ -281,25 +291,18 @@ export function AppNavigation({
               >
                 <LogOut className="size-3.5 mr-1 opacity-60" /> Exit
               </Button>
-
-              <div className="ml-1">
-                <ThemeToggle />
-              </div>
             </div>
 
-            {/* Mobile Actions */}
-            <div className="flex items-center gap-2 md:hidden">
-              <ThemeToggle />
-              <Button
-                variant="outline"
-                size="icon"
-                className="size-9 rounded-xl border-border/60"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label="Toggle navigation menu"
-              >
-                {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-              </Button>
-            </div>
+            {/* Mobile Hamburger Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-9 rounded-xl md:hidden border-border/60"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </Button>
           </div>
         </div>
 
@@ -428,6 +431,27 @@ export function AppNavigation({
                   </div>
                 </div>
               </Link>
+
+              {isUserAdmin && (
+                <Link
+                  to="/master-hq"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="col-span-2 flex items-center gap-2.5 p-3 rounded-2xl text-xs font-bold text-left border border-primary/40 bg-primary/10 text-primary shadow-xs"
+                >
+                  <Shield className="size-4 text-primary shrink-0" />
+                  <div>
+                    <div className="font-bold flex items-center gap-1.5">
+                      Master HQ Admin
+                      <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">
+                        Console
+                      </span>
+                    </div>
+                    <div className="text-[10px] font-normal text-primary/80">
+                      Platform controls, detailers & analytics
+                    </div>
+                  </div>
+                </Link>
+              )}
             </div>
 
             {profile && (
@@ -461,8 +485,15 @@ export function AppNavigation({
                     rel="noreferrer"
                     className="flex items-center justify-center gap-1.5 h-9 rounded-xl border border-border/60 bg-muted/10 text-xs font-bold text-foreground"
                   >
-                    <FlaskConical className="size-3.5 text-amber-500" /> Sandbox
+                    <FlaskConical className="size-3.5 text-amber-500" /> Live Sandbox
                   </a>
+                  <Link
+                    to="/test-bot"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-1.5 h-9 rounded-xl border border-border/60 bg-muted/10 text-xs font-bold text-foreground"
+                  >
+                    <FlaskConical className="size-3.5 text-emerald-500" /> Test Bot
+                  </Link>
                 </div>
               </div>
             )}

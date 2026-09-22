@@ -92,9 +92,12 @@ export const Route = createFileRoute("/master-hq/")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
-    const email = data.session?.user?.email;
-    if (!isAdminEmail(email)) {
-      throw redirect({ to: "/master-hq/login" });
+    const user = data.session?.user;
+    if (!user) {
+      throw redirect({ to: "/login" });
+    }
+    if (!isAdminEmail(user.email)) {
+      throw redirect({ to: "/dashboard" });
     }
   },
   head: () => ({
@@ -143,9 +146,15 @@ function AdminDashboardPage() {
         setAuthChecking(false);
       } else {
         setAuthChecking(false);
+        if (data.session?.user) {
+          toast.error("Access restricted: Administrator privileges required.");
+          navigate({ to: "/dashboard" });
+        } else {
+          navigate({ to: "/login" });
+        }
       }
     });
-  }, []);
+  }, [navigate]);
 
   // 2. Fetch metrics
   const {
@@ -392,7 +401,7 @@ function AdminDashboardPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast.info("Signed out of admin session");
-    navigate({ to: "/master-hq/login" });
+    navigate({ to: "/login" });
   };
 
   // Auth gate check
@@ -411,17 +420,17 @@ function AdminDashboardPage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 text-center text-slate-100">
         <div className="max-w-md space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
           <Shield className="mx-auto size-12 text-primary" />
-          <h1 className="text-xl font-bold">Admin Portal Gated</h1>
+          <h1 className="text-xl font-bold">Access Restricted</h1>
           <p className="text-xs text-slate-400">
-            You must be signed in as <strong>me@detailr.online</strong> to access this master
-            dashboard.
+            This administrative console is restricted to authorized platform administrators and can
+            only be accessed from an active admin account.
           </p>
-          <Link
-            to="/master-hq/login"
-            className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90"
+          <Button
+            onClick={() => navigate({ to: "/dashboard" })}
+            className="w-full rounded-xl bg-primary text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90"
           >
-            Sign In with Master Credentials
-          </Link>
+            Return to Dashboard
+          </Button>
         </div>
       </div>
     );
@@ -500,8 +509,23 @@ function AdminDashboardPage() {
               <Send className="size-3" /> {cronRunning ? "Sending..." : "Weekly Cron"}
             </Button>
 
+            {/* Direct Link Back to Account Dashboard */}
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 border-primary/30 bg-primary/10 text-xs font-bold text-primary hover:bg-primary/20 hover:text-white"
+            >
+              <Link to="/dashboard">
+                <ChevronRight className="size-3.5 rotate-180" />
+                <span className="hidden sm:inline">My Shop Dashboard</span>
+              </Link>
+            </Button>
+
             <div className="hidden text-right text-[11px] xl:block">
-              <div className="font-semibold text-slate-200">me@detailr.online</div>
+              <div className="font-semibold text-slate-200">
+                {adminUser?.email || "Administrator"}
+              </div>
               <div className="text-slate-500">Super Administrator</div>
             </div>
 
@@ -510,6 +534,7 @@ function AdminDashboardPage() {
               size="sm"
               onClick={handleSignOut}
               className="h-8 gap-1 text-xs text-slate-400 hover:bg-slate-900 hover:text-rose-400"
+              title="Sign out of admin session"
             >
               <LogOut className="size-3.5" />
             </Button>

@@ -65,7 +65,6 @@ type PublicProfile = {
 };
 
 export const Route = createFileRoute("/$business_slug")({
-  ssr: false,
   validateSearch: (search: Record<string, unknown>): { test?: boolean } =>
     search["test"] === "1" || search["test"] === true ? { test: true } : {},
   loader: async ({ params }): Promise<PublicProfile | null> => {
@@ -165,7 +164,7 @@ export const Route = createFileRoute("/$business_slug")({
 
 const MAX_PHOTOS = 5;
 
-function QuoteForm() {
+export function QuoteForm({ extraBanner }: { extraBanner?: React.ReactNode }) {
   const { business_slug } = Route.useParams();
   const { test: isTest } = Route.useSearch();
   const initialProfile = Route.useLoaderData();
@@ -542,10 +541,11 @@ function QuoteForm() {
           phone: profile.phone || undefined,
           image: profile.logo_url || undefined,
           priceRange: "$$",
-          servicesOffered: packages.map((p) => p.label),
+          servicesOffered: services.map((s) => s.name),
         }}
       />
-      {isTest && (
+      {extraBanner}
+      {isTest && !extraBanner && (
         <div className="bg-slate-900 text-white px-4 py-2.5 shadow-xs border-b border-amber-500/40 sticky top-0 z-40">
           <div className="mx-auto flex max-w-md items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 min-w-0">
