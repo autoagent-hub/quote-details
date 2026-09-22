@@ -631,6 +631,16 @@ function AdminDashboardPage() {
             <Users className="size-4" /> Detailer Accounts ({users.length})
           </button>
           <button
+            onClick={() => setActiveTab("quotes")}
+            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 font-semibold transition-colors whitespace-nowrap ${
+              activeTab === "quotes"
+                ? "border-primary text-white"
+                : "border-transparent hover:text-slate-200"
+            }`}
+          >
+            <Activity className="size-4" /> Live Quotes Stream
+          </button>
+          <button
             onClick={() => setActiveTab("security")}
             className={`flex items-center gap-2 border-b-2 px-4 py-2.5 font-semibold transition-colors whitespace-nowrap ${
               activeTab === "security"
@@ -646,14 +656,14 @@ function AdminDashboardPage() {
             )}
           </button>
           <button
-            onClick={() => setActiveTab("quotes")}
+            onClick={() => setActiveTab("tools")}
             className={`flex items-center gap-2 border-b-2 px-4 py-2.5 font-semibold transition-colors whitespace-nowrap ${
-              activeTab === "quotes"
+              activeTab === "tools"
                 ? "border-primary text-white"
                 : "border-transparent hover:text-slate-200"
             }`}
           >
-            <Activity className="size-4" /> Live Quotes Stream
+            <Layers className="size-4" /> System Health & Cron
           </button>
           <button
             onClick={() => setActiveTab("keywords")}
@@ -664,16 +674,6 @@ function AdminDashboardPage() {
             }`}
           >
             <Sparkles className="size-4 text-emerald-400" /> Keyword Discovery Engine (10k+)
-          </button>
-          <button
-            onClick={() => setActiveTab("tools")}
-            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 font-semibold transition-colors whitespace-nowrap ${
-              activeTab === "tools"
-                ? "border-primary text-white"
-                : "border-transparent hover:text-slate-200"
-            }`}
-          >
-            <Layers className="size-4" /> System Health & Cron
           </button>
         </div>
 
