@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getUpgradeCheckout } from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Upgrade to Detailr Pro — Detailr Online" },

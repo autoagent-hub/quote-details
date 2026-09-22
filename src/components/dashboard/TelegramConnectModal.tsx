@@ -95,7 +95,8 @@ export function TelegramConnectModal({
           </DialogTitle>
 
           <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-            Get instant customer quote requests pushed directly to your phone via Telegram.
+            Telegram is a free messaging app (iPhone & Android) that sends you instant phone alerts
+            with customer contact info whenever someone asks for a quote.
           </DialogDescription>
         </DialogHeader>
 

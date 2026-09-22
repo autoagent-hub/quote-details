@@ -172,28 +172,32 @@ export function TopMetricsGrid({
           </p>
           <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
             <span className="size-1 rounded-full bg-border" />
-            {realQuotes.length} customer lead{realQuotes.length === 1 ? "" : "s"}
+            {realQuotes.length > 0 ? (
+              `${realQuotes.length} customer lead${realQuotes.length === 1 ? "" : "s"} received`
+            ) : (
+              <span className="text-muted-foreground">Ready for your 1st customer quote</span>
+            )}
           </p>
         </CardContent>
       </Card>
 
-      {/* Card 3: Avg Ticket */}
+      {/* Card 3: Avg Ticket / Quotes Count */}
       <Card className="border-border/60 bg-card/50 shadow-sm backdrop-blur-sm transition-all hover:border-border hover:shadow-md">
         <CardContent className="p-5 space-y-1.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-bold uppercase tracking-widest text-[9px] opacity-70">
-              Average Ticket
+              {quotes.length > 0 ? "Average Ticket" : "Total Inquiries"}
             </span>
             <div className="size-6 flex items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
               <TrendingUp className="size-3.5" />
             </div>
           </div>
           <p className="font-display text-2xl font-bold tracking-tight text-foreground">
-            {money(avgQuote, profile.currency)}
+            {quotes.length > 0 ? money(avgQuote, profile.currency) : "0 Leads"}
           </p>
           <p className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
             <span className="size-1 rounded-full bg-border" />
-            Estimated revenue per job
+            {quotes.length > 0 ? "Estimated revenue per job" : "Share link on bio or SMS"}
           </p>
         </CardContent>
       </Card>

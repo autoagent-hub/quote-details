@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import type { Profile } from "@/components/dashboard/types";
 
 export const Route = createFileRoute("/_authenticated/help")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Help & Documentation — Detailr Online" },

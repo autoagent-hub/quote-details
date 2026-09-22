@@ -2,11 +2,17 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Car,
+  Check,
   Clock,
+  Copy,
+  ExternalLink,
   FileText,
+  FlaskConical,
+  Loader2,
   MessageSquare,
   Phone,
   Search,
+  Share2,
   Sparkles,
   Trash2,
   Users,
@@ -53,16 +59,22 @@ export function QuoteHistoryCard({
   timezone,
   services,
   categories,
+  slug,
+  detailerId,
 }: {
   quotes: Quote[];
   currency: string;
   timezone: string;
   services: ServiceItem[];
   categories: VehicleCategory[];
+  slug?: string;
+  detailerId?: string;
 }) {
   const queryClient = useQueryClient();
   const [showTests, setShowTests] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [creatingTestLead, setCreatingTestLead] = useState(false);
 
   // Confirmation dialog state
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -72,6 +84,50 @@ export function QuoteHistoryCard({
   const testCount = quotes.filter((q) => q.is_test).length;
   const realQuotes = quotes.filter((q) => !q.is_test);
   const visible = showTests ? quotes : realQuotes;
+
+  const liveUrl = slug
+    ? typeof window !== "undefined"
+      ? `${window.location.origin}/${slug}`
+      : `https://detailr.online/${slug}`
+    : "";
+
+  const handleCopyLink = () => {
+    if (!liveUrl) return;
+    void navigator.clipboard.writeText(liveUrl);
+    setCopiedLink(true);
+    toast.success("Quote link copied!");
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleCreateSampleLead = async () => {
+    if (!detailerId) return;
+    setCreatingTestLead(true);
+    try {
+      const { error } = await supabase.from("quotes").insert({
+        detailer_id: detailerId,
+        customer_name: "Jordan Lee (Sample Lead)",
+        customer_phone: "+1 555-014-4921",
+        vehicle_type: "suv",
+        vehicle_desc: "2023 Porsche Macan (Compact SUV)",
+        service_key: "full-detail",
+        service_label: "Full Detail Package",
+        service_price: 180,
+        addons: ["ceramic", "stains"],
+        estimated_price: 260,
+        notes: "Sample lead created to test your leads queue. Try the Call or SMS buttons!",
+        is_test: true,
+        currency: currency || "USD",
+      });
+
+      if (error) throw error;
+      void queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      toast.success("Sample lead created! You can test the Call and SMS buttons.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to create sample lead.");
+    } finally {
+      setCreatingTestLead(false);
+    }
+  };
 
   const filtered = visible.filter((q) => {
     if (!searchQuery.trim()) return true;
@@ -214,19 +270,97 @@ export function QuoteHistoryCard({
 
       <CardContent className="p-0">
         {filtered.length === 0 ? (
-          <div className="px-6 py-16 text-center">
-            <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground/60 shadow-inner">
-              <Users className="size-6" />
+          searchQuery ? (
+            <div className="px-6 py-16 text-center">
+              <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground/60 shadow-inner">
+                <Users className="size-6" />
+              </div>
+              <p className="mt-4 text-sm font-bold text-foreground">No matching leads found</p>
+              <p className="mt-1 text-xs text-muted-foreground/80 max-w-[240px] mx-auto leading-relaxed">
+                Refine your search term to find a specific customer record.
+              </p>
             </div>
-            <p className="mt-4 text-sm font-bold text-foreground">
-              {searchQuery ? "No matching leads found" : "Your lead queue is empty"}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground/80 max-w-[240px] mx-auto leading-relaxed">
-              {searchQuery
-                ? "Refine your search term to find a specific customer record."
-                : "Share your quote link on social media to start receiving instant quotes."}
-            </p>
-          </div>
+          ) : (
+            <div className="px-6 py-12 sm:py-16 text-center max-w-lg mx-auto space-y-6">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+                <Sparkles className="size-7" />
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-foreground">Your Lead Queue is Ready!</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  When customers use your quote form, their name, phone number, vehicle type, and
+                  requested services will arrive right here in real time.
+                </p>
+              </div>
+
+              {/* 3 Quick Tips for Getting Leads */}
+              <div className="text-left rounded-2xl border border-border/70 bg-muted/20 p-4 space-y-2.5 text-xs">
+                <span className="font-bold text-foreground block text-[11px] uppercase tracking-wider text-muted-foreground">
+                  How to get your first customer quote:
+                </span>
+                <div className="flex items-start gap-2.5">
+                  <span className="size-5 rounded-md bg-primary/10 text-primary font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                    1
+                  </span>
+                  <p className="text-muted-foreground text-[11px]">
+                    <strong className="text-foreground">Share your link</strong> in your Instagram
+                    bio, TikTok, or text it when customers ask "how much for a detail?".
+                  </p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="size-5 rounded-md bg-amber-500/10 text-amber-600 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                    2
+                  </span>
+                  <p className="text-muted-foreground text-[11px]">
+                    <strong className="text-foreground">Customers get instant pricing</strong>{" "}
+                    without back-and-forth messaging.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="size-5 rounded-md bg-emerald-500/10 text-emerald-600 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                    3
+                  </span>
+                  <p className="text-muted-foreground text-[11px]">
+                    <strong className="text-foreground">1-Tap Booking:</strong> Click Call or SMS
+                    right from this dashboard to lock in the appointment!
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
+                {liveUrl && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full sm:w-auto h-9 text-xs font-bold rounded-xl gap-2 bg-primary text-white hover:bg-primary/90 shadow-sm"
+                    onClick={handleCopyLink}
+                  >
+                    {copiedLink ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                    <span>{copiedLink ? "Link Copied!" : "Copy My Quote Link"}</span>
+                  </Button>
+                )}
+
+                {detailerId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full sm:w-auto h-9 text-xs font-bold rounded-xl border-border/80 gap-1.5"
+                    disabled={creatingTestLead}
+                    onClick={handleCreateSampleLead}
+                  >
+                    {creatingTestLead ? (
+                      <Loader2 className="size-3.5 animate-spin mr-1 text-primary" />
+                    ) : (
+                      <FlaskConical className="size-3.5 text-amber-500" />
+                    )}
+                    <span>{creatingTestLead ? "Generating..." : "Try Sample Test Lead"}</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+          )
         ) : (
           <>
             {/* Mobile & Tablet Flexible Card Grid (< lg) */}

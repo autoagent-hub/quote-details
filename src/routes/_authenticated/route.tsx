@@ -42,6 +42,14 @@ function AuthenticatedErrorComponent({ error, reset }: { error: Error | null; re
   );
 }
 
+function AuthenticatedLayout() {
+  return (
+    <ErrorBoundary boundaryName="authenticated_layout">
+      <Outlet />
+    </ErrorBoundary>
+  );
+}
+
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
@@ -70,9 +78,5 @@ export const Route = createFileRoute("/_authenticated")({
     return { user: data.user };
   },
   errorComponent: AuthenticatedErrorComponent,
-  component: () => (
-    <ErrorBoundary boundaryName="authenticated_layout">
-      <Outlet />
-    </ErrorBoundary>
-  ),
+  component: AuthenticatedLayout,
 });

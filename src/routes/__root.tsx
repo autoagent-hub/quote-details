@@ -424,12 +424,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const navigate = useNavigate();
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true,
-  );
+  const [isOnline, setIsOnline] = useState(true);
 
   // Register service worker and handle offline/online network status
   useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      setIsOnline(navigator.onLine);
+    }
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker

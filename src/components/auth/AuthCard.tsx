@@ -22,12 +22,10 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { requestAuthCode, verifyRecoveryCode, verifySignupCode } from "@/lib/auth-codes.functions";
 
 export type AuthMode = "signin" | "signup" | "forgot";
@@ -60,7 +58,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
       .getSession()
       .then(({ data }) => {
         if (data?.session) {
-          navigate({ to: "/dashboard" });
+          window.location.href = "/dashboard";
         }
       })
       .catch((err) => {
@@ -72,7 +70,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((_event, session) => {
         if (session) {
-          navigate({ to: "/dashboard" });
+          window.location.href = "/dashboard";
         }
       });
 
@@ -136,7 +134,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
-        navigate({ to: "/dashboard" });
+        window.location.href = "/dashboard";
         return;
       }
 
@@ -197,7 +195,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
       toast.success(
         mode === "signup" ? "Account created! Welcome to Detailr." : "Logged in successfully.",
       );
-      navigate({ to: "/dashboard" });
+      window.location.href = "/dashboard";
     } catch (error) {
       fail(error);
     } finally {
@@ -287,7 +285,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
 
         if (!idAuthError && idAuthData?.user) {
           toast.success("Successfully signed in with Google!");
-          navigate({ to: "/dashboard" });
+          window.location.href = "/dashboard";
           return;
         }
       } catch (directErr) {
@@ -325,7 +323,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
 
         if (otpData?.user) {
           toast.success("Successfully signed in with Google!");
-          navigate({ to: "/dashboard" });
+          window.location.href = "/dashboard";
           return;
         }
       }
@@ -400,7 +398,6 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
   // Password strength helper

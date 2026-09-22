@@ -159,14 +159,14 @@ function DashboardPage() {
 
               {/* Tab 1: Customer Leads */}
               <TabsContent value="quotes" className="focus-visible:outline-none ring-0 space-y-4">
-                <div className="flex justify-end">
-                  <Link
-                    to="/quotes"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1 px-3 rounded-lg bg-muted/40 hover:bg-muted"
-                  >
-                    <span>Open Standalone Leads & Quotes Page</span>
-                    <ExternalLink className="size-3" />
-                  </Link>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
+                  <div>
+                    <h2 className="text-base font-bold text-foreground">Customer Leads & Quotes</h2>
+                    <p className="text-xs text-muted-foreground">
+                      Every quote requested from your link appears here with customer name, phone
+                      number, and vehicle details.
+                    </p>
+                  </div>
                 </div>
                 <QuoteHistoryCard
                   quotes={quotes ?? []}
@@ -174,19 +174,23 @@ function DashboardPage() {
                   timezone={profile.timezone}
                   services={parseServices(profile.services)}
                   categories={parseVehicleCategories(profile.vehicle_categories)}
+                  slug={profile.slug}
+                  detailerId={profile.id}
                 />
               </TabsContent>
 
               {/* Tab 2: Pricing & Rates */}
               <TabsContent value="pricing" className="focus-visible:outline-none ring-0 space-y-4">
-                <div className="flex justify-end">
-                  <Link
-                    to="/pricing"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1 px-3 rounded-lg bg-muted/40 hover:bg-muted"
-                  >
-                    <span>Open Standalone Services Page</span>
-                    <ExternalLink className="size-3" />
-                  </Link>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
+                  <div>
+                    <h2 className="text-base font-bold text-foreground">
+                      Services & Pricing Rates
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      Adjust what you charge. Customers receive automated quotes based on vehicle
+                      size and chosen packages.
+                    </p>
+                  </div>
                 </div>
                 <PricingCard profile={profile} />
               </TabsContent>
@@ -196,14 +200,14 @@ function DashboardPage() {
                 value="notifications"
                 className="focus-visible:outline-none ring-0 space-y-4"
               >
-                <div className="max-w-3xl mx-auto flex justify-end">
-                  <Link
-                    to="/notifications"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1 px-3 rounded-lg bg-muted/40 hover:bg-muted"
-                  >
-                    <span>Open Standalone Alerts Page</span>
-                    <ExternalLink className="size-3" />
-                  </Link>
+                <div className="max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
+                  <div>
+                    <h2 className="text-base font-bold text-foreground">Telegram Phone Alerts</h2>
+                    <p className="text-xs text-muted-foreground">
+                      Receive real-time lead alerts directly on your phone whenever a customer
+                      submits a quote.
+                    </p>
+                  </div>
                 </div>
                 <div className="max-w-3xl mx-auto">
                   <NotificationSettingsCard profile={profile} />
@@ -212,14 +216,13 @@ function DashboardPage() {
 
               {/* Tab 4: Shop Profile */}
               <TabsContent value="settings" className="focus-visible:outline-none ring-0 space-y-4">
-                <div className="max-w-3xl mx-auto flex justify-end">
-                  <Link
-                    to="/profile"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1 px-3 rounded-lg bg-muted/40 hover:bg-muted"
-                  >
-                    <span>Open Standalone Profile Page</span>
-                    <ExternalLink className="size-3" />
-                  </Link>
+                <div className="max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
+                  <div>
+                    <h2 className="text-base font-bold text-foreground">Shop Profile & Link</h2>
+                    <p className="text-xs text-muted-foreground">
+                      Manage your business name, quote link address, currency, and company branding.
+                    </p>
+                  </div>
                 </div>
                 <div className="max-w-3xl mx-auto">
                   <BusinessProfileCard profile={profile} />

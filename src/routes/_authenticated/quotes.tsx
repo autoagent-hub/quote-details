@@ -14,6 +14,7 @@ import { parseServices, parseVehicleCategories } from "@/lib/pricing";
 import type { Profile, Quote } from "@/components/dashboard/types";
 
 export const Route = createFileRoute("/_authenticated/quotes")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Customer Leads & Quotes — Detailr Online" },

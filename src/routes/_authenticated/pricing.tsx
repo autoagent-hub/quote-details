@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { Profile } from "@/components/dashboard/types";
 
 export const Route = createFileRoute("/_authenticated/pricing")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Services & Prices — Detailr Online" },

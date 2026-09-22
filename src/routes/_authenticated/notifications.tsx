@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Profile } from "@/components/dashboard/types";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Telegram Alerts — Detailr Online" },

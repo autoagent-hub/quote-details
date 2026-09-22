@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import type { Profile } from "@/components/dashboard/types";
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Account & App Settings — Detailr Online" },

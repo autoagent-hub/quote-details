@@ -13,10 +13,25 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as Business_slugRouteImport } from './routes/$business_slug'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedHelpRouteImport } from './routes/_authenticated/help'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedQuotesRouteImport } from './routes/_authenticated/quotes'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
+import { Route as AuthIndexRouteImport } from './routes/auth/index'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as MasterHqIndexRouteImport } from './routes/master-hq/index'
+import { Route as MasterHqLoginRouteImport } from './routes/master-hq/login'
 import { Route as ApiPublicCheckEmailDomainRouteImport } from './routes/api/public/check-email-domain'
+import { Route as ApiPublicCronWeeklySummaryRouteImport } from './routes/api/public/cron-weekly-summary'
+import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google-callback'
 import { Route as ApiPublicWhopWebhookRouteImport } from './routes/api/public/whop-webhook'
+import { Route as AuthV1CallbackRouteImport } from './routes/auth/v1/callback'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -38,9 +53,50 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHelpRoute = AuthenticatedHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedQuotesRoute = AuthenticatedQuotesRouteImport.update({
+  id: '/quotes',
+  path: '/quotes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
@@ -48,16 +104,52 @@ const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
   path: '/upgrade',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
+const MasterHqIndexRoute = MasterHqIndexRouteImport.update({
+  id: '/master-hq/',
+  path: '/master-hq/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterHqLoginRoute = MasterHqLoginRouteImport.update({
+  id: '/master-hq/login',
+  path: '/master-hq/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCheckEmailDomainRoute =
   ApiPublicCheckEmailDomainRouteImport.update({
     id: '/api/public/check-email-domain',
     path: '/api/public/check-email-domain',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCronWeeklySummaryRoute =
+  ApiPublicCronWeeklySummaryRouteImport.update({
+    id: '/api/public/cron-weekly-summary',
+    path: '/api/public/cron-weekly-summary',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicGoogleCallbackRoute = ApiPublicGoogleCallbackRouteImport.update({
+  id: '/api/public/google-callback',
+  path: '/api/public/google-callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWhopWebhookRoute = ApiPublicWhopWebhookRouteImport.update({
   id: '/api/public/whop-webhook',
   path: '/api/public/whop-webhook',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthV1CallbackRoute = AuthV1CallbackRouteImport.update({
+  id: '/v1/callback',
+  path: '/v1/callback',
+  getParentRoute: () => AuthRoute,
 } as any)
 const ApiPublicTelegramWebhookRoute =
   ApiPublicTelegramWebhookRouteImport.update({
@@ -69,21 +161,50 @@ const ApiPublicTelegramWebhookRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$business_slug': typeof Business_slugRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/help': typeof AuthenticatedHelpRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/pricing': typeof AuthenticatedPricingRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/quotes': typeof AuthenticatedQuotesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/master-hq/login': typeof MasterHqLoginRoute
+  '/auth/': typeof AuthIndexRoute
+  '/master-hq/': typeof MasterHqIndexRoute
   '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
+  '/api/public/cron-weekly-summary': typeof ApiPublicCronWeeklySummaryRoute
+  '/api/public/google-callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
+  '/auth/v1/callback': typeof AuthV1CallbackRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$business_slug': typeof Business_slugRoute
-  '/auth': typeof AuthRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/help': typeof AuthenticatedHelpRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/pricing': typeof AuthenticatedPricingRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/quotes': typeof AuthenticatedQuotesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/master-hq/login': typeof MasterHqLoginRoute
+  '/auth': typeof AuthIndexRoute
+  '/master-hq': typeof MasterHqIndexRoute
   '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
+  '/api/public/cron-weekly-summary': typeof ApiPublicCronWeeklySummaryRoute
+  '/api/public/google-callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
+  '/auth/v1/callback': typeof AuthV1CallbackRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesById {
@@ -91,11 +212,26 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$business_slug': typeof Business_slugRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/help': typeof AuthenticatedHelpRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/pricing': typeof AuthenticatedPricingRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/quotes': typeof AuthenticatedQuotesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/master-hq/login': typeof MasterHqLoginRoute
+  '/auth/': typeof AuthIndexRoute
+  '/master-hq/': typeof MasterHqIndexRoute
   '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
+  '/api/public/cron-weekly-summary': typeof ApiPublicCronWeeklySummaryRoute
+  '/api/public/google-callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
+  '/auth/v1/callback': typeof AuthV1CallbackRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRouteTypes {
@@ -104,20 +240,49 @@ export interface FileRouteTypes {
     | '/'
     | '/$business_slug'
     | '/auth'
+    | '/login'
+    | '/signup'
     | '/dashboard'
+    | '/help'
+    | '/notifications'
+    | '/pricing'
+    | '/profile'
+    | '/quotes'
+    | '/settings'
     | '/upgrade'
+    | '/auth/callback'
+    | '/master-hq/login'
+    | '/auth/'
+    | '/master-hq/'
     | '/api/public/check-email-domain'
+    | '/api/public/cron-weekly-summary'
+    | '/api/public/google-callback'
     | '/api/public/whop-webhook'
+    | '/auth/v1/callback'
     | '/api/public/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/$business_slug'
-    | '/auth'
+    | '/login'
+    | '/signup'
     | '/dashboard'
+    | '/help'
+    | '/notifications'
+    | '/pricing'
+    | '/profile'
+    | '/quotes'
+    | '/settings'
     | '/upgrade'
+    | '/auth/callback'
+    | '/master-hq/login'
+    | '/auth'
+    | '/master-hq'
     | '/api/public/check-email-domain'
+    | '/api/public/cron-weekly-summary'
+    | '/api/public/google-callback'
     | '/api/public/whop-webhook'
+    | '/auth/v1/callback'
     | '/api/public/telegram/webhook'
   id:
     | '__root__'
@@ -125,10 +290,25 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/$business_slug'
     | '/auth'
+    | '/login'
+    | '/signup'
     | '/_authenticated/dashboard'
+    | '/_authenticated/help'
+    | '/_authenticated/notifications'
+    | '/_authenticated/pricing'
+    | '/_authenticated/profile'
+    | '/_authenticated/quotes'
+    | '/_authenticated/settings'
     | '/_authenticated/upgrade'
+    | '/auth/callback'
+    | '/master-hq/login'
+    | '/auth/'
+    | '/master-hq/'
     | '/api/public/check-email-domain'
+    | '/api/public/cron-weekly-summary'
+    | '/api/public/google-callback'
     | '/api/public/whop-webhook'
+    | '/auth/v1/callback'
     | '/api/public/telegram/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -136,8 +316,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   Business_slugRoute: typeof Business_slugRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
+  MasterHqLoginRoute: typeof MasterHqLoginRoute
+  MasterHqIndexRoute: typeof MasterHqIndexRoute
   ApiPublicCheckEmailDomainRoute: typeof ApiPublicCheckEmailDomainRoute
+  ApiPublicCronWeeklySummaryRoute: typeof ApiPublicCronWeeklySummaryRoute
+  ApiPublicGoogleCallbackRoute: typeof ApiPublicGoogleCallbackRoute
   ApiPublicWhopWebhookRoute: typeof ApiPublicWhopWebhookRoute
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
 }
@@ -172,11 +358,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/help': {
+      id: '/_authenticated/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof AuthenticatedHelpRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pricing': {
+      id: '/_authenticated/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof AuthenticatedPricingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/quotes': {
+      id: '/_authenticated/quotes'
+      path: '/quotes'
+      fullPath: '/quotes'
+      preLoaderRoute: typeof AuthenticatedQuotesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/upgrade': {
@@ -186,11 +428,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/auth/': {
+      id: '/auth/'
+      path: '/'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/master-hq/': {
+      id: '/master-hq/'
+      path: '/master-hq'
+      fullPath: '/master-hq/'
+      preLoaderRoute: typeof MasterHqIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master-hq/login': {
+      id: '/master-hq/login'
+      path: '/master-hq/login'
+      fullPath: '/master-hq/login'
+      preLoaderRoute: typeof MasterHqLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/check-email-domain': {
       id: '/api/public/check-email-domain'
       path: '/api/public/check-email-domain'
       fullPath: '/api/public/check-email-domain'
       preLoaderRoute: typeof ApiPublicCheckEmailDomainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron-weekly-summary': {
+      id: '/api/public/cron-weekly-summary'
+      path: '/api/public/cron-weekly-summary'
+      fullPath: '/api/public/cron-weekly-summary'
+      preLoaderRoute: typeof ApiPublicCronWeeklySummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/google-callback': {
+      id: '/api/public/google-callback'
+      path: '/api/public/google-callback'
+      fullPath: '/api/public/google-callback'
+      preLoaderRoute: typeof ApiPublicGoogleCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/whop-webhook': {
@@ -199,6 +483,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/whop-webhook'
       preLoaderRoute: typeof ApiPublicWhopWebhookRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/auth/v1/callback': {
+      id: '/auth/v1/callback'
+      path: '/v1/callback'
+      fullPath: '/auth/v1/callback'
+      preLoaderRoute: typeof AuthV1CallbackRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/api/public/telegram/webhook': {
       id: '/api/public/telegram/webhook'
@@ -212,23 +503,55 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedHelpRoute: typeof AuthenticatedHelpRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedQuotesRoute: typeof AuthenticatedQuotesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedHelpRoute: AuthenticatedHelpRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedPricingRoute: AuthenticatedPricingRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedQuotesRoute: AuthenticatedQuotesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthIndexRoute: typeof AuthIndexRoute
+  AuthV1CallbackRoute: typeof AuthV1CallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthIndexRoute: AuthIndexRoute,
+  AuthV1CallbackRoute: AuthV1CallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   Business_slugRoute: Business_slugRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
+  LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
+  MasterHqLoginRoute: MasterHqLoginRoute,
+  MasterHqIndexRoute: MasterHqIndexRoute,
   ApiPublicCheckEmailDomainRoute: ApiPublicCheckEmailDomainRoute,
+  ApiPublicCronWeeklySummaryRoute: ApiPublicCronWeeklySummaryRoute,
+  ApiPublicGoogleCallbackRoute: ApiPublicGoogleCallbackRoute,
   ApiPublicWhopWebhookRoute: ApiPublicWhopWebhookRoute,
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
 }

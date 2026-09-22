@@ -865,16 +865,16 @@ function Landing() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <Card className="overflow-hidden border-border/80 shadow-2xl transition-transform hover:-translate-y-1">
-              <div className="bg-foreground p-8 text-background text-center relative overflow-hidden">
+              <div className="gradient-ink p-8 text-white text-center relative overflow-hidden">
                 <div className="pointer-events-none absolute -right-10 -bottom-10 size-40 rounded-full bg-primary/30 blur-2xl" />
-                <p className="text-xs font-bold uppercase tracking-widest text-primary-glow">
+                <p className="text-xs font-bold uppercase tracking-widest text-primary-foreground/90">
                   Everything Included
                 </p>
                 <div className="mt-4 flex items-baseline justify-center gap-1 font-display">
                   <span className="text-6xl font-extrabold text-white">$9.99</span>
-                  <span className="text-base text-white/70">/ month</span>
+                  <span className="text-base text-white/80">/ month</span>
                 </div>
-                <p className="mt-2 text-xs text-white/80">
+                <p className="mt-2 text-xs text-white/90">
                   7-day 100% free trial · Cancel anytime with one click
                 </p>
               </div>
