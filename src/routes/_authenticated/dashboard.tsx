@@ -1,23 +1,13 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ReceiptText,
-  Sliders,
-  Bell,
-  Store,
-  ExternalLink,
-  ChevronRight,
-  Shield,
-} from "lucide-react";
+import { ReceiptText, Sliders, Bell, Store, ExternalLink, ChevronRight } from "lucide-react";
 
 import { SkeletonDashboard } from "@/components/skeletons/SkeletonDashboard";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { parseServices, parseVehicleCategories } from "@/lib/pricing";
-import { isAdminEmail } from "@/lib/admin-auth";
 
 import type { Profile, Quote } from "@/components/dashboard/types";
 import { AppNavigation } from "@/components/dashboard/AppNavigation";
@@ -104,31 +94,6 @@ function DashboardPage() {
       <main className="mx-auto max-w-7xl space-y-8 px-4 sm:px-8 py-8">
         {profile ? (
           <>
-            {/* Platform Admin Console Access Banner */}
-            {isAdminEmail(user?.email) && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-3.5 sm:px-5 sm:py-3 text-xs text-primary shadow-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex size-7 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Shield className="size-4" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-foreground">Detailr Super Administrator</span>
-                    <span className="ml-2 text-muted-foreground hidden md:inline">
-                      Signed in as {user?.email}
-                    </span>
-                  </div>
-                </div>
-                <Button
-                  asChild
-                  size="sm"
-                  variant="outline"
-                  className="h-8 rounded-xl border-primary/30 bg-primary/10 text-xs font-bold text-primary hover:bg-primary/20 hover:text-primary transition-all self-start sm:self-auto shrink-0"
-                >
-                  <Link to="/master-hq">Open Master HQ Console →</Link>
-                </Button>
-              </div>
-            )}
-
             <TrialBanner />
 
             {/* Welcome Guide */}

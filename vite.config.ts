@@ -16,8 +16,6 @@ export default defineConfig({
   vite: {
     resolve: {
       dedupe: ["react", "react-dom", "motion"],
-      alias: {
-      },
     },
     optimizeDeps: {
       include: ["react", "react-dom", "motion/react"],
