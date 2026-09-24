@@ -17,7 +17,6 @@ export default defineConfig({
     resolve: {
       dedupe: ["react", "react-dom", "motion"],
       alias: {
-        "@radix-ui/react-slot": path.resolve(process.cwd(), "src/lib/slot.tsx"),
       },
     },
     optimizeDeps: {

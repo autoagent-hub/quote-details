@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Slot } from "@/lib/slot";
+import { Slot } from "@radix-ui/react-slot";
 import {
   Controller,
   FormProvider,
