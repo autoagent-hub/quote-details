@@ -65,6 +65,7 @@ type PublicProfile = {
 };
 
 export const Route = createFileRoute("/$business_slug")({
+  ssr: false,
   validateSearch: (search: Record<string, unknown>): { test?: boolean } =>
     search["test"] === "1" || search["test"] === true ? { test: true } : {},
   loader: async ({ params }): Promise<PublicProfile | null> => {
@@ -164,7 +165,7 @@ export const Route = createFileRoute("/$business_slug")({
 
 const MAX_PHOTOS = 5;
 
-export function QuoteForm({ extraBanner }: { extraBanner?: React.ReactNode }) {
+function QuoteForm() {
   const { business_slug } = Route.useParams();
   const { test: isTest } = Route.useSearch();
   const initialProfile = Route.useLoaderData();
@@ -252,7 +253,7 @@ export function QuoteForm({ extraBanner }: { extraBanner?: React.ReactNode }) {
     () => parsePackages(profile?.packages).filter((p) => p.enabled),
     [profile],
   );
-  const addonList = useMemo(
+  const services = useMemo(
     () => parseServices(profile?.services).filter((s) => s.enabled),
     [profile],
   );
@@ -262,12 +263,12 @@ export function QuoteForm({ extraBanner }: { extraBanner?: React.ReactNode }) {
       calculateQuote({
         categories: parseVehicleCategories(profile?.vehicle_categories),
         packages: parsePackages(profile?.packages),
-        addons: addonList,
+        addons: services,
         categoryKey,
         packageKey,
         selectedAddons: addons,
       }),
-    [profile, addonList, categoryKey, packageKey, addons],
+    [profile, services, categoryKey, packageKey, addons],
   );
 
   const chosenPackage: ServiceItem | undefined = packages.find((p) => p.key === packageKey);
@@ -412,7 +413,7 @@ export function QuoteForm({ extraBanner }: { extraBanner?: React.ReactNode }) {
             : (chosenCategory?.label ?? ""),
           service: { label: chosenPackage.label, price: quote.servicePrice },
           addons: addons.map((key) => {
-            const found = addonList.find((a) => a.key === key);
+            const found = services.find((a) => a.key === key);
             return { label: found?.label ?? key, price: Number(found?.price) || 0 };
           }),
           estimate: quote.total,
@@ -541,11 +542,10 @@ export function QuoteForm({ extraBanner }: { extraBanner?: React.ReactNode }) {
           phone: profile.phone || undefined,
           image: profile.logo_url || undefined,
           priceRange: "$$",
-          servicesOffered: services.map((s) => s.name),
+          servicesOffered: packages.map((p) => p.label),
         }}
       />
-      {extraBanner}
-      {isTest && !extraBanner && (
+      {isTest && (
         <div className="bg-slate-900 text-white px-4 py-2.5 shadow-xs border-b border-amber-500/40 sticky top-0 z-40">
           <div className="mx-auto flex max-w-md items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 min-w-0">
@@ -819,7 +819,7 @@ export function QuoteForm({ extraBanner }: { extraBanner?: React.ReactNode }) {
               <section>
                 <StepLabel step={3} title="Optional Service Add-ons" />
                 <div className="mt-3 space-y-2.5">
-                  {addonList.map((a) => {
+                  {services.map((a) => {
                     const active = addons.includes(a.key);
                     return (
                       <label
@@ -982,7 +982,7 @@ export function QuoteForm({ extraBanner }: { extraBanner?: React.ReactNode }) {
                       <p>Pick a vehicle and service to see your price.</p>
                     )}
                     {addons.map((key) => {
-                      const a = addonList.find((item) => item.key === key);
+                      const a = services.find((item) => item.key === key);
                       return (
                         <p key={key}>
                           {a?.label ?? key} — {money(Number(a?.price) || 0, currency)}
