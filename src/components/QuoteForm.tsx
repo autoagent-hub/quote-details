@@ -73,6 +73,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [countryChoice, setCountryChoice] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState(1);
 
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -652,7 +653,14 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
                       type="button"
                       variant={isRecording ? "destructive" : "outline"}
                       onClick={isRecording ? stopRecording : startRecording}
+                      className="relative"
                     >
+                      {isRecording && (
+                        <span className="absolute -left-1 -top-1 flex size-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full size-3 bg-red-500"></span>
+                        </span>
+                      )}
                       {isRecording ? "Stop Recording" : "Record Voice Message"}
                     </Button>
                     {audioBlob && (
@@ -712,6 +720,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
                   <Input
                     id="phone"
                     required
+                    inputMode="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     onBlur={() => setPhoneTouched(true)}
