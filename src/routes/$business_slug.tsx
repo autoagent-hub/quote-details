@@ -196,8 +196,9 @@ function QuoteForm() {
       recorder.start();
       setMediaRecorder(recorder);
       setIsRecording(true);
-    } catch (err) {
-      toast.error("Could not access microphone");
+    } catch (err: any) {
+      console.error("Audio access error:", err);
+      toast.error(`Microphone access denied: ${err.message || "Please check browser permissions"}`);
     }
   };
 
@@ -1133,7 +1134,7 @@ function QuoteForm() {
                         required
                         type="tel"
                         inputMode="tel"
-                        className={`flex-1 transition-colors ${
+                        className={`min-w-0 flex-[2] transition-colors ${
                           phoneTouched
                             ? isPhoneValid
                               ? "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/10"
