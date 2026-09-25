@@ -23,6 +23,7 @@ import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
 import { SkeletonQuoteForm } from "@/components/skeletons/SkeletonQuoteForm";
 import { SeoHead } from "@/components/seo/SeoHead";
+import { QuoteForm as NewQuoteForm } from "@/components/QuoteForm";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

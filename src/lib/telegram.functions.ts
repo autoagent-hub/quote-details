@@ -13,6 +13,7 @@ type AlertInput = {
   estimate: number;
   notes?: string;
   photoPaths?: string[];
+  audioPath?: string | null;
   isTest?: boolean;
 };
 
@@ -197,6 +198,9 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       includePhotos
         ? `\n📷 ${photos.length} photo${photos.length === 1 ? "" : "s"} attached below`
         : "",
+      data.audioPath
+        ? `\n🎙️ <b>Voice Message attached</b>`
+        : "",
       data.notes && profile.notify_include_notes !== false
         ? `\n📝 <b>Notes</b>\n${esc(data.notes)}`
         : "",
@@ -257,6 +261,18 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
             body: form,
           });
           if (!groupRes.ok) console.error("Telegram sendMediaGroup failed", await groupRes.text());
+        }
+      }
+
+      if (data.audioPath) {
+        const { data: audioFile } = await supabaseAdmin.storage.from("quote-photos").download(data.audioPath);
+        if (audioFile) {
+          const form = new FormData();
+          form.append("chat_id", String(chatId));
+          form.append("caption", `Voice message from ${data.customerName}`);
+          form.append("voice", audioFile, "message.webm");
+          const audioRes = await fetch(`${API}${token}/sendVoice`, { method: "POST", body: form });
+          if (!audioRes.ok) console.error("Telegram sendVoice failed", await audioRes.text());
         }
       }
 
