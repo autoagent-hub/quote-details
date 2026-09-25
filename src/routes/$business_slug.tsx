@@ -179,6 +179,34 @@ function QuoteForm() {
   const [phone, setPhone] = useState("");
   const [countryChoice, setCountryChoice] = useState<string | null>(null);
 
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        setAudioBlob(blob);
+      };
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (err) {
+      toast.error("Could not access microphone");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorder?.stop();
+    mediaRecorder?.stream.getTracks().forEach((track) => track.stop());
+    setIsRecording(false);
+  };
+
   const [notes, setNotes] = useState("");
   const [activeStep, setActiveStep] = useState<number>(1);
   const [nameTouched, setNameTouched] = useState(false);
@@ -998,6 +1026,28 @@ function QuoteForm() {
               <section>
                 <StepLabel step={6} title="Where Should We Send Your Quote?" />
                 <div className="mt-3 space-y-4 rounded-xl border border-border bg-card p-5 shadow-2xs">
+                  <div className="space-y-1.5">
+                    <Label className="font-semibold">Voice Message (Optional)</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={isRecording ? "destructive" : "outline"}
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className="relative"
+                      >
+                        {isRecording && (
+                          <span className="absolute -left-1 -top-1 flex size-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full size-3 bg-red-500"></span>
+                          </span>
+                        )}
+                        {isRecording ? "Stop Recording" : "Record Voice Message"}
+                      </Button>
+                      {audioBlob && (
+                        <span className="text-xs text-emerald-600">Audio recorded!</span>
+                      )}
+                    </div>
+                  </div>
                   {/* Name Input with Real-time Validation */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
