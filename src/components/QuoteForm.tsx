@@ -78,6 +78,25 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setRecordingTime(0);
+    }
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const startRecording = async () => {
     try {
@@ -92,6 +111,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
       recorder.start();
       setMediaRecorder(recorder);
       setIsRecording(true);
+      setRecordingTime(0);
     } catch (err) {
       toast.error("Could not access microphone");
     }
@@ -663,7 +683,12 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
                       )}
                       {isRecording ? "Stop Recording" : "Record Voice Message"}
                     </Button>
-                    {audioBlob && (
+                    {isRecording && (
+                      <span className="font-mono text-sm text-red-600 font-bold">
+                        {formatTime(recordingTime)}
+                      </span>
+                    )}
+                    {audioBlob && !isRecording && (
                       <span className="text-xs text-emerald-600">Audio recorded!</span>
                     )}
                   </div>
