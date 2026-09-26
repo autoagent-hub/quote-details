@@ -75,53 +75,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
   const [countryChoice, setCountryChoice] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState(1);
 
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [recordingTime, setRecordingTime] = useState(0);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isRecording) {
-      interval = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
-    } else {
-      setRecordingTime(0);
-    }
-    return () => clearInterval(interval);
-  }, [isRecording]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        setAudioBlob(blob);
-      };
-      recorder.start();
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-      setRecordingTime(0);
-    } catch (err) {
-      toast.error("Could not access microphone");
-    }
-  };
-
-  const stopRecording = () => {
-    mediaRecorder?.stop();
-    mediaRecorder?.stream.getTracks().forEach((track) => track.stop());
-    setIsRecording(false);
-  };
   const [nameTouched, setNameTouched] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -178,6 +132,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
     setPhotos(next);
   };
 
+
   const uploadPhotos = async (detailerId: string): Promise<string[]> => {
     const paths: string[] = [];
     for (const file of photos) {
@@ -192,17 +147,8 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
     return paths;
   };
 
-  const uploadAudio = async (detailerId: string): Promise<string | null> => {
-    if (!audioBlob) return null;
-    const path = `${detailerId}/${crypto.randomUUID()}.webm`;
-    const { error } = await supabase.storage.from("quote-photos").upload(path, audioBlob, {
-      contentType: "audio/webm",
-      upsert: false,
-    });
-    return error ? null : path;
-  };
-
   const ready = !!categoryKey && !!packageKey && !!name.trim() && !!phone.trim();
+
 
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -211,7 +157,6 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
 
     try {
       const photoPaths = photos.length ? await uploadPhotos(profile.id) : [];
-      const audioPath = await uploadAudio(profile.id);
 
       const { error } = await supabase.from("quotes").insert({
         detailer_id: profile.id,
@@ -225,8 +170,6 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
         addons,
         notes: notes.trim(),
         photo_urls: photoPaths,
-        // @ts-expect-error - Assuming audio_url exists in database schema
-        audio_url: audioPath,
         currency,
         estimated_price: quote.total,
         is_test: !!isTest,
@@ -249,8 +192,6 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
           estimate: quote.total,
           notes: notes.trim(),
           photoPaths,
-          // @ts-expect-error - Adding audio to alert data
-          audioPath,
           isTest: !!isTest,
         },
       }).catch(() => undefined);
@@ -683,13 +624,26 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
                       )}
                       {isRecording ? "Stop Recording" : "Record Voice Message"}
                     </Button>
+                    
                     {isRecording && (
                       <span className="font-mono text-sm text-red-600 font-bold">
                         {formatTime(recordingTime)}
                       </span>
                     )}
+                    
                     {audioBlob && !isRecording && (
-                      <span className="text-xs text-emerald-600">Audio recorded!</span>
+                      <div className="flex items-center gap-2">
+                        <audio src={URL.createObjectURL(audioBlob)} controls className="h-9 w-32" />
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setAudioBlob(null)}
+                          className="h-9 text-xs"
+                        >
+                          Remove
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
