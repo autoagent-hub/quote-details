@@ -180,6 +180,7 @@ function QuoteForm() {
   const [countryChoice, setCountryChoice] = useState<string | null>(null);
 
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
@@ -192,6 +193,7 @@ function QuoteForm() {
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: "audio/webm" });
         setAudioBlob(blob);
+        setAudioUrl(URL.createObjectURL(blob));
       };
       recorder.start();
       setMediaRecorder(recorder);
@@ -206,6 +208,14 @@ function QuoteForm() {
     mediaRecorder?.stop();
     mediaRecorder?.stream.getTracks().forEach((track) => track.stop());
     setIsRecording(false);
+  };
+
+  const removeAudio = () => {
+    setAudioBlob(null);
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+    }
   };
 
   const [notes, setNotes] = useState("");
@@ -1044,8 +1054,13 @@ function QuoteForm() {
                         )}
                         {isRecording ? "Stop Recording" : "Record Voice Message"}
                       </Button>
-                      {audioBlob && (
-                        <span className="text-xs text-emerald-600">Audio recorded!</span>
+                      {audioBlob && audioUrl && (
+                        <>
+                          <audio src={audioUrl} controls className="h-10" />
+                          <Button type="button" variant="ghost" size="sm" onClick={removeAudio}>
+                            <X className="size-4" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -1114,9 +1129,9 @@ function QuoteForm() {
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex w-full flex-wrap sm:flex-nowrap gap-2">
                       <Select value={selectedCountry.code} onValueChange={setCountryChoice}>
-                        <SelectTrigger className="w-[128px] shrink-0" aria-label="Country code">
+                        <SelectTrigger className="w-full sm:w-[110px] shrink-0" aria-label="Country code">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="max-h-72">
@@ -1134,7 +1149,7 @@ function QuoteForm() {
                         required
                         type="tel"
                         inputMode="tel"
-                        className={`min-w-0 flex-[2] transition-colors ${
+                        className={`min-w-0 flex-1 transition-colors ${
                           phoneTouched
                             ? isPhoneValid
                               ? "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/10"
