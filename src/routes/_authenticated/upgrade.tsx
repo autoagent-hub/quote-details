@@ -107,7 +107,7 @@ function Upgrade() {
           </div>
         ) : (
           <Card className="overflow-hidden shadow-card">
-            <div className="gradient-ink px-7 py-8 text-primary-foreground">
+            <div className="gradient-ink px-7 py-8 text-white">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <img
@@ -115,16 +115,21 @@ function Upgrade() {
                     alt="Detailr logo"
                     className="size-5 rounded-md object-contain shadow-xs"
                   />
-                  <p className="text-xs font-semibold tracking-widest uppercase opacity-90">
+                  <p className="text-xs font-semibold tracking-widest uppercase opacity-90 text-white">
                     Detailr Pro
                   </p>
                 </div>
-                <Badge variant={subscribed ? "default" : "secondary"}>{copy.label}</Badge>
+                <Badge
+                  variant={subscribed ? "default" : "secondary"}
+                  className="bg-white/10 text-white border-white/20"
+                >
+                  {copy.label}
+                </Badge>
               </div>
-              <p className="mt-3 font-display text-5xl font-bold">
-                $9.99<span className="text-base font-medium opacity-70">/month</span>
+              <p className="mt-3 font-display text-5xl font-bold text-white">
+                $9.99<span className="text-base font-medium opacity-80 text-white/80">/month</span>
               </p>
-              <p className="mt-2 text-sm opacity-80">{copy.note}</p>
+              <p className="mt-2 text-sm text-white/90">{copy.note}</p>
             </div>
 
             <CardHeader>

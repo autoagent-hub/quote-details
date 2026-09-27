@@ -12,8 +12,8 @@ export const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        hero: "gradient-primary text-primary-foreground shadow-lift hover:brightness-110 active:brightness-95 font-semibold tracking-tight",
-        ink: "gradient-ink text-primary-foreground shadow-card hover:brightness-125",
+        hero: "gradient-primary text-white shadow-lift hover:brightness-110 active:brightness-95 font-semibold tracking-tight",
+        ink: "gradient-ink text-white shadow-card hover:brightness-125",
       },
       size: {
         default: "h-9 px-4 py-2",

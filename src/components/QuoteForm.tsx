@@ -569,9 +569,11 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
           >
             <section>
               <StepLabel step={5} title="Your Calculated Estimate" />
-              <div className="gradient-ink mt-3 rounded-xl p-5 text-primary-foreground shadow-card">
-                <p className="text-xs tracking-widest uppercase opacity-70">Estimated total</p>
-                <p className="mt-1 font-display text-4xl font-bold">
+              <div className="gradient-ink mt-3 rounded-xl p-5 text-white shadow-card">
+                <p className="text-xs tracking-widest uppercase opacity-80 text-white">
+                  Estimated total
+                </p>
+                <p className="mt-1 font-display text-4xl font-bold text-white">
                   {money(quote.total, currency)}
                 </p>
                 <div className="mt-3 space-y-1 text-xs opacity-80">
