@@ -91,6 +91,54 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           .replace(/[^a-zA-Z0-9_-]/g, "")
           .toLowerCase();
 
+        // 0. Check if this is a Quote Lookup request (/start quote_c03f9e21 or /start q_c03f9e21)
+        if (code.startsWith("quote_") || code.startsWith("q_")) {
+          const rawId = code.replace(/^(quote_|q_)/i, "").toLowerCase();
+          const { data: q } = await admin
+            .from("quotes")
+            .select("*")
+            .or(`id.ilike.${rawId}%,id.eq.${rawId}`)
+            .limit(1)
+            .maybeSingle();
+
+          const escStr = (str: string) =>
+            String(str || "")
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;");
+
+          if (q) {
+            const shortId = q.id.slice(0, 8).toUpperCase();
+            const addonsList =
+              Array.isArray(q.addons) && q.addons.length ? q.addons.join(", ") : "None";
+
+            const msg =
+              `📋 <b>Quote Details #${shortId}</b>\n\n` +
+              `👤 <b>Customer:</b> ${escStr(q.customer_name)}\n` +
+              `📞 <b>Phone:</b> <a href="tel:${escStr(q.customer_phone)}">${escStr(q.customer_phone)}</a>\n` +
+              `🚗 <b>Vehicle:</b> ${escStr(q.vehicle_desc || q.vehicle_type)}\n` +
+              `📦 <b>Package:</b> ${escStr(q.service_label || "Base Detail")}\n` +
+              `➕ <b>Add-ons:</b> ${escStr(addonsList)}\n` +
+              `💰 <b>Estimated Total:</b> $${q.estimated_price}\n` +
+              `📅 <b>Received:</b> ${new Date(q.created_at).toLocaleString("en-US", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}\n` +
+              (q.notes ? `\n📝 <b>Customer Notes:</b>\n${escStr(q.notes)}\n` : "") +
+              `\n💬 <i>Note: Original customer photos were sent directly to this Telegram chat when submitted. Search "<b>#${shortId}</b>" in chat history to locate attached photos!</i>`;
+
+            await send(token, chatId, msg);
+            return Response.json({ ok: true, quoteFound: true });
+          } else {
+            await send(
+              token,
+              chatId,
+              `🔍 Could not find Quote #${rawId.toUpperCase()} in your quote history.`,
+            );
+            return Response.json({ ok: true, quoteFound: false });
+          }
+        }
+
         // 1. Check if this is an Admin connection request (/start admin)
         if (code === "admin" || code.startsWith("admin_")) {
           const { data: authUsers } = await admin.auth.admin.listUsers();

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Car,
   Check,
@@ -12,6 +13,7 @@ import {
   MessageSquare,
   Phone,
   Search,
+  Send,
   Share2,
   Sparkles,
   Trash2,
@@ -42,6 +44,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { getTelegramBotUsername } from "@/lib/telegram.functions";
 import {
   money,
   formatWhen,
@@ -71,6 +74,13 @@ export function QuoteHistoryCard({
   detailerId?: string;
 }) {
   const queryClient = useQueryClient();
+  const fetchBotUsername = useServerFn(getTelegramBotUsername);
+  const { data: botData } = useQuery({
+    queryKey: ["telegram-bot-username"],
+    queryFn: () => fetchBotUsername(),
+  });
+  const botUsername = botData?.username || "DetailrBot";
+
   const [showTests, setShowTests] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
@@ -379,6 +389,12 @@ export function QuoteHistoryCard({
                         <h3 className="font-bold text-sm tracking-tight text-foreground truncate">
                           {q.customer_name || "Anonymous Customer"}
                         </h3>
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] py-0 h-4 px-1.5 font-mono border-primary/30 text-primary font-bold"
+                        >
+                          #{q.id.slice(0, 8).toUpperCase()}
+                        </Badge>
                         {q.is_test && (
                           <Badge
                             variant="secondary"
@@ -457,32 +473,35 @@ export function QuoteHistoryCard({
                     </div>
                   )}
 
-                  {/* Customer Notes & Vehicle Photos */}
-                  {(q.notes?.trim() || q.photo_urls?.length) && (
-                    <div className="rounded-xl border border-border/40 bg-background/50 p-2.5 space-y-2 text-xs">
-                      {q.notes?.trim() && (
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                            <FileText className="size-3 opacity-70" /> Customer Notes:
-                          </span>
-                          <p className="text-xs text-foreground/90 font-medium italic leading-relaxed">
-                            "{q.notes}"
-                          </p>
-                        </div>
-                      )}
-                      {q.photo_urls?.length ? (
-                        <div className="pt-1 flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-muted-foreground">
-                            {q.photo_urls.length} vehicle photo{q.photo_urls.length > 1 ? "s" : ""}
-                          </span>
-                          <PhotoDialog
-                            paths={q.photo_urls}
-                            customer={q.customer_name || "Customer"}
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
+                  {/* Telegram Bot Details Button & Notes */}
+                  <div className="space-y-2 pt-1">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-full rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-500/20 border-sky-500/30 text-xs font-bold gap-2"
+                    >
+                      <a
+                        href={`https://t.me/${botUsername}?start=quote_${q.id.slice(0, 8)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <Send className="size-3.5 text-sky-600 dark:text-sky-400" />
+                        <span>View Quote #{q.id.slice(0, 8).toUpperCase()} in Telegram</span>
+                      </a>
+                    </Button>
+
+                    {q.notes?.trim() && (
+                      <div className="rounded-xl border border-border/40 bg-background/50 p-2.5 space-y-1 text-xs">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                          <FileText className="size-3 opacity-70" /> Customer Notes:
+                        </span>
+                        <p className="text-xs text-foreground/90 font-medium italic leading-relaxed">
+                          "{q.notes}"
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
                   {/* 1-Tap Action Footer (Call, SMS, & Delete) */}
                   <div className="flex items-center gap-2 pt-1 border-t border-border/40">
@@ -565,6 +584,12 @@ export function QuoteHistoryCard({
                       <TableCell className="font-bold text-xs py-4 px-6">
                         <div className="flex items-center gap-2">
                           <span className="truncate max-w-[140px]">{q.customer_name}</span>
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] py-0 h-4 px-1.5 font-mono border-primary/30 text-primary font-bold shrink-0"
+                          >
+                            #{q.id.slice(0, 8).toUpperCase()}
+                          </Badge>
                           {q.is_test && (
                             <Badge
                               variant="secondary"
@@ -644,12 +669,22 @@ export function QuoteHistoryCard({
 
                       <TableCell className="text-xs py-4">
                         <div className="flex items-center gap-2">
-                          {q.photo_urls?.length ? (
-                            <PhotoDialog
-                              paths={q.photo_urls}
-                              customer={q.customer_name || "Customer"}
-                            />
-                          ) : null}
+                          <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2.5 rounded-lg bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-500/20 border-sky-500/30 text-[10px] font-bold gap-1 shrink-0"
+                          >
+                            <a
+                              href={`https://t.me/${botUsername}?start=quote_${q.id.slice(0, 8)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Open Telegram Bot to view full quote details"
+                            >
+                              <Send className="size-3 text-sky-600 dark:text-sky-400" />
+                              <span>Telegram</span>
+                            </a>
+                          </Button>
                           {q.notes?.trim() ? (
                             <div
                               className="max-w-[140px] truncate text-[11px] font-medium text-muted-foreground bg-muted/30 px-2 py-0.5 rounded cursor-help"
@@ -657,11 +692,7 @@ export function QuoteHistoryCard({
                             >
                               {q.notes}
                             </div>
-                          ) : (
-                            !q.photo_urls?.length && (
-                              <span className="text-muted-foreground/40 text-[11px]">—</span>
-                            )
-                          )}
+                          ) : null}
                         </div>
                       </TableCell>
 

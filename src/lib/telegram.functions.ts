@@ -4,6 +4,7 @@ import { createHash } from "crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type AlertInput = {
+  quoteId?: string;
   detailerId: string;
   customerName: string;
   customerPhone: string;
@@ -13,11 +14,30 @@ type AlertInput = {
   estimate: number;
   notes?: string;
   photoPaths?: string[];
+  photosBase64?: string[];
   audioPath?: string | null;
   isTest?: boolean;
 };
 
 const API = "https://api.telegram.org/bot";
+
+export const getTelegramBotUsername = createServerFn({ method: "GET" }).handler(async () => {
+  const token = process.env["TELEGRAM_BOT_TOKEN"];
+  if (!token) return { username: null };
+  let username = process.env["TELEGRAM_BOT_USERNAME"] || null;
+  if (!username) {
+    try {
+      const res = await fetch(`${API}${token}/getMe`);
+      const me = (await res.json()) as { ok?: boolean; result?: { username?: string } };
+      if (me.ok && me.result?.username) {
+        username = me.result.username;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return { username };
+});
 
 export const prepareTelegramLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -177,8 +197,12 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
     }
 
     const currency = profile.currency || "USD";
-    const photos = (data.photoPaths ?? []).slice(0, 10);
-    const includePhotos = photos.length > 0 && profile.notify_include_photos !== false;
+    const shortId = data.quoteId ? data.quoteId.slice(0, 8).toUpperCase() : "";
+    const b64Photos = (data.photosBase64 ?? []).slice(0, 10);
+    const legacyPhotos = (data.photoPaths ?? []).slice(0, 10);
+    const hasBase64 = b64Photos.length > 0;
+    const hasPhotos = hasBase64 || legacyPhotos.length > 0;
+    const includePhotos = hasPhotos && profile.notify_include_photos !== false;
 
     const items = [
       pad(data.service.label, fmt(data.service.price, currency)),
@@ -186,7 +210,9 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
     ];
 
     const body = [
-      data.isTest ? `🧪 <b>TEST REQUEST — not a real customer</b>` : `🚨 <b>NEW QUOTE REQUEST</b>`,
+      data.isTest
+        ? `🧪 <b>TEST REQUEST — not a real customer</b>`
+        : `🚨 <b>NEW QUOTE REQUEST ${shortId ? `#${shortId}` : ""}</b>`,
       profile.business_name ? `<i>${esc(profile.business_name)}</i>` : "",
       ``,
       `👤 <b>${esc(data.customerName)}</b>`,
@@ -196,12 +222,13 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       `<pre>${items.join("\n")}</pre>`,
       `💰 <b>Estimated total: ${fmt(data.estimate, currency)}</b>`,
       includePhotos
-        ? `\n📷 ${photos.length} photo${photos.length === 1 ? "" : "s"} attached below`
+        ? `\n📷 ${hasBase64 ? b64Photos.length : legacyPhotos.length} photo${(hasBase64 ? b64Photos.length : legacyPhotos.length) === 1 ? "" : "s"} attached below`
         : "",
       data.audioPath ? `\n🎙️ <b>Voice Message attached</b>` : "",
       data.notes && profile.notify_include_notes !== false
         ? `\n📝 <b>Notes</b>\n${esc(data.notes)}`
         : "",
+      shortId ? `\n🆔 <b>Quote ID: #${shortId}</b>` : "",
       ``,
       `📞 <a href="tel:${esc(data.customerPhone)}">${esc(data.customerPhone)}</a>`,
     ]
@@ -226,23 +253,41 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       if (!res.ok) console.error("Telegram sendMessage failed", await res.text());
 
       if (includePhotos) {
-        // Concurrently download photos with timeouts so notification stays fast
-        const photoDownloads = photos.map(async (path, index) => {
-          try {
-            const downloadPromise = supabaseAdmin.storage.from("quote-photos").download(path);
-            const timeoutPromise = new Promise<{ data: null }>((res) =>
-              setTimeout(() => res({ data: null }), 4000),
-            );
-            const { data: file } = await Promise.race([downloadPromise, timeoutPromise]);
-            if (file) return { name: `photo${index}.jpg`, blob: file };
-          } catch (err) {
-            console.warn(`[telegram] Photo download failed for ${path}:`, err);
-          }
-          return null;
-        });
+        let files: { name: string; blob: Blob }[] = [];
 
-        const fileResults = await Promise.all(photoDownloads);
-        const files = fileResults.filter((f): f is { name: string; blob: Blob } => f !== null);
+        if (hasBase64) {
+          // Stream directly from in-memory base64 strings without touching database or storage
+          files = b64Photos.map((b64, index) => {
+            const parts = b64.split(",");
+            const mime = parts[0]?.match(/:(.*?);/)?.[1] || "image/jpeg";
+            const bstr = atob(parts[1] || parts[0]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) u8arr[n] = bstr.charCodeAt(n);
+            return {
+              name: `photo${index}.jpg`,
+              blob: new Blob([u8arr], { type: mime }),
+            };
+          });
+        } else if (legacyPhotos.length > 0) {
+          // Fallback for legacy stored photo paths
+          const photoDownloads = legacyPhotos.map(async (path, index) => {
+            try {
+              const downloadPromise = supabaseAdmin.storage.from("quote-photos").download(path);
+              const timeoutPromise = new Promise<{ data: null }>((res) =>
+                setTimeout(() => res({ data: null }), 4000),
+              );
+              const { data: file } = await Promise.race([downloadPromise, timeoutPromise]);
+              if (file) return { name: `photo${index}.jpg`, blob: file };
+            } catch (err) {
+              console.warn(`[telegram] Photo download failed for ${path}:`, err);
+            }
+            return null;
+          });
+
+          const fileResults = await Promise.all(photoDownloads);
+          files = fileResults.filter((f): f is { name: string; blob: Blob } => f !== null);
+        }
 
         if (files.length === 1) {
           const form = new FormData();

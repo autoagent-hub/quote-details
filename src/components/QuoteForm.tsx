@@ -166,31 +166,23 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
     setPhotos(next);
   };
 
-  const uploadPhotos = async (detailerId: string): Promise<string[]> => {
+  const prepareBase64Photos = async (): Promise<string[]> => {
     if (!photos.length) return [];
     const tasks = photos.map(async (file) => {
       try {
-        const compressed = await Promise.race([
-          compressImage(file),
-          new Promise<Blob>((res) => setTimeout(() => res(file), 1500)),
-        ]);
-        const path = `${detailerId}/${crypto.randomUUID()}.jpg`;
-        const uploadPromise = supabase.storage.from("quote-photos").upload(path, compressed, {
-          contentType: "image/jpeg",
-          upsert: false,
+        const compressed = await compressImage(file, 1000, 0.7);
+        return await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string) || "");
+          reader.onerror = () => resolve("");
+          reader.readAsDataURL(compressed);
         });
-        const timeoutPromise = new Promise<{ error: Error }>((res) =>
-          setTimeout(() => res({ error: new Error("timeout") }), 4000),
-        );
-        const result = await Promise.race([uploadPromise, timeoutPromise]);
-        if ("error" in result && result.error) return null;
-        return path;
       } catch {
-        return null;
+        return "";
       }
     });
     const results = await Promise.all(tasks);
-    return results.filter((p): p is string => p !== null);
+    return results.filter((s) => s.length > 0);
   };
 
   const ready = !!categoryKey && !!packageKey && !!name.trim() && !!phone.trim();
@@ -201,29 +193,36 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
     setSubmitting(true);
 
     try {
-      const photoPaths = photos.length ? await uploadPhotos(profile.id) : [];
+      // Process photos in memory for Telegram transmission without storing in database/bucket
+      const photosBase64 = photos.length ? await prepareBase64Photos() : [];
 
-      const { error } = await supabase.from("quotes").insert({
-        detailer_id: profile.id,
-        customer_name: name.trim(),
-        customer_phone: fullPhone,
-        vehicle_type: categoryKey!,
-        vehicle_desc: vehicleDesc.trim(),
-        service_key: chosenPackage.key,
-        service_label: chosenPackage.label,
-        service_price: quote.servicePrice,
-        addons,
-        notes: notes.trim(),
-        photo_urls: photoPaths,
-        currency,
-        estimated_price: quote.total,
-        is_test: !!isTest,
-      });
+      const { data: newQuote, error } = await supabase
+        .from("quotes")
+        .insert({
+          detailer_id: profile.id,
+          customer_name: name.trim(),
+          customer_phone: fullPhone,
+          vehicle_type: categoryKey!,
+          vehicle_desc: vehicleDesc.trim(),
+          service_key: chosenPackage.key,
+          service_label: chosenPackage.label,
+          service_price: quote.servicePrice,
+          addons,
+          notes: notes.trim(),
+          photo_urls: [], // Zero photos saved in database/storage
+          currency,
+          estimated_price: quote.total,
+          is_test: !!isTest,
+        })
+        .select("id")
+        .maybeSingle();
+
       if (error) throw error;
 
-      // Fire quote alert in background
+      // Fire quote alert with Quote ID and direct in-memory photos
       sendQuoteAlert({
         data: {
+          quoteId: newQuote?.id,
           detailerId: profile.id,
           customerName: name.trim(),
           customerPhone: fullPhone,
@@ -237,7 +236,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
           }),
           estimate: quote.total,
           notes: notes.trim(),
-          photoPaths,
+          photosBase64,
           isTest: !!isTest,
         },
       }).catch((err) => console.warn("[sendQuoteAlert] Notice:", err));
