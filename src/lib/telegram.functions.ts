@@ -198,9 +198,7 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       includePhotos
         ? `\n📷 ${photos.length} photo${photos.length === 1 ? "" : "s"} attached below`
         : "",
-      data.audioPath
-        ? `\n🎙️ <b>Voice Message attached</b>`
-        : "",
+      data.audioPath ? `\n🎙️ <b>Voice Message attached</b>` : "",
       data.notes && profile.notify_include_notes !== false
         ? `\n📝 <b>Notes</b>\n${esc(data.notes)}`
         : "",
@@ -265,7 +263,9 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       }
 
       if (data.audioPath) {
-        const { data: audioFile } = await supabaseAdmin.storage.from("quote-photos").download(data.audioPath);
+        const { data: audioFile } = await supabaseAdmin.storage
+          .from("quote-photos")
+          .download(data.audioPath);
         if (audioFile) {
           const form = new FormData();
           form.append("chat_id", String(chatId));

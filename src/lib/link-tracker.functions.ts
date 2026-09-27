@@ -43,11 +43,16 @@ export const recordPublicLinkVisit = createServerFn({ method: "POST" })
         !!profile.trial_expiry &&
         new Date(profile.trial_expiry).getTime() < Date.now();
 
-      if (profile.trial_status === "SUSPENDED" || profile.trial_status === "BANNED" || isTrialExpired) {
+      if (
+        profile.trial_status === "SUSPENDED" ||
+        profile.trial_status === "BANNED" ||
+        isTrialExpired
+      ) {
         return {
           ok: true,
           isSuspended: true,
-          suspensionReason: "This shop quote form is currently inactive. Please contact the business directly.",
+          suspensionReason:
+            "This shop quote form is currently inactive. Please contact the business directly.",
         };
       }
 

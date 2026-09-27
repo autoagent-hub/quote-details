@@ -75,7 +75,6 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
   const [countryChoice, setCountryChoice] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState(1);
 
-
   const [nameTouched, setNameTouched] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -132,7 +131,6 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
     setPhotos(next);
   };
 
-
   const uploadPhotos = async (detailerId: string): Promise<string[]> => {
     const paths: string[] = [];
     for (const file of photos) {
@@ -148,7 +146,6 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
   };
 
   const ready = !!categoryKey && !!packageKey && !!name.trim() && !!phone.trim();
-
 
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -332,9 +329,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
                     >
                       <span>
                         <span className="block text-sm font-semibold">{c.label}</span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {c.sub}
-                        </span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{c.sub}</span>
                       </span>
                       <span className="flex items-center gap-2">
                         {c.uplift !== 0 && (
@@ -412,9 +407,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
                     >
                       <span>
                         <span className="block text-sm font-semibold">{p.label}</span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {p.sub}
-                        </span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{p.sub}</span>
                       </span>
                       <span className="flex items-center gap-2">
                         <span className="font-display text-base font-bold">
@@ -445,9 +438,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
                       <Checkbox checked={active} onCheckedChange={() => toggleAddon(a.key)} />
                       <span className="flex-1">
                         <span className="block text-sm font-semibold">{a.label}</span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {a.sub}
-                        </span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{a.sub}</span>
                       </span>
                       <span className="font-display text-sm font-bold text-primary">
                         +{money(a.price, currency)}
@@ -497,8 +488,8 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
               <section>
                 <StepLabel step={4} title="Vehicle Photos (Optional)" />
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Snap the messiest spots so the detailer gives you an accurate service quote. Up
-                  to {MAX_PHOTOS}.
+                  Snap the messiest spots so the detailer gives you an accurate service quote. Up to{" "}
+                  {MAX_PHOTOS}.
                 </p>
                 <div className="mt-3 grid grid-cols-3 gap-2.5">
                   {photos.map((file, i) => (
@@ -624,20 +615,20 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
                       )}
                       {isRecording ? "Stop Recording" : "Record Voice Message"}
                     </Button>
-                    
+
                     {isRecording && (
                       <span className="font-mono text-sm text-red-600 font-bold">
                         {formatTime(recordingTime)}
                       </span>
                     )}
-                    
+
                     {audioBlob && !isRecording && (
                       <div className="flex items-center gap-2">
                         <audio src={URL.createObjectURL(audioBlob)} controls className="h-9 w-32" />
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
                           onClick={() => setAudioBlob(null)}
                           className="h-9 text-xs"
                         >

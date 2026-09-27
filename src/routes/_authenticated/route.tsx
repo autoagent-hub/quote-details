@@ -75,7 +75,10 @@ function AuthenticatedLayout() {
   if (
     !isUpgradePage &&
     trial &&
-    (trial.expired || trial.isSuspended || trial.status === "EXPIRED" || trial.status === "SUSPENDED") &&
+    (trial.expired ||
+      trial.isSuspended ||
+      trial.status === "EXPIRED" ||
+      trial.status === "SUSPENDED") &&
     !trial.isSubscribed
   ) {
     return <TrialExpiredLock profile={profile} trial={trial} />;

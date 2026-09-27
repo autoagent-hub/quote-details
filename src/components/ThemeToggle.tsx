@@ -8,12 +8,7 @@ export function ThemeToggle() {
   };
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={toggleTheme}
-      className="size-9 rounded-xl"
-    >
+    <Button variant="ghost" size="icon" onClick={toggleTheme} className="size-9 rounded-xl">
       <Sun className="size-5 dark:hidden" />
       <Moon className="hidden size-5 dark:block" />
     </Button>

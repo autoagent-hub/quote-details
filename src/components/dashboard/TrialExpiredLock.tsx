@@ -143,7 +143,11 @@ export function TrialExpiredLock({ profile, trial }: TrialExpiredLockProps) {
             size="xl"
             className="w-full h-14 rounded-2xl text-base font-bold shadow-xl shadow-primary/20 gap-2"
           >
-            <a href={checkoutHref} target={checkoutHref.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
+            <a
+              href={checkoutHref}
+              target={checkoutHref.startsWith("http") ? "_blank" : undefined}
+              rel="noreferrer"
+            >
               <CreditCard className="size-5" />
               <span>Upgrade to Pro ($9.99/month)</span>
               <ArrowRight className="size-5 ml-auto" />

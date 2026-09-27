@@ -198,9 +198,10 @@ function QuoteForm() {
       recorder.start();
       setMediaRecorder(recorder);
       setIsRecording(true);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Audio access error:", err);
-      toast.error(`Microphone access denied: ${err.message || "Please check browser permissions"}`);
+      const errMsg = err instanceof Error ? err.message : "Please check browser permissions";
+      toast.error(`Microphone access denied: ${errMsg}`);
     }
   };
 
@@ -1140,7 +1141,10 @@ function QuoteForm() {
                     </div>
                     <div className="flex w-full flex-wrap sm:flex-nowrap gap-2">
                       <Select value={selectedCountry.code} onValueChange={setCountryChoice}>
-                        <SelectTrigger className="w-full sm:w-[110px] shrink-0" aria-label="Country code">
+                        <SelectTrigger
+                          className="w-full sm:w-[110px] shrink-0"
+                          aria-label="Country code"
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="max-h-72">
