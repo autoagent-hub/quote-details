@@ -36,6 +36,41 @@ import {
 
 const MAX_PHOTOS = 5;
 
+async function compressImage(file: File, maxSide = 1200, quality = 0.75): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxSide || height > maxSide) {
+        if (width > height) {
+          height = Math.round((height * maxSide) / width);
+          width = maxSide;
+        } else {
+          width = Math.round((width * maxSide) / height);
+          height = maxSide;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", quality);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
+
 type PublicProfile = {
   id: string;
   business_name: string;
@@ -132,17 +167,30 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
   };
 
   const uploadPhotos = async (detailerId: string): Promise<string[]> => {
-    const paths: string[] = [];
-    for (const file of photos) {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${detailerId}/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from("quote-photos").upload(path, file, {
-        contentType: file.type || "image/jpeg",
-        upsert: false,
-      });
-      if (!error) paths.push(path);
-    }
-    return paths;
+    if (!photos.length) return [];
+    const tasks = photos.map(async (file) => {
+      try {
+        const compressed = await Promise.race([
+          compressImage(file),
+          new Promise<Blob>((res) => setTimeout(() => res(file), 1500)),
+        ]);
+        const path = `${detailerId}/${crypto.randomUUID()}.jpg`;
+        const uploadPromise = supabase.storage.from("quote-photos").upload(path, compressed, {
+          contentType: "image/jpeg",
+          upsert: false,
+        });
+        const timeoutPromise = new Promise<{ error: Error }>((res) =>
+          setTimeout(() => res({ error: new Error("timeout") }), 4000),
+        );
+        const result = await Promise.race([uploadPromise, timeoutPromise]);
+        if ("error" in result && result.error) return null;
+        return path;
+      } catch {
+        return null;
+      }
+    });
+    const results = await Promise.all(tasks);
+    return results.filter((p): p is string => p !== null);
   };
 
   const ready = !!categoryKey && !!packageKey && !!name.trim() && !!phone.trim();
@@ -173,7 +221,8 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
       });
       if (error) throw error;
 
-      void sendQuoteAlert({
+      // Fire quote alert in background
+      sendQuoteAlert({
         data: {
           detailerId: profile.id,
           customerName: name.trim(),
@@ -191,7 +240,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
           photoPaths,
           isTest: !!isTest,
         },
-      }).catch(() => undefined);
+      }).catch((err) => console.warn("[sendQuoteAlert] Notice:", err));
 
       toast.success(
         isTest

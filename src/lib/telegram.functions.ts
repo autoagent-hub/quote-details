@@ -213,6 +213,7 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(6000),
       });
 
     try {
@@ -225,20 +226,34 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       if (!res.ok) console.error("Telegram sendMessage failed", await res.text());
 
       if (includePhotos) {
-        // Stream the private files through Telegram as real uploads so the
-        // detailer sees images even though nothing is stored in the database.
-        const files: { name: string; blob: Blob }[] = [];
-        for (const [index, path] of photos.entries()) {
-          const { data: file } = await supabaseAdmin.storage.from("quote-photos").download(path);
-          if (file) files.push({ name: `photo${index}.jpg`, blob: file });
-        }
+        // Concurrently download photos with timeouts so notification stays fast
+        const photoDownloads = photos.map(async (path, index) => {
+          try {
+            const downloadPromise = supabaseAdmin.storage.from("quote-photos").download(path);
+            const timeoutPromise = new Promise<{ data: null }>((res) =>
+              setTimeout(() => res({ data: null }), 4000),
+            );
+            const { data: file } = await Promise.race([downloadPromise, timeoutPromise]);
+            if (file) return { name: `photo${index}.jpg`, blob: file };
+          } catch (err) {
+            console.warn(`[telegram] Photo download failed for ${path}:`, err);
+          }
+          return null;
+        });
+
+        const fileResults = await Promise.all(photoDownloads);
+        const files = fileResults.filter((f): f is { name: string; blob: Blob } => f !== null);
 
         if (files.length === 1) {
           const form = new FormData();
           form.append("chat_id", String(chatId));
           form.append("caption", `Photo from ${data.customerName}`);
           form.append("photo", files[0]!.blob, files[0]!.name);
-          const photoRes = await fetch(`${API}${token}/sendPhoto`, { method: "POST", body: form });
+          const photoRes = await fetch(`${API}${token}/sendPhoto`, {
+            method: "POST",
+            body: form,
+            signal: AbortSignal.timeout(6000),
+          });
           if (!photoRes.ok) console.error("Telegram sendPhoto failed", await photoRes.text());
         } else if (files.length > 1) {
           const form = new FormData();
@@ -257,6 +272,7 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
           const groupRes = await fetch(`${API}${token}/sendMediaGroup`, {
             method: "POST",
             body: form,
+            signal: AbortSignal.timeout(6000),
           });
           if (!groupRes.ok) console.error("Telegram sendMediaGroup failed", await groupRes.text());
         }
