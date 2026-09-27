@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Loader2, Share2 } from "lucide-react";
+import { Check, AlertCircle, Loader2, Share2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CURRENCIES, TIMEZONES, slugify } from "@/lib/pricing";
+import { useSlugValidator } from "@/hooks/useSlugValidator";
 import type { Profile } from "./types";
 import { useProfileUpdate } from "./useProfileUpdate";
 
@@ -25,6 +27,8 @@ export function BusinessProfileCard({ profile }: { profile: Profile }) {
     timezone: profile.timezone || "America/Los_Angeles",
     tagline: profile.tagline ?? "",
   });
+
+  const slugStatus = useSlugValidator(form.slug, profile.id);
   const save = useProfileUpdate("Profile settings saved");
 
   return (
@@ -51,21 +55,74 @@ export function BusinessProfileCard({ profile }: { profile: Profile }) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label
-              htmlFor="slug"
-              className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80"
-            >
-              URL Slug
-            </Label>
-            <Input
-              id="slug"
-              value={form.slug}
-              onChange={(e) => setForm((f) => ({ ...f, slug: slugify(e.target.value) }))}
-              className="h-9 text-xs font-mono rounded-xl border-border/60 bg-background/50 focus-visible:ring-primary/20"
-            />
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="slug"
+                className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80"
+              >
+                URL Slug
+              </Label>
+              {slugStatus.isChecking ? (
+                <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                  <Loader2 className="size-3 animate-spin text-primary" /> Checking...
+                </span>
+              ) : slugStatus.isTaken ? (
+                <span className="text-[10px] font-bold text-red-500 flex items-center gap-1">
+                  <AlertCircle className="size-3 shrink-0" /> Slug Taken
+                </span>
+              ) : slugStatus.isValid && form.slug ? (
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <Check className="size-3" /> Available
+                </span>
+              ) : null}
+            </div>
+            <div className="relative">
+              <Input
+                id="slug"
+                value={form.slug}
+                onChange={(e) => setForm((f) => ({ ...f, slug: slugify(e.target.value) }))}
+                className={`h-9 text-xs font-mono rounded-xl bg-background/50 transition-colors ${
+                  slugStatus.isTaken
+                    ? "border-red-500/80 focus-visible:ring-red-500/30 bg-red-50/10"
+                    : slugStatus.isValid && form.slug
+                      ? "border-emerald-500/60 focus-visible:ring-emerald-500/30"
+                      : "border-border/60 focus-visible:ring-primary/20"
+                }`}
+              />
+            </div>
+
+            {/* Slug Taken Alert & Alternative Pills */}
+            {slugStatus.isTaken && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-2.5 space-y-2 text-xs animate-in fade-in-50 duration-150">
+                <p className="text-[11px] font-semibold text-red-600 dark:text-red-400 leading-tight">
+                  {slugStatus.message}
+                </p>
+
+                {slugStatus.suggestions.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Suggested available alternatives:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {slugStatus.suggestions.map((alt) => (
+                        <button
+                          key={alt}
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, slug: alt }))}
+                          className="rounded-lg border border-primary/30 bg-background/80 hover:bg-primary/10 px-2 py-1 text-[11px] font-mono font-bold text-primary transition-all hover:scale-105 cursor-pointer shadow-2xs"
+                        >
+                          + {alt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
           <div className="space-y-2">
             <Label
               htmlFor="phone"
@@ -201,7 +258,14 @@ export function BusinessProfileCard({ profile }: { profile: Profile }) {
             variant="hero"
             size="sm"
             className="h-9 px-8 font-bold text-xs rounded-xl shadow-lg shadow-primary/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            disabled={save.isPending || !form.business_name.trim() || !form.slug}
+            disabled={
+              save.isPending ||
+              slugStatus.isChecking ||
+              slugStatus.isTaken ||
+              !slugStatus.isValid ||
+              !form.business_name.trim() ||
+              !form.slug
+            }
             onClick={() =>
               save.mutate({
                 id: profile.id,
