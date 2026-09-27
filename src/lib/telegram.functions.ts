@@ -210,27 +210,24 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
     ];
 
     const body = [
-      data.isTest
-        ? `🧪 <b>TEST REQUEST — not a real customer</b>`
-        : `🚨 <b>NEW QUOTE REQUEST ${shortId ? `#${shortId}` : ""}</b>`,
+      data.isTest ? `🧪 <b>TEST REQUEST — not a real customer</b>` : `🚨 <b>NEW QUOTE REQUEST</b>`,
+      shortId ? `🆔 <b>QUOTE ID: <code>#${shortId}</code></b>` : "",
       profile.business_name ? `<i>${esc(profile.business_name)}</i>` : "",
       ``,
-      `👤 <b>${esc(data.customerName)}</b>`,
-      `🚗 ${esc(data.vehicle)}`,
+      `👤 <b>Customer:</b> ${esc(data.customerName)}`,
+      `📞 <b>Phone:</b> <a href="tel:${esc(data.customerPhone)}">${esc(data.customerPhone)}</a>`,
+      `🚗 <b>Vehicle:</b> ${esc(data.vehicle)}`,
       ``,
-      `<b>Requested work</b>`,
+      `<b>Requested Services:</b>`,
       `<pre>${items.join("\n")}</pre>`,
-      `💰 <b>Estimated total: ${fmt(data.estimate, currency)}</b>`,
+      `💰 <b>Estimated Total: ${fmt(data.estimate, currency)}</b>`,
       includePhotos
-        ? `\n📷 ${hasBase64 ? b64Photos.length : legacyPhotos.length} photo${(hasBase64 ? b64Photos.length : legacyPhotos.length) === 1 ? "" : "s"} attached below`
+        ? `\n📷 <b>${hasBase64 ? b64Photos.length : legacyPhotos.length} photo${(hasBase64 ? b64Photos.length : legacyPhotos.length) === 1 ? "" : "s"} attached below:</b>`
         : "",
-      data.audioPath ? `\n🎙️ <b>Voice Message attached</b>` : "",
       data.notes && profile.notify_include_notes !== false
-        ? `\n📝 <b>Notes</b>\n${esc(data.notes)}`
+        ? `\n📝 <b>Customer Notes:</b>\n${esc(data.notes)}`
         : "",
-      shortId ? `\n🆔 <b>Quote ID: #${shortId}</b>` : "",
-      ``,
-      `📞 <a href="tel:${esc(data.customerPhone)}">${esc(data.customerPhone)}</a>`,
+      shortId ? `\n🔍 <i>Bot lookup: <code>/start quote_${shortId.toLowerCase()}</code></i>` : "",
     ]
       .filter((line) => line !== "")
       .join("\n");

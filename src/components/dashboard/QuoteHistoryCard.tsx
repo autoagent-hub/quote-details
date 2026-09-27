@@ -84,7 +84,18 @@ export function QuoteHistoryCard({
   const [showTests, setShowTests] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedQuoteId, setCopiedQuoteId] = useState<string | null>(null);
   const [creatingTestLead, setCreatingTestLead] = useState(false);
+
+  const handleCopyQuoteId = (id: string) => {
+    const shortId = id.slice(0, 8).toUpperCase();
+    void navigator.clipboard.writeText(shortId);
+    setCopiedQuoteId(id);
+    toast.success(`Quote ID #${shortId} copied!`, {
+      description: "You can paste this ID into your Telegram bot.",
+    });
+    setTimeout(() => setCopiedQuoteId(null), 2000);
+  };
 
   // Confirmation dialog state
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -473,23 +484,45 @@ export function QuoteHistoryCard({
                     </div>
                   )}
 
-                  {/* Telegram Bot Details Button & Notes */}
+                  {/* Telegram Bot Details Button, Copy ID & Notes */}
                   <div className="space-y-2 pt-1">
-                    <Button
-                      asChild
-                      variant="outline"
-                      size="sm"
-                      className="h-8 w-full rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-500/20 border-sky-500/30 text-xs font-bold gap-2"
-                    >
-                      <a
-                        href={`https://t.me/${botUsername}?start=quote_${q.id.slice(0, 8)}`}
-                        target="_blank"
-                        rel="noreferrer"
+                    <div className="flex items-center gap-2">
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="h-8 flex-1 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-500/20 border-sky-500/30 text-xs font-bold gap-2"
                       >
-                        <Send className="size-3.5 text-sky-600 dark:text-sky-400" />
-                        <span>View Quote #{q.id.slice(0, 8).toUpperCase()} in Telegram</span>
-                      </a>
-                    </Button>
+                        <a
+                          href={`https://t.me/${botUsername}?start=quote_${q.id.slice(0, 8)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <Send className="size-3.5 text-sky-600 dark:text-sky-400" />
+                          <span>View Quote #{q.id.slice(0, 8).toUpperCase()} in Telegram</span>
+                        </a>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-xl border-border/60 text-xs font-semibold gap-1.5 shrink-0 hover:bg-muted"
+                        onClick={() => handleCopyQuoteId(q.id)}
+                        title="Copy Quote ID"
+                      >
+                        {copiedQuoteId === q.id ? (
+                          <>
+                            <Check className="size-3.5 text-emerald-500" />
+                            <span>Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="size-3.5 text-muted-foreground" />
+                            <span>Copy ID</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
 
                     {q.notes?.trim() && (
                       <div className="rounded-xl border border-border/40 bg-background/50 p-2.5 space-y-1 text-xs">
@@ -668,7 +701,7 @@ export function QuoteHistoryCard({
                       </TableCell>
 
                       <TableCell className="text-xs py-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <Button
                             asChild
                             variant="outline"
@@ -684,6 +717,21 @@ export function QuoteHistoryCard({
                               <Send className="size-3 text-sky-600 dark:text-sky-400" />
                               <span>Telegram</span>
                             </a>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 rounded-lg border-border/60 text-[10px] font-semibold gap-1 shrink-0 hover:bg-muted"
+                            onClick={() => handleCopyQuoteId(q.id)}
+                            title="Copy Quote ID to paste in Telegram"
+                          >
+                            {copiedQuoteId === q.id ? (
+                              <Check className="size-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="size-3 text-muted-foreground" />
+                            )}
+                            <span>{copiedQuoteId === q.id ? "Copied" : "Copy ID"}</span>
                           </Button>
                           {q.notes?.trim() ? (
                             <div

@@ -36,7 +36,7 @@ import {
 
 const MAX_PHOTOS = 5;
 
-async function compressImage(file: File, maxSide = 1200, quality = 0.75): Promise<Blob> {
+async function compressImage(file: File, maxSide = 1600, quality = 0.82): Promise<Blob> {
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -60,6 +60,8 @@ async function compressImage(file: File, maxSide = 1200, quality = 0.75): Promis
         resolve(file);
         return;
       }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
       ctx.drawImage(img, 0, 0, width, height);
       canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", quality);
     };
@@ -170,7 +172,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
     if (!photos.length) return [];
     const tasks = photos.map(async (file) => {
       try {
-        const compressed = await compressImage(file, 1000, 0.7);
+        const compressed = await compressImage(file, 1600, 0.82);
         return await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve((reader.result as string) || "");
@@ -648,46 +650,6 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
             <section>
               <StepLabel step={6} title="Where Should We Send Your Quote?" />
               <div className="mt-3 space-y-4 rounded-xl border border-border bg-card p-5 shadow-2xs">
-                <div className="space-y-1.5">
-                  <Label className="font-semibold">Voice Message (Optional)</Label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant={isRecording ? "destructive" : "outline"}
-                      onClick={isRecording ? stopRecording : startRecording}
-                      className="relative"
-                    >
-                      {isRecording && (
-                        <span className="absolute -left-1 -top-1 flex size-3">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full size-3 bg-red-500"></span>
-                        </span>
-                      )}
-                      {isRecording ? "Stop Recording" : "Record Voice Message"}
-                    </Button>
-
-                    {isRecording && (
-                      <span className="font-mono text-sm text-red-600 font-bold">
-                        {formatTime(recordingTime)}
-                      </span>
-                    )}
-
-                    {audioBlob && !isRecording && (
-                      <div className="flex items-center gap-2">
-                        <audio src={URL.createObjectURL(audioBlob)} controls className="h-9 w-32" />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setAudioBlob(null)}
-                          className="h-9 text-xs"
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="name" className="font-semibold">

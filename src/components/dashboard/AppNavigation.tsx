@@ -26,7 +26,6 @@ import {
 import { toast } from "sonner";
 
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -281,15 +280,10 @@ export function AppNavigation({
               >
                 <LogOut className="size-3.5 mr-1 opacity-60" /> Exit
               </Button>
-
-              <div className="ml-1">
-                <ThemeToggle />
-              </div>
             </div>
 
             {/* Mobile Actions */}
             <div className="flex items-center gap-2 md:hidden">
-              <ThemeToggle />
               <Button
                 variant="outline"
                 size="icon"
