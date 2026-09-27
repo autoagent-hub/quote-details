@@ -482,18 +482,27 @@ function QuoteForm() {
 
   if (isSuspended) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface px-6 text-center">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-sm">
-          <AlertOctagon className="size-7" />
+      <div className="flex min-h-screen flex-col items-center justify-center gap-5 bg-surface px-6 text-center py-12">
+        <div className="flex size-16 items-center justify-center rounded-3xl bg-amber-500/10 text-amber-500 shadow-md ring-1 ring-amber-500/20">
+          <AlertOctagon className="size-8" />
         </div>
-        <h1 className="text-xl font-bold">Shop Temporarily Inactive</h1>
-        <p className="max-w-md text-sm text-muted-foreground">
-          {suspensionReason ||
-            "This quote form is temporarily inactive or undergoing administrative updates."}
-        </p>
-        <Button asChild variant="outline" className="mt-2">
-          <Link to="/">Visit Detailr</Link>
-        </Button>
+        <div className="max-w-md space-y-2">
+          <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+            Form Inactive
+          </span>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Quote Link Temporarily Inactive
+          </h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {suspensionReason ||
+              "This shop quote form is currently inactive. Please contact the business directly or try again later."}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+          <Button asChild variant="outline" size="lg" className="rounded-xl font-bold">
+            <Link to="/">Visit Detailr</Link>
+          </Button>
+        </div>
       </div>
     );
   }

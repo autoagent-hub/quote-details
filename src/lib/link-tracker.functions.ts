@@ -35,12 +35,19 @@ export const recordPublicLinkVisit = createServerFn({ method: "POST" })
         return { ok: false, isSuspended: false };
       }
 
-      // 1. Check if user is suspended or banned
-      if (profile.trial_status === "SUSPENDED" || profile.trial_status === "BANNED") {
+      // 1. Check if user is suspended, banned, or 7-day trial has expired
+      const isSubscribed =
+        profile.trial_status === "SUBSCRIBED" || profile.trial_status === "ADMIN";
+      const isTrialExpired =
+        !isSubscribed &&
+        !!profile.trial_expiry &&
+        new Date(profile.trial_expiry).getTime() < Date.now();
+
+      if (profile.trial_status === "SUSPENDED" || profile.trial_status === "BANNED" || isTrialExpired) {
         return {
           ok: true,
           isSuspended: true,
-          suspensionReason: "This shop quote link is currently inactive or under review.",
+          suspensionReason: "This shop quote form is currently inactive. Please contact the business directly.",
         };
       }
 

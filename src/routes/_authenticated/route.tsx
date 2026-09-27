@@ -1,8 +1,12 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { RefreshCw, Home } from "lucide-react";
+import { getTrialState } from "@/lib/billing.functions";
+import { TrialExpiredLock } from "@/components/dashboard/TrialExpiredLock";
 
 function AuthenticatedErrorComponent({ error, reset }: { error: Error | null; reset: () => void }) {
   return (
@@ -43,6 +47,40 @@ function AuthenticatedErrorComponent({ error, reset }: { error: Error | null; re
 }
 
 function AuthenticatedLayout() {
+  const routerState = useRouterState();
+  const isUpgradePage = routerState.location.pathname.includes("/upgrade");
+
+  const fetchTrial = useServerFn(getTrialState);
+  const { data: trial } = useQuery({
+    queryKey: ["trial-state"],
+    queryFn: async () => fetchTrial(),
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, slug, business_name, trial_status, trial_expiry")
+        .eq("id", uid)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  // Lock dashboard access when 7-day trial has ended
+  if (
+    !isUpgradePage &&
+    trial &&
+    (trial.expired || trial.isSuspended || trial.status === "EXPIRED" || trial.status === "SUSPENDED") &&
+    !trial.isSubscribed
+  ) {
+    return <TrialExpiredLock profile={profile} trial={trial} />;
+  }
+
   return (
     <ErrorBoundary boundaryName="authenticated_layout">
       <Outlet />
