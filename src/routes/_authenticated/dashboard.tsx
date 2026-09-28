@@ -19,6 +19,10 @@ import { NotificationSettingsCard } from "@/components/dashboard/NotificationSet
 import { TrialBanner } from "@/components/dashboard/TrialBanner";
 import { Onboarding } from "@/components/dashboard/Onboarding";
 import { DashboardWelcomeHero } from "@/components/dashboard/DashboardWelcomeHero";
+import {
+  DashboardOnboardingTour,
+  useDashboardTour,
+} from "@/components/dashboard/DashboardOnboardingTour";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -37,6 +41,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function DashboardPage() {
   const [activeTab, setActiveTab] = useState("quotes");
+  const tour = useDashboardTour();
 
   const { data: user } = useQuery({
     queryKey: ["auth-user"],
@@ -88,6 +93,7 @@ function DashboardPage() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         userEmail={user?.email}
+        onStartTour={tour.startTour}
       />
 
       {/* Main Workspace Layout */}
@@ -97,7 +103,9 @@ function DashboardPage() {
             <TrialBanner />
 
             {/* Welcome Guide */}
-            <DashboardWelcomeHero profile={profile} onSelectTab={setActiveTab} />
+            <div data-tour="welcome-hero">
+              <DashboardWelcomeHero profile={profile} onSelectTab={setActiveTab} />
+            </div>
 
             {/* Top Metrics Grid */}
             <TopMetricsGrid profile={profile} quotes={quotes ?? []} onSelectTab={setActiveTab} />
@@ -108,6 +116,7 @@ function DashboardPage() {
                 <TabsList className="bg-muted/40 p-1.5 h-auto rounded-2xl border border-border/40 backdrop-blur-sm grid grid-cols-2 md:grid-cols-4 gap-1.5">
                   <TabsTrigger
                     value="quotes"
+                    data-tour="quotes-tab"
                     className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all flex flex-col items-start text-left sm:flex-row sm:items-center"
                   >
                     <div className="flex items-center gap-2">
@@ -124,6 +133,7 @@ function DashboardPage() {
 
                   <TabsTrigger
                     value="pricing"
+                    data-tour="pricing-tab"
                     className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all flex flex-col items-start text-left sm:flex-row sm:items-center"
                   >
                     <div className="flex items-center gap-2">
@@ -134,6 +144,7 @@ function DashboardPage() {
 
                   <TabsTrigger
                     value="notifications"
+                    data-tour="notifications-tab"
                     className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all flex flex-col items-start text-left sm:flex-row sm:items-center"
                   >
                     <div className="flex items-center gap-2">
@@ -147,6 +158,7 @@ function DashboardPage() {
 
                   <TabsTrigger
                     value="settings"
+                    data-tour="settings-tab"
                     className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all flex flex-col items-start text-left sm:flex-row sm:items-center"
                   >
                     <div className="flex items-center gap-2">
@@ -248,6 +260,12 @@ function DashboardPage() {
           </p>
         </footer>
       </main>
+
+      <DashboardOnboardingTour
+        isOpen={tour.isOpen}
+        onClose={tour.closeTour}
+        onSelectTab={setActiveTab}
+      />
     </div>
   );
 }

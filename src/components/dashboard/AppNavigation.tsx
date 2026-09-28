@@ -51,6 +51,7 @@ interface AppNavigationProps {
   activeTab?: string;
   onSelectTab?: (tab: string) => void;
   userEmail?: string | null;
+  onStartTour?: () => void;
 }
 
 export function AppNavigation({
@@ -58,6 +59,7 @@ export function AppNavigation({
   activeTab = "quotes",
   onSelectTab,
   userEmail,
+  onStartTour,
 }: AppNavigationProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -201,6 +203,19 @@ export function AppNavigation({
           <div className="flex items-center gap-2 shrink-0">
             {profile && (
               <div className="hidden sm:flex items-center gap-2">
+                {onStartTour && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 rounded-xl px-2.5 border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 font-bold text-[11px] gap-1.5 transition-all"
+                    onClick={onStartTour}
+                    title="Start guided onboarding tour of dashboard features"
+                  >
+                    <Sparkles className="size-3.5" />
+                    <span>Take Tour</span>
+                  </Button>
+                )}
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -426,6 +441,21 @@ export function AppNavigation({
 
             {profile && (
               <div className="pt-2 flex flex-col gap-2">
+                {onStartTour && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full rounded-xl h-10 font-bold text-xs gap-2 justify-center bg-primary text-white"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onStartTour();
+                    }}
+                  >
+                    <Sparkles className="size-4" />
+                    <span>Take Dashboard Tour</span>
+                  </Button>
+                )}
+
                 <Button
                   variant="outline"
                   size="sm"
