@@ -170,14 +170,22 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
     if (!chatId) return { sent: false, reason: "not_connected" as const };
     if (profile.notify_telegram === false) return { sent: false, reason: "muted" as const };
 
-    // Anti-cheat: Verify detailer has active access (valid Whop subscription or active trial)
+    // Anti-cheat: Verify detailer has active access (valid Whop subscription, pending trial, or active trial)
     const isSubscribed =
-      profile.trial_status === "SUBSCRIBED" &&
-      !!profile.whop_membership_id &&
-      (profile.whop_membership_id.startsWith("mem_") ||
-        profile.whop_membership_id.startsWith("pay_"));
+      (profile.trial_status === "SUBSCRIBED" || profile.trial_status === "ADMIN") &&
+      (profile.trial_status === "ADMIN" ||
+        (!!profile.whop_membership_id &&
+          (profile.whop_membership_id.startsWith("mem_") ||
+            profile.whop_membership_id.startsWith("pay_"))));
+
+    const isPendingTrial =
+      profile.trial_status === "TRIAL_PENDING" ||
+      profile.trial_status === "TRIAL" ||
+      !profile.trial_expiry;
+
     const isTrialActive =
-      !!profile.trial_expiry && new Date(profile.trial_expiry).getTime() > Date.now();
+      isPendingTrial ||
+      (!!profile.trial_expiry && new Date(profile.trial_expiry).getTime() > Date.now());
 
     if (!isSubscribed && !isTrialActive && !data.isTest) {
       // Trial expired and not subscribed: send upgrade notification instead of full quote

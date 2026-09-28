@@ -43,7 +43,7 @@ const DEFAULT_DOMAIN = "https://detailr.online";
 const DEFAULT_TITLE = "Detailr Online — Instant Detailing Quotes & Real-Time Telegram Alerts";
 const DEFAULT_DESCRIPTION =
   "Give car detailing customers instant pricing estimates on your website and receive new qualified leads directly in Telegram with vehicle photos.";
-const DEFAULT_OG_IMAGE = `${DEFAULT_DOMAIN}/og-image.jpg`;
+const DEFAULT_OG_IMAGE = `${DEFAULT_DOMAIN}/logo.png`;
 
 export function SeoHead({
   title = DEFAULT_TITLE,

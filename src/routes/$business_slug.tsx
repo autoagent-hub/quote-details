@@ -41,6 +41,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, composePhone, defaultCountryForCurrency } from "@/lib/countries";
 import { sendQuoteAlert } from "@/lib/telegram.functions";
 import { recordPublicLinkVisit } from "@/lib/link-tracker.functions";
+import { submitPublicQuote } from "@/lib/quote.functions";
 
 import {
   calculateQuote,
@@ -103,13 +104,15 @@ async function compressImage(file: File, maxSide = 1200, quality = 0.8): Promise
 }
 
 export const Route = createFileRoute("/$business_slug")({
-  ssr: false,
   validateSearch: (search: Record<string, unknown>): { test?: boolean } =>
     search["test"] === "1" || search["test"] === true ? { test: true } : {},
   loader: async ({ params }): Promise<PublicProfile | null> => {
     try {
       const slug = (params.business_slug || "").trim().toLowerCase();
-      const { data, error } = await supabase.rpc("get_public_pricing", {
+      const { getAdminClient } = await import("@/lib/admin.server");
+      const admin = getAdminClient();
+      const client = admin ?? supabase;
+      const { data, error } = await client.rpc("get_public_pricing", {
         _slug: slug,
       });
       if (!error && data && data.length > 0) {
@@ -129,7 +132,7 @@ export const Route = createFileRoute("/$business_slug")({
     const canonicalUrl = `https://detailr.online/${params.business_slug}`;
 
     const rawLogo = profile?.logo_url?.trim();
-    let shareImage = "https://detailr.online/og-image.jpg";
+    let shareImage = "https://detailr.online/logo.png";
     let isCustomLogo = false;
 
     if (rawLogo) {
@@ -428,32 +431,29 @@ function QuoteForm() {
     try {
       const photosBase64 = photos.length ? await prepareBase64Photos() : [];
 
-      const { data: newQuote, error } = await supabase
-        .from("quotes")
-        .insert({
-          detailer_id: profile.id,
-          customer_name: name.trim(),
-          customer_phone: fullPhone,
-          vehicle_type: categoryKey!,
-          vehicle_desc: vehicleDesc.trim(),
-          service_key: chosenPackage.key,
-          service_label: chosenPackage.label,
-          service_price: quote.servicePrice,
+      const result = await submitPublicQuote({
+        data: {
+          detailerId: profile.id,
+          customerName: name.trim(),
+          customerPhone: fullPhone,
+          vehicleType: categoryKey!,
+          vehicleDesc: vehicleDesc.trim(),
+          serviceKey: chosenPackage.key,
+          serviceLabel: chosenPackage.label,
+          servicePrice: quote.servicePrice,
           addons,
           notes: notes.trim(),
-          photo_urls: [],
           currency,
-          estimated_price: quote.total,
-          is_test: !!isTest,
-        })
-        .select("id")
-        .maybeSingle();
+          estimatedPrice: quote.total,
+          isTest: !!isTest,
+        },
+      });
 
-      if (error) throw error;
+      const quoteId = result?.quoteId;
 
       void sendQuoteAlert({
         data: {
-          quoteId: newQuote?.id,
+          quoteId: quoteId || undefined,
           detailerId: profile.id,
           customerName: name.trim(),
           customerPhone: fullPhone,
