@@ -92,16 +92,22 @@ export function SeoHead({
     );
 
     // Open Graph
+    setMetaTag('meta[property="og:site_name"]', "property", "og:site_name", "Detailr Online");
     setMetaTag('meta[property="og:title"]', "property", "og:title", title);
     setMetaTag('meta[property="og:description"]', "property", "og:description", description);
     setMetaTag('meta[property="og:url"]', "property", "og:url", currentCanonical);
     setMetaTag('meta[property="og:type"]', "property", "og:type", ogType);
     setMetaTag('meta[property="og:image"]', "property", "og:image", ogImage);
+    setMetaTag('meta[property="og:image:url"]', "property", "og:image:url", ogImage);
+    setMetaTag('meta[property="og:image:secure_url"]', "property", "og:image:secure_url", ogImage);
 
-    // Twitter
+    // Twitter / Social Cards
+    setMetaTag('meta[name="twitter:card"]', "name", "twitter:card", "summary_large_image");
+    setMetaTag('meta[name="twitter:site"]', "name", "twitter:site", "@detailronline");
     setMetaTag('meta[name="twitter:title"]', "name", "twitter:title", title);
     setMetaTag('meta[name="twitter:description"]', "name", "twitter:description", description);
     setMetaTag('meta[name="twitter:image"]', "name", "twitter:image", ogImage);
+    setMetaTag('meta[name="twitter:image:src"]', "name", "twitter:image:src", ogImage);
 
     // Canonical link tag
     let linkCanonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
