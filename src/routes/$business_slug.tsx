@@ -65,6 +65,43 @@ type PublicProfile = {
   vehicle_categories: unknown;
 };
 
+async function compressImage(file: File, maxSide = 1200, quality = 0.8): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxSide || height > maxSide) {
+        if (width > height) {
+          height = Math.round((height * maxSide) / width);
+          width = maxSide;
+        } else {
+          width = Math.round((width * maxSide) / height);
+          height = maxSide;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", quality);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
+
 export const Route = createFileRoute("/$business_slug")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>): { test?: boolean } =>
@@ -284,18 +321,23 @@ function QuoteForm() {
     setPhotos(next);
   };
 
-  const uploadPhotos = async (detailerId: string): Promise<string[]> => {
-    const paths: string[] = [];
-    for (const file of photos) {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${detailerId}/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from("quote-photos").upload(path, file, {
-        contentType: file.type || "image/jpeg",
-        upsert: false,
-      });
-      if (!error) paths.push(path);
-    }
-    return paths;
+  const prepareBase64Photos = async (): Promise<string[]> => {
+    if (!photos.length) return [];
+    const tasks = photos.map(async (file) => {
+      try {
+        const compressed = await compressImage(file, 1200, 0.8);
+        return await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string) || "");
+          reader.onerror = () => resolve("");
+          reader.readAsDataURL(compressed);
+        });
+      } catch {
+        return "";
+      }
+    });
+    const results = await Promise.all(tasks);
+    return results.filter((s) => s.length > 0);
   };
 
   // Automatic sync for offline quotes when network connection is restored
@@ -384,28 +426,34 @@ function QuoteForm() {
     }
 
     try {
-      const photoPaths = photos.length ? await uploadPhotos(profile.id) : [];
+      const photosBase64 = photos.length ? await prepareBase64Photos() : [];
 
-      const { error } = await supabase.from("quotes").insert({
-        detailer_id: profile.id,
-        customer_name: name.trim(),
-        customer_phone: fullPhone,
-        vehicle_type: categoryKey!,
-        vehicle_desc: vehicleDesc.trim(),
-        service_key: chosenPackage.key,
-        service_label: chosenPackage.label,
-        service_price: quote.servicePrice,
-        addons,
-        notes: notes.trim(),
-        photo_urls: photoPaths,
-        currency,
-        estimated_price: quote.total,
-        is_test: !!isTest,
-      });
+      const { data: newQuote, error } = await supabase
+        .from("quotes")
+        .insert({
+          detailer_id: profile.id,
+          customer_name: name.trim(),
+          customer_phone: fullPhone,
+          vehicle_type: categoryKey!,
+          vehicle_desc: vehicleDesc.trim(),
+          service_key: chosenPackage.key,
+          service_label: chosenPackage.label,
+          service_price: quote.servicePrice,
+          addons,
+          notes: notes.trim(),
+          photo_urls: [],
+          currency,
+          estimated_price: quote.total,
+          is_test: !!isTest,
+        })
+        .select("id")
+        .maybeSingle();
+
       if (error) throw error;
 
       void sendQuoteAlert({
         data: {
+          quoteId: newQuote?.id,
           detailerId: profile.id,
           customerName: name.trim(),
           customerPhone: fullPhone,
@@ -419,10 +467,10 @@ function QuoteForm() {
           }),
           estimate: quote.total,
           notes: notes.trim(),
-          photoPaths,
+          photosBase64,
           isTest: !!isTest,
         },
-      }).catch(() => undefined);
+      }).catch((err) => console.warn("[sendQuoteAlert] notice:", err));
 
       toast.success(
         isTest

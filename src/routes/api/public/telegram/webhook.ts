@@ -125,7 +125,8 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
                 timeStyle: "short",
               })}\n` +
               (q.notes ? `\n📝 <b>Customer Notes:</b>\n${escStr(q.notes)}\n` : "") +
-              `\n💬 <i>Note: Original customer photos were sent directly to this Telegram chat when submitted. Search "<b>#${shortId}</b>" in chat history to locate attached photos!</i>`;
+              `\n🏷️ <b>Search Tags:</b> #${shortId} #quote_${shortId.toLowerCase()}\n` +
+              `\n💬 <i>Tip: Tap <b>#${shortId}</b> above to immediately search chat history and highlight attached photos!</i>`;
 
             await send(token, chatId, msg);
             return Response.json({ ok: true, quoteFound: true });

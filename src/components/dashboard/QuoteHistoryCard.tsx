@@ -402,7 +402,9 @@ export function QuoteHistoryCard({
                         </h3>
                         <Badge
                           variant="outline"
-                          className="text-[9px] py-0 h-4 px-1.5 font-mono border-primary/30 text-primary font-bold"
+                          onClick={() => handleCopyQuoteId(q.id)}
+                          className="text-[9px] py-0 h-4 px-1.5 font-mono border-primary/30 text-primary font-bold cursor-pointer hover:bg-primary/10 transition-colors"
+                          title="Click to copy Quote ID"
                         >
                           #{q.id.slice(0, 8).toUpperCase()}
                         </Badge>
@@ -619,7 +621,9 @@ export function QuoteHistoryCard({
                           <span className="truncate max-w-[140px]">{q.customer_name}</span>
                           <Badge
                             variant="outline"
-                            className="text-[9px] py-0 h-4 px-1.5 font-mono border-primary/30 text-primary font-bold shrink-0"
+                            onClick={() => handleCopyQuoteId(q.id)}
+                            className="text-[9px] py-0 h-4 px-1.5 font-mono border-primary/30 text-primary font-bold shrink-0 cursor-pointer hover:bg-primary/10 transition-colors"
+                            title="Click to copy Quote ID"
                           >
                             #{q.id.slice(0, 8).toUpperCase()}
                           </Badge>

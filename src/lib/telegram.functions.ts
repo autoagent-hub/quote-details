@@ -196,6 +196,19 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       return { sent: false, reason: "trial_expired" as const };
     }
 
+    let botUsername = process.env["TELEGRAM_BOT_USERNAME"] || "DetailrBot";
+    if (!process.env["TELEGRAM_BOT_USERNAME"]) {
+      try {
+        const meRes = await fetch(`${API}${token}/getMe`);
+        const me = (await meRes.json()) as { ok?: boolean; result?: { username?: string } };
+        if (me.ok && me.result?.username) {
+          botUsername = me.result.username;
+        }
+      } catch {
+        // fallback to default
+      }
+    }
+
     const currency = profile.currency || "USD";
     const shortId = data.quoteId ? data.quoteId.slice(0, 8).toUpperCase() : "";
     const b64Photos = (data.photosBase64 ?? []).slice(0, 10);
@@ -227,10 +240,23 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       data.notes && profile.notify_include_notes !== false
         ? `\n📝 <b>Customer Notes:</b>\n${esc(data.notes)}`
         : "",
-      shortId ? `\n🔍 <i>Bot lookup: <code>/start quote_${shortId.toLowerCase()}</code></i>` : "",
+      shortId ? `\n🏷️ <b>Search Tags:</b> #${shortId} #quote_${shortId.toLowerCase()}` : "",
     ]
       .filter((line) => line !== "")
       .join("\n");
+
+    const replyMarkup = shortId
+      ? {
+          inline_keyboard: [
+            [
+              {
+                text: `📋 View Quote Details (#${shortId})`,
+                url: `https://t.me/${botUsername}?start=quote_${shortId.toLowerCase()}`,
+              },
+            ],
+          ],
+        }
+      : undefined;
 
     const post = (method: string, payload: unknown) =>
       fetch(`${API}${token}/${method}`, {
@@ -241,19 +267,11 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       });
 
     try {
-      const res = await post("sendMessage", {
-        chat_id: chatId,
-        text: body,
-        parse_mode: "HTML",
-        disable_web_page_preview: true,
-      });
-      if (!res.ok) console.error("Telegram sendMessage failed", await res.text());
+      // 1. Prepare photos in-memory binary blobs immediately
+      let files: { name: string; blob: Blob }[] = [];
 
       if (includePhotos) {
-        let files: { name: string; blob: Blob }[] = [];
-
         if (hasBase64) {
-          // Stream directly from in-memory base64 strings without touching database or storage
           files = b64Photos.map((b64, index) => {
             const parts = b64.split(",");
             const mime = parts[0]?.match(/:(.*?);/)?.[1] || "image/jpeg";
@@ -267,12 +285,11 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
             };
           });
         } else if (legacyPhotos.length > 0) {
-          // Fallback for legacy stored photo paths
           const photoDownloads = legacyPhotos.map(async (path, index) => {
             try {
               const downloadPromise = supabaseAdmin.storage.from("quote-photos").download(path);
               const timeoutPromise = new Promise<{ data: null }>((res) =>
-                setTimeout(() => res({ data: null }), 4000),
+                setTimeout(() => res({ data: null }), 3000),
               );
               const { data: file } = await Promise.race([downloadPromise, timeoutPromise]);
               if (file) return { name: `photo${index}.jpg`, blob: file };
@@ -285,39 +302,68 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
           const fileResults = await Promise.all(photoDownloads);
           files = fileResults.filter((f): f is { name: string; blob: Blob } => f !== null);
         }
+      }
 
-        if (files.length === 1) {
-          const form = new FormData();
-          form.append("chat_id", String(chatId));
-          form.append("caption", `Photo from ${data.customerName}`);
-          form.append("photo", files[0]!.blob, files[0]!.name);
-          const photoRes = await fetch(`${API}${token}/sendPhoto`, {
-            method: "POST",
-            body: form,
-            signal: AbortSignal.timeout(6000),
-          });
-          if (!photoRes.ok) console.error("Telegram sendPhoto failed", await photoRes.text());
-        } else if (files.length > 1) {
-          const form = new FormData();
-          form.append("chat_id", String(chatId));
-          form.append(
-            "media",
-            JSON.stringify(
-              files.map((f, i) => ({
-                type: "photo",
-                media: `attach://${f.name}`,
-                ...(i === 0 ? { caption: `Photos from ${data.customerName}` } : {}),
-              })),
-            ),
-          );
-          for (const f of files) form.append(f.name, f.blob, f.name);
-          const groupRes = await fetch(`${API}${token}/sendMediaGroup`, {
-            method: "POST",
-            body: form,
-            signal: AbortSignal.timeout(6000),
-          });
-          if (!groupRes.ok) console.error("Telegram sendMediaGroup failed", await groupRes.text());
-        }
+      // 2. Dispatch text message HTTP request with inline keyboard
+      const sendTextPromise = post("sendMessage", {
+        chat_id: chatId,
+        text: body,
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+        ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+      });
+
+      // 3. Dispatch media HTTP request concurrently
+      let sendMediaPromise: Promise<Response | null> = Promise.resolve(null);
+
+      const photoTagStr = shortId ? `\n\n🏷️ #${shortId} #quote_${shortId.toLowerCase()}` : "";
+
+      if (files.length === 1) {
+        const form = new FormData();
+        form.append("chat_id", String(chatId));
+        form.append(
+          "caption",
+          `📷 Photo from ${data.customerName}${shortId ? ` (#${shortId})` : ""}${photoTagStr}`,
+        );
+        form.append("photo", files[0]!.blob, files[0]!.name);
+        sendMediaPromise = fetch(`${API}${token}/sendPhoto`, {
+          method: "POST",
+          body: form,
+          signal: AbortSignal.timeout(6000),
+        });
+      } else if (files.length > 1) {
+        const form = new FormData();
+        form.append("chat_id", String(chatId));
+        form.append(
+          "media",
+          JSON.stringify(
+            files.map((f, i) => ({
+              type: "photo",
+              media: `attach://${f.name}`,
+              ...(i === 0
+                ? {
+                    caption: `📷 Photos from ${data.customerName}${shortId ? ` (#${shortId})` : ""}${photoTagStr}`,
+                  }
+                : {}),
+            })),
+          ),
+        );
+        for (const f of files) form.append(f.name, f.blob, f.name);
+        sendMediaPromise = fetch(`${API}${token}/sendMediaGroup`, {
+          method: "POST",
+          body: form,
+          signal: AbortSignal.timeout(6000),
+        });
+      }
+
+      // 4. Await text message and photo media group in parallel
+      const [resText, resMedia] = await Promise.all([sendTextPromise, sendMediaPromise]);
+
+      if (resText && !resText.ok) {
+        console.error("Telegram sendMessage failed", await resText.text());
+      }
+      if (resMedia && !resMedia.ok) {
+        console.error("Telegram sendMedia failed", await resMedia.text());
       }
 
       if (data.audioPath) {
