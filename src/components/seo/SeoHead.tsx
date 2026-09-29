@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 
 export interface BusinessDetails {
   name: string;
@@ -60,166 +60,127 @@ export function SeoHead({
     canonicalUrl ||
     (typeof window !== "undefined" ? window.location.href.split("?")[0] : DEFAULT_DOMAIN);
 
-  useEffect(() => {
-    if (typeof document === "undefined") return;
+  // Dynamic JSON-LD injection
+  const jsonLdGraph: Record<string, unknown>[] = [];
 
-    // 1. Title
-    document.title = title;
-
-    // 2. Helper to set meta tags
-    const setMetaTag = (selector: string, attrName: string, attrVal: string, content: string) => {
-      let tag = document.querySelector(selector);
-      if (!tag) {
-        tag = document.createElement("meta");
-        tag.setAttribute(attrName, attrVal);
-        document.head.appendChild(tag);
-      }
-      tag.setAttribute("content", content);
+  if (businessDetails) {
+    const localBusinessSchema: Record<string, unknown> = {
+      "@type": "AutoRepair",
+      "@id": `${businessDetails.url || currentCanonical}#localbusiness`,
+      name: businessDetails.name,
+      description: businessDetails.description || description,
+      url: businessDetails.url || currentCanonical,
+      image: businessDetails.image || ogImage,
+      priceRange: businessDetails.priceRange || "$$",
     };
 
-    // Meta Description & Keywords
-    setMetaTag('meta[name="description"]', "name", "description", description);
-    if (keywords.length > 0) {
-      setMetaTag('meta[name="keywords"]', "name", "keywords", keywords.join(", "));
+    if (businessDetails.phone) {
+      localBusinessSchema.telephone = businessDetails.phone;
     }
 
-    // Robots
-    setMetaTag(
-      'meta[name="robots"]',
-      "name",
-      "robots",
-      noIndex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1",
-    );
-
-    // Open Graph
-    setMetaTag('meta[property="og:site_name"]', "property", "og:site_name", "Detailr");
-    setMetaTag('meta[property="og:title"]', "property", "og:title", title);
-    setMetaTag('meta[property="og:description"]', "property", "og:description", description);
-    setMetaTag('meta[property="og:url"]', "property", "og:url", currentCanonical);
-    setMetaTag('meta[property="og:type"]', "property", "og:type", ogType);
-    setMetaTag('meta[property="og:image"]', "property", "og:image", ogImage);
-    setMetaTag('meta[property="og:image:url"]', "property", "og:image:url", ogImage);
-    setMetaTag('meta[property="og:image:secure_url"]', "property", "og:image:secure_url", ogImage);
-
-    // Twitter / Social Cards
-    setMetaTag('meta[name="twitter:card"]', "name", "twitter:card", "summary_large_image");
-    setMetaTag('meta[name="twitter:site"]', "name", "twitter:site", "@detailronline");
-    setMetaTag('meta[name="twitter:title"]', "name", "twitter:title", title);
-    setMetaTag('meta[name="twitter:description"]', "name", "twitter:description", description);
-    setMetaTag('meta[name="twitter:image"]', "name", "twitter:image", ogImage);
-    setMetaTag('meta[name="twitter:image:src"]', "name", "twitter:image:src", ogImage);
-
-    // Canonical link tag
-    let linkCanonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (!linkCanonical) {
-      linkCanonical = document.createElement("link");
-      linkCanonical.setAttribute("rel", "canonical");
-      document.head.appendChild(linkCanonical);
+    if (businessDetails.email) {
+      localBusinessSchema.email = businessDetails.email;
     }
-    linkCanonical.setAttribute("href", currentCanonical);
 
-    // Dynamic JSON-LD injection
-    const jsonLdGraph: Record<string, unknown>[] = [];
-
-    if (businessDetails) {
-      const localBusinessSchema: Record<string, unknown> = {
-        "@type": "AutoRepair",
-        "@id": `${businessDetails.url || currentCanonical}#localbusiness`,
-        name: businessDetails.name,
-        description: businessDetails.description || description,
-        url: businessDetails.url || currentCanonical,
-        image: businessDetails.image || ogImage,
-        priceRange: businessDetails.priceRange || "$$",
+    if (businessDetails.address) {
+      localBusinessSchema.address = {
+        "@type": "PostalAddress",
+        ...businessDetails.address,
       };
-
-      if (businessDetails.phone) {
-        localBusinessSchema.telephone = businessDetails.phone;
-      }
-
-      if (businessDetails.email) {
-        localBusinessSchema.email = businessDetails.email;
-      }
-
-      if (businessDetails.address) {
-        localBusinessSchema.address = {
-          "@type": "PostalAddress",
-          ...businessDetails.address,
-        };
-      }
-
-      if (businessDetails.geo) {
-        localBusinessSchema.geo = {
-          "@type": "GeoCoordinates",
-          latitude: businessDetails.geo.latitude,
-          longitude: businessDetails.geo.longitude,
-        };
-      }
-
-      if (businessDetails.openingHours && businessDetails.openingHours.length > 0) {
-        localBusinessSchema.openingHours = businessDetails.openingHours;
-      }
-
-      if (businessDetails.aggregateRating) {
-        localBusinessSchema.aggregateRating = {
-          "@type": "AggregateRating",
-          ratingValue: businessDetails.aggregateRating.ratingValue,
-          reviewCount: businessDetails.aggregateRating.reviewCount,
-          bestRating: 5,
-          worstRating: 1,
-        };
-      }
-
-      if (businessDetails.servicesOffered && businessDetails.servicesOffered.length > 0) {
-        localBusinessSchema.hasOfferCatalog = {
-          "@type": "OfferCatalog",
-          name: "Auto Detailing Services",
-          itemListElement: businessDetails.servicesOffered.map((service, index) => ({
-            "@type": "Offer",
-            itemOffered: {
-              "@type": "Service",
-              name: service,
-            },
-            position: index + 1,
-          })),
-        };
-      }
-
-      jsonLdGraph.push(localBusinessSchema);
     }
 
-    if (additionalJsonLd) {
-      if (Array.isArray(additionalJsonLd)) {
-        jsonLdGraph.push(...additionalJsonLd);
-      } else {
-        jsonLdGraph.push(additionalJsonLd);
-      }
+    if (businessDetails.geo) {
+      localBusinessSchema.geo = {
+        "@type": "GeoCoordinates",
+        latitude: businessDetails.geo.latitude,
+        longitude: businessDetails.geo.longitude,
+      };
     }
 
-    if (jsonLdGraph.length > 0) {
-      const scriptId = "dynamic-seo-jsonld";
-      let scriptTag = document.getElementById(scriptId) as HTMLScriptElement | null;
-      if (!scriptTag) {
-        scriptTag = document.createElement("script");
-        scriptTag.id = scriptId;
-        scriptTag.type = "application/ld+json";
-        document.head.appendChild(scriptTag);
-      }
-      scriptTag.textContent = JSON.stringify({
-        "@context": "https://schema.org",
-        "@graph": jsonLdGraph,
-      });
+    if (businessDetails.openingHours && businessDetails.openingHours.length > 0) {
+      localBusinessSchema.openingHours = businessDetails.openingHours;
     }
-  }, [
-    title,
-    description,
-    currentCanonical,
-    keywords,
-    ogImage,
-    ogType,
-    noIndex,
-    businessDetails,
-    additionalJsonLd,
-  ]);
 
-  return null;
+    if (businessDetails.aggregateRating) {
+      localBusinessSchema.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: businessDetails.aggregateRating.ratingValue,
+        reviewCount: businessDetails.aggregateRating.reviewCount,
+        bestRating: 5,
+        worstRating: 1,
+      };
+    }
+
+    if (businessDetails.servicesOffered && businessDetails.servicesOffered.length > 0) {
+      localBusinessSchema.hasOfferCatalog = {
+        "@type": "OfferCatalog",
+        name: "Auto Detailing Services",
+        itemListElement: businessDetails.servicesOffered.map((service, index) => ({
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: service,
+          },
+          position: index + 1,
+        })),
+      };
+    }
+
+    jsonLdGraph.push(localBusinessSchema);
+  }
+
+  if (additionalJsonLd) {
+    if (Array.isArray(additionalJsonLd)) {
+      jsonLdGraph.push(...additionalJsonLd);
+    } else {
+      jsonLdGraph.push(additionalJsonLd);
+    }
+  }
+
+  const jsonLdContent =
+    jsonLdGraph.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@graph": jsonLdGraph,
+        }
+      : null;
+
+  return (
+    <Helmet>
+      {/* 1. Title */}
+      <title>{title}</title>
+
+      {/* 2. Primary Meta Tags */}
+      <meta name="description" content={description} />
+      {keywords.length > 0 && <meta name="keywords" content={keywords.join(", ")} />}
+      <meta
+        name="robots"
+        content={
+          noIndex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1"
+        }
+      />
+      <link rel="canonical" href={currentCanonical} />
+
+      {/* 3. Open Graph / Facebook */}
+      <meta property="og:site_name" content="Detailr" />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:url" content={currentCanonical} />
+      <meta property="og:type" content={ogType} />
+      <meta property="og:image" content={ogImage} />
+      <meta property="og:image:url" content={ogImage} />
+      <meta property="og:image:secure_url" content={ogImage} />
+
+      {/* 4. Twitter Cards */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@detailronline" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={ogImage} />
+      <meta name="twitter:image:src" content={ogImage} />
+
+      {/* 5. Structured Schema.org JSON-LD */}
+      {jsonLdContent && <script type="application/ld+json">{JSON.stringify(jsonLdContent)}</script>}
+    </Helmet>
+  );
 }

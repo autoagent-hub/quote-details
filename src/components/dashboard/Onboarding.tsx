@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { slugify } from "@/lib/pricing";
+import { slugify, cleanSlugInput } from "@/lib/pricing";
 import { useSlugValidator } from "@/hooks/useSlugValidator";
 
 export function Onboarding() {
@@ -67,7 +67,7 @@ export function Onboarding() {
             value={businessName}
             onChange={(e) => {
               setBusinessName(e.target.value);
-              setSlug(slugify(e.target.value));
+              setSlug(cleanSlugInput(e.target.value));
             }}
             placeholder="e.g. Apex Auto Detailing"
             className="h-11 text-sm rounded-xl border-border/60 bg-background/50 focus-visible:ring-primary/20"
@@ -103,7 +103,7 @@ export function Onboarding() {
             <Input
               id="ob-slug"
               value={slug}
-              onChange={(e) => setSlug(slugify(e.target.value))}
+              onChange={(e) => setSlug(cleanSlugInput(e.target.value))}
               placeholder="apex-auto"
               className={`h-11 pl-[96px] text-sm font-mono font-bold rounded-xl bg-background/50 transition-colors ${
                 slugStatus.isTaken

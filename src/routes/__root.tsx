@@ -1,5 +1,6 @@
 import { queryClient } from "../lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { HelmetProvider } from "react-helmet-async";
 import {
   Outlet,
   Link,
@@ -410,7 +411,9 @@ function RootShell({ children }: { children: ReactNode }) {
         />
       </head>
       <body suppressHydrationWarning>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <HelmetProvider>
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </HelmetProvider>
         <Scripts />
       </body>
     </html>

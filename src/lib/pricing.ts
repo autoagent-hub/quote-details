@@ -378,3 +378,11 @@ export function slugify(val: string): string {
     .replace(/^[-_.~]+|[-_.~]+$/g, "")
     .slice(0, 60);
 }
+
+export function cleanSlugInput(val: string): string {
+  return val
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\-_.~]+/g, "")
+    .slice(0, 60);
+}

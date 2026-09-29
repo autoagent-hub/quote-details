@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CURRENCIES, TIMEZONES, slugify } from "@/lib/pricing";
+import { CURRENCIES, TIMEZONES, slugify, cleanSlugInput } from "@/lib/pricing";
 import { useSlugValidator } from "@/hooks/useSlugValidator";
 import type { Profile } from "./types";
 import { useProfileUpdate } from "./useProfileUpdate";
@@ -82,7 +82,7 @@ export function BusinessProfileCard({ profile }: { profile: Profile }) {
               <Input
                 id="slug"
                 value={form.slug}
-                onChange={(e) => setForm((f) => ({ ...f, slug: slugify(e.target.value) }))}
+                onChange={(e) => setForm((f) => ({ ...f, slug: cleanSlugInput(e.target.value) }))}
                 className={`h-9 text-xs font-mono rounded-xl bg-background/50 transition-colors ${
                   slugStatus.isTaken
                     ? "border-red-500/80 focus-visible:ring-red-500/30 bg-red-50/10"
@@ -270,7 +270,7 @@ export function BusinessProfileCard({ profile }: { profile: Profile }) {
               save.mutate({
                 id: profile.id,
                 business_name: form.business_name.trim(),
-                slug: form.slug,
+                slug: slugify(form.slug),
                 phone: form.phone.trim(),
                 logo_url: form.logo_url.trim() || null,
                 currency: form.currency,
