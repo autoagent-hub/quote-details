@@ -367,3 +367,50 @@ export const ensureWelcomeEmail = createServerFn({ method: "POST" })
       return { ok: false, error: e.message };
     }
   });
+
+export const ensureGoogleUserOnboarded = createServerFn({ method: "POST" })
+  .inputValidator((data: { email: string; businessName?: string }) => data)
+  .handler(async ({ data }) => {
+    const admin = getAdminClient();
+    if (!admin) return { success: false };
+
+    const email = data.email.toLowerCase().trim();
+    if (!email) return { success: false };
+
+    try {
+      const { data: userList } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const user = userList?.users?.find((u) => u.email?.toLowerCase().trim() === email);
+
+      if (user) {
+        const meta = (user.user_metadata || {}) as Record<string, unknown>;
+        if (!meta.welcome_email_sent) {
+          await admin.auth.admin.updateUserById(user.id, {
+            user_metadata: {
+              ...meta,
+              welcome_email_sent: true,
+              welcome_email_sent_at: new Date().toISOString(),
+            },
+          });
+
+          try {
+            await sendWelcomeEmail(email, data.businessName);
+          } catch (e) {
+            console.warn("[ensureGoogleUserOnboarded] welcome email error:", e);
+          }
+
+          try {
+            await sendAdminTelegramAlert({
+              type: "NEW_SIGNUP",
+              userEmail: email,
+            });
+          } catch (e) {
+            console.warn("[ensureGoogleUserOnboarded] telegram admin alert error:", e);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[ensureGoogleUserOnboarded] error:", err);
+    }
+
+    return { success: true };
+  });

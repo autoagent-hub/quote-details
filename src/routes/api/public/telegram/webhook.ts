@@ -159,7 +159,58 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
               `\n💬 <i>Tip: Tap <b>#${shortId}</b> above to search chat history and highlight attached photos!</i>\n` +
               `👉 <a href="https://detailr.online/dashboard/quotes">Open in Dashboard</a>`;
 
-            await send(token, chatId, msg);
+            const photoUrls: string[] = [];
+            if (Array.isArray(q.photo_urls)) {
+              for (const pathOrUrl of q.photo_urls) {
+                if (typeof pathOrUrl === "string" && pathOrUrl.trim()) {
+                  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
+                    photoUrls.push(pathOrUrl);
+                  } else {
+                    const { data: pubData } = admin.storage
+                      .from("quote-photos")
+                      .getPublicUrl(pathOrUrl);
+                    if (pubData?.publicUrl) {
+                      photoUrls.push(pubData.publicUrl);
+                    }
+                  }
+                }
+              }
+            }
+
+            if (photoUrls.length === 1) {
+              await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  photo: photoUrls[0],
+                  caption: msg,
+                  parse_mode: "HTML",
+                }),
+              }).catch((e) => console.warn("[telegram-webhook] sendPhoto error:", e));
+            } else if (photoUrls.length > 1) {
+              const mediaGroup = photoUrls.slice(0, 10).map((url, idx) => ({
+                type: "photo",
+                media: url,
+                ...(idx === 0
+                  ? { caption: `📷 ${photoUrls.length} Vehicle Photos Attached (#${shortId})` }
+                  : {}),
+              }));
+
+              await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  media: mediaGroup,
+                }),
+              }).catch((e) => console.warn("[telegram-webhook] sendMediaGroup error:", e));
+
+              await send(token, chatId, msg);
+            } else {
+              await send(token, chatId, msg);
+            }
+
             return Response.json({ ok: true, quoteFound: true });
           } else {
             await send(

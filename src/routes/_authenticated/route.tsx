@@ -7,6 +7,7 @@ import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { RefreshCw, Home } from "lucide-react";
 import { getTrialState } from "@/lib/billing.functions";
 import { TrialExpiredLock } from "@/components/dashboard/TrialExpiredLock";
+import { ensureGoogleUserOnboarded } from "@/lib/auth-codes.functions";
 
 function AuthenticatedErrorComponent({ error, reset }: { error: Error | null; reset: () => void }) {
   return (
@@ -108,14 +109,28 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData?.session?.user) {
-      return { user: sessionData.session.user };
+    const user = sessionData?.session?.user;
+
+    if (user) {
+      if (user.email && !user.user_metadata?.welcome_email_sent) {
+        void ensureGoogleUserOnboarded({
+          data: { email: user.email },
+        }).catch((err) => console.warn("[_authenticated] onboarding trigger warning:", err));
+      }
+      return { user };
     }
 
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
       throw redirect({ to: "/login" });
     }
+
+    if (data.user.email && !data.user.user_metadata?.welcome_email_sent) {
+      void ensureGoogleUserOnboarded({
+        data: { email: data.user.email },
+      }).catch((err) => console.warn("[_authenticated] onboarding trigger warning:", err));
+    }
+
     return { user: data.user };
   },
   errorComponent: AuthenticatedErrorComponent,

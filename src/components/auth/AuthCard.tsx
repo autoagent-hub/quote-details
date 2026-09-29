@@ -26,7 +26,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { supabase } from "@/integrations/supabase/client";
-import { requestAuthCode, verifyRecoveryCode, verifySignupCode } from "@/lib/auth-codes.functions";
+import {
+  ensureGoogleUserOnboarded,
+  requestAuthCode,
+  verifyRecoveryCode,
+  verifySignupCode,
+} from "@/lib/auth-codes.functions";
 
 export type AuthMode = "signin" | "signup" | "forgot";
 
@@ -283,6 +288,12 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
         });
 
         if (!idAuthError && idAuthData?.user) {
+          const userEmail = idAuthData.user.email;
+          if (userEmail) {
+            void ensureGoogleUserOnboarded({
+              data: { email: userEmail, businessName: businessName.trim() },
+            }).catch((err) => console.warn("[google-auth] ensureGoogleUserOnboarded notice:", err));
+          }
           toast.success("Successfully signed in with Google!");
           window.location.href = "/dashboard";
           return;
