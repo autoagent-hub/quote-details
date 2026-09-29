@@ -369,7 +369,7 @@ export const ensureWelcomeEmail = createServerFn({ method: "POST" })
   });
 
 export const ensureGoogleUserOnboarded = createServerFn({ method: "POST" })
-  .inputValidator((data: { email: string; businessName?: string }) => data)
+  .inputValidator((data: { email: string; businessName?: string; userId?: string }) => data)
   .handler(async ({ data }) => {
     const admin = getAdminClient();
     if (!admin) return { success: false };
@@ -378,12 +378,31 @@ export const ensureGoogleUserOnboarded = createServerFn({ method: "POST" })
     if (!email) return { success: false };
 
     try {
-      const { data: userList } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      const user = userList?.users?.find((u) => u.email?.toLowerCase().trim() === email);
+      let user = data.userId ? (await admin.auth.admin.getUserById(data.userId)).data?.user : null;
+      if (!user) {
+        const { data: userList } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        user = userList?.users?.find((u) => u.email?.toLowerCase().trim() === email) ?? null;
+      }
 
       if (user) {
         const meta = (user.user_metadata || {}) as Record<string, unknown>;
         if (!meta.welcome_email_sent) {
+          // Fetch profile details if available
+          const { data: profile } = await admin
+            .from("profiles")
+            .select("business_name, slug")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          const bizName =
+            data.businessName ||
+            profile?.business_name ||
+            (meta.business_name as string) ||
+            (meta.name as string) ||
+            (meta.full_name as string);
+          const slug = profile?.slug;
+
+          // Mark welcome email sent in metadata first
           await admin.auth.admin.updateUserById(user.id, {
             user_metadata: {
               ...meta,
@@ -392,16 +411,20 @@ export const ensureGoogleUserOnboarded = createServerFn({ method: "POST" })
             },
           });
 
+          // Dispatch welcome email
           try {
-            await sendWelcomeEmail(email, data.businessName);
+            await sendWelcomeEmail(email, bizName, slug);
           } catch (e) {
             console.warn("[ensureGoogleUserOnboarded] welcome email error:", e);
           }
 
+          // Dispatch Admin Telegram Alert
           try {
             await sendAdminTelegramAlert({
               type: "NEW_SIGNUP",
               userEmail: email,
+              businessName: bizName,
+              userId: user.id,
             });
           } catch (e) {
             console.warn("[ensureGoogleUserOnboarded] telegram admin alert error:", e);

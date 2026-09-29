@@ -113,9 +113,13 @@ export const Route = createFileRoute("/_authenticated")({
 
     if (user) {
       if (user.email && !user.user_metadata?.welcome_email_sent) {
-        void ensureGoogleUserOnboarded({
-          data: { email: user.email },
-        }).catch((err) => console.warn("[_authenticated] onboarding trigger warning:", err));
+        try {
+          await ensureGoogleUserOnboarded({
+            data: { email: user.email, userId: user.id },
+          });
+        } catch (err) {
+          console.warn("[_authenticated] onboarding trigger warning:", err);
+        }
       }
       return { user };
     }
@@ -126,9 +130,13 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     if (data.user.email && !data.user.user_metadata?.welcome_email_sent) {
-      void ensureGoogleUserOnboarded({
-        data: { email: data.user.email },
-      }).catch((err) => console.warn("[_authenticated] onboarding trigger warning:", err));
+      try {
+        await ensureGoogleUserOnboarded({
+          data: { email: data.user.email, userId: data.user.id },
+        });
+      } catch (err) {
+        console.warn("[_authenticated] onboarding trigger warning:", err);
+      }
     }
 
     return { user: data.user };

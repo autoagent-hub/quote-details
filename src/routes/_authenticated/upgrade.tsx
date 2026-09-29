@@ -174,61 +174,76 @@ function Upgrade() {
             <Loader2 className="size-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch pt-2">
             {/* 1 Month Plan Card */}
             <Card
-              className={`relative overflow-hidden transition-all flex flex-col justify-between cursor-pointer ${
+              className={`relative overflow-hidden transition-all duration-200 flex flex-col justify-between cursor-pointer rounded-2xl border p-6 sm:p-8 ${
                 selectedPlan === "monthly"
-                  ? "border-2 border-primary shadow-xl ring-2 ring-primary/20 bg-card"
-                  : "border-border/60 bg-card/60 opacity-90 hover:opacity-100"
+                  ? "border-primary/60 bg-card shadow-lg ring-1 ring-primary/30"
+                  : "border-border/60 bg-card/50 hover:border-border hover:bg-card/80"
               }`}
               onClick={() => setSelectedPlan("monthly")}
             >
-              <div>
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Monthly Membership
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b border-border/40 pb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="size-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+                      <Clock className="size-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">Monthly Membership</h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        Month-to-month flexibility
+                      </p>
+                    </div>
+                  </div>
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] font-bold px-2.5 py-0.5 rounded-md"
+                  >
+                    1 Month
+                  </Badge>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-baseline gap-1 font-mono">
+                    <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
+                      $9.99
                     </span>
-                    <Badge variant="secondary" className="text-[10px] font-bold">
-                      1 Month
-                    </Badge>
+                    <span className="text-xs font-sans font-medium text-muted-foreground">
+                      / month
+                    </span>
                   </div>
-                  <div className="pt-2">
-                    <p className="text-4xl font-extrabold tracking-tight text-foreground">
-                      $9.99{" "}
-                      <span className="text-sm font-normal text-muted-foreground">/ month</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground pt-1">
-                      Pay as you go · Billed monthly · Cancel anytime
-                    </p>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-2">
-                    Included in Monthly Plan:
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Billed monthly · Cancel anytime with 1 click
                   </p>
-                  <ul className="space-y-2.5 text-xs">
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Included in Monthly Plan
+                  </p>
+                  <ul className="space-y-3 text-xs">
                     {perks.map((perk) => (
-                      <li key={`monthly-${perk}`} className="flex items-start gap-2">
-                        <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-500 font-bold" />
-                        <span className="text-foreground">{perk}</span>
+                      <li key={`monthly-${perk}`} className="flex items-start gap-2.5">
+                        <Check className="mt-0.5 size-4 shrink-0 text-emerald-500 font-bold" />
+                        <span className="text-foreground leading-snug">{perk}</span>
                       </li>
                     ))}
                   </ul>
-                </CardContent>
+                </div>
               </div>
 
-              <div className="p-6 pt-0 mt-6">
+              <div className="pt-8 mt-6 border-t border-border/40">
                 {subscribed ? (
-                  <Button asChild variant="outline" className="w-full rounded-xl font-bold">
+                  <Button asChild variant="outline" className="w-full h-12 rounded-xl font-bold">
                     <Link to="/dashboard">Go to Dashboard</Link>
                   </Button>
                 ) : (
                   <Button
                     asChild
                     variant={selectedPlan === "monthly" ? "hero" : "outline"}
-                    className="w-full rounded-xl font-bold h-12 text-sm shadow-md"
+                    className="w-full h-12 rounded-xl font-bold text-sm shadow-sm transition-all"
                   >
                     <a href={monthlyHref} target="_blank" rel="noreferrer">
                       <CreditCard className="size-4 mr-2" />
@@ -239,65 +254,87 @@ function Upgrade() {
               </div>
             </Card>
 
-            {/* 1 Year Plan Card */}
+            {/* 1 Year Plan Card (Featured) */}
             <Card
-              className={`relative overflow-hidden transition-all flex flex-col justify-between cursor-pointer ${
+              className={`relative overflow-hidden transition-all duration-200 flex flex-col justify-between cursor-pointer rounded-2xl border p-6 sm:p-8 ${
                 selectedPlan === "yearly"
-                  ? "border-2 border-primary shadow-2xl ring-4 ring-primary/20 bg-card"
-                  : "border-border/60 bg-card/60 opacity-90 hover:opacity-100"
+                  ? "border-primary bg-card shadow-2xl ring-2 ring-primary/30"
+                  : "border-border/60 bg-card/50 hover:border-border hover:bg-card/80"
               }`}
               onClick={() => setSelectedPlan("yearly")}
             >
-              <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-amber-600 text-black font-extrabold text-[10px] uppercase tracking-wider px-3 py-1 rounded-bl-xl shadow-xs flex items-center gap-1">
-                <Sparkles className="size-3" /> Recommended · Annual Pass
-              </div>
+              {/* Top Accent Bar */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-primary to-amber-500" />
 
-              <div>
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1">
-                      <Calendar className="size-3.5" /> Annual Membership
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b border-border/40 pb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="size-8 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center">
+                      <Sparkles className="size-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                        Annual Membership
+                      </h3>
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                        Best Value · 12 Months Access
+                      </p>
+                    </div>
+                  </div>
+                  <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2.5 py-0.5 rounded-md">
+                    Annual Pass
+                  </Badge>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-baseline gap-2 font-mono">
+                    <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
+                      $119.99
+                    </span>
+                    <span className="text-xs font-sans font-medium text-muted-foreground">
+                      / year
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans text-[11px] font-bold ml-auto">
+                      ~$10/mo equivalent
                     </span>
                   </div>
-                  <div className="pt-2">
-                    <p className="text-4xl font-extrabold tracking-tight text-foreground">
-                      $119.99{" "}
-                      <span className="text-sm font-normal text-muted-foreground">/ year</span>
-                    </p>
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold pt-1">
-                      12 Months Full Uninterrupted Access · Billed annually
-                    </p>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-2">
-                    Included in Annual Plan:
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Billed annually · Full 12 months uninterrupted access
                   </p>
-                  <ul className="space-y-2.5 text-xs">
-                    <li className="flex items-start gap-2 font-bold text-foreground">
-                      <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-amber-500 font-bold" />
-                      <span>Guaranteed price lock for 12 full months</span>
-                    </li>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-center gap-2.5">
+                    <ShieldCheck className="size-4 text-amber-500 shrink-0" />
+                    <span className="text-xs font-bold text-foreground">
+                      12-Month Price Guarantee & Locked-in Access
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-1">
+                    Included in Annual Plan
+                  </p>
+                  <ul className="space-y-3 text-xs">
                     {perks.map((perk) => (
-                      <li key={`yearly-${perk}`} className="flex items-start gap-2">
-                        <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-500 font-bold" />
-                        <span className="text-foreground">{perk}</span>
+                      <li key={`yearly-${perk}`} className="flex items-start gap-2.5">
+                        <Check className="mt-0.5 size-4 shrink-0 text-emerald-500 font-bold" />
+                        <span className="text-foreground leading-snug">{perk}</span>
                       </li>
                     ))}
                   </ul>
-                </CardContent>
+                </div>
               </div>
 
-              <div className="p-6 pt-0 mt-6">
+              <div className="pt-8 mt-6 border-t border-border/40">
                 {subscribed ? (
-                  <Button asChild variant="outline" className="w-full rounded-xl font-bold">
+                  <Button asChild variant="outline" className="w-full h-12 rounded-xl font-bold">
                     <Link to="/dashboard">Go to Dashboard</Link>
                   </Button>
                 ) : (
                   <Button
                     asChild
                     variant="hero"
-                    className="w-full rounded-xl font-bold h-12 text-sm shadow-xl shadow-primary/20"
+                    className="w-full h-12 rounded-xl font-bold text-sm shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all"
                   >
                     <a href={yearlyHref} target="_blank" rel="noreferrer">
                       <CreditCard className="size-4 mr-2" />

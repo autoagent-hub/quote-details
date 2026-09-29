@@ -290,9 +290,17 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
         if (!idAuthError && idAuthData?.user) {
           const userEmail = idAuthData.user.email;
           if (userEmail) {
-            void ensureGoogleUserOnboarded({
-              data: { email: userEmail, businessName: businessName.trim() },
-            }).catch((err) => console.warn("[google-auth] ensureGoogleUserOnboarded notice:", err));
+            try {
+              await ensureGoogleUserOnboarded({
+                data: {
+                  email: userEmail,
+                  businessName: businessName.trim(),
+                  userId: idAuthData.user.id,
+                },
+              });
+            } catch (err) {
+              console.warn("[google-auth] ensureGoogleUserOnboarded notice:", err);
+            }
           }
           toast.success("Successfully signed in with Google!");
           window.location.href = "/dashboard";
@@ -332,6 +340,20 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
         if (otpError) throw otpError;
 
         if (otpData?.user) {
+          const userEmail = otpData.user.email || data.email;
+          if (userEmail) {
+            try {
+              await ensureGoogleUserOnboarded({
+                data: {
+                  email: userEmail,
+                  businessName: businessName.trim(),
+                  userId: otpData.user.id,
+                },
+              });
+            } catch (err) {
+              console.warn("[google-auth] ensureGoogleUserOnboarded notice:", err);
+            }
+          }
           toast.success("Successfully signed in with Google!");
           window.location.href = "/dashboard";
           return;

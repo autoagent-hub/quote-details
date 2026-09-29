@@ -137,18 +137,35 @@ export const Route = createFileRoute("/api/public/google-callback")({
                 });
                 if (!createError && newUser?.user) {
                   existingUser = newUser.user;
+                }
+              }
+
+              if (existingUser) {
+                const meta = (existingUser.user_metadata || {}) as Record<string, unknown>;
+                if (!meta.welcome_email_sent) {
+                  await admin.auth.admin.updateUserById(existingUser.id, {
+                    user_metadata: {
+                      ...meta,
+                      welcome_email_sent: true,
+                      welcome_email_sent_at: new Date().toISOString(),
+                    },
+                  });
+
                   try {
                     const { sendWelcomeEmail } = await import("@/lib/welcome-email.server");
-                    await sendWelcomeEmail(tokenEmail);
+                    await sendWelcomeEmail(tokenEmail, (meta.business_name as string) || tokenName);
                   } catch (welcomeErr) {
                     console.warn("[google-callback] sendWelcomeEmail warning:", welcomeErr);
                   }
+
                   try {
                     const { sendAdminTelegramAlert } =
                       await import("@/lib/admin-telegram.functions");
                     await sendAdminTelegramAlert({
                       type: "NEW_SIGNUP",
                       userEmail: tokenEmail,
+                      businessName: (meta.business_name as string) || tokenName,
+                      userId: existingUser.id,
                     });
                   } catch (telegramErr) {
                     console.warn("[google-callback] sendAdminTelegramAlert warning:", telegramErr);
