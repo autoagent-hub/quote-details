@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowRight,
   Bell,
@@ -17,6 +17,17 @@ import {
   Sparkles,
   Star,
   Zap,
+  Lock,
+  Mail,
+  User,
+  Activity,
+  BookOpen,
+  ChevronRight,
+  X,
+  Heart,
+  HelpCircle,
+  FileText,
+  AlertCircle,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { SeoHead } from "@/components/seo/SeoHead";
+import { Footer } from "@/components/Footer";
 import heroImage from "@/assets/hero-detailer.jpg";
 
 export const Route = createFileRoute("/")({
@@ -209,6 +221,31 @@ function Landing() {
   const [petHair, setPetHair] = useState(true);
   const [headlights, setHeadlights] = useState(false);
 
+  // Active document modal overlay
+  const [activeDoc, setActiveDoc] = useState<string | null>(null);
+
+  // Contact form state
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setSubmitSuccess(true);
+      setContactName("");
+      setContactEmail("");
+      setContactPhone("");
+      setContactMessage("");
+      setTimeout(() => setSubmitSuccess(false), 6000);
+    }, 1200);
+  };
+
   // Price calculations for interactive demo
   const vehicleUplift = vehicle === "sedan" ? 0 : vehicle === "suv" ? 40 : 70;
   const basePrice = tier === "express" ? 110 : tier === "full" ? 210 : 450;
@@ -246,17 +283,18 @@ function Landing() {
         ogImage="https://detailr.online/og-image.jpg"
         additionalJsonLd={faqJsonLd}
       />
+
       {/* Floating Modern Header */}
       <header className="sticky top-3 z-50 px-4">
         <div className="mx-auto flex h-15 max-w-6xl items-center justify-between rounded-2xl border border-border/80 bg-background/85 px-4 shadow-lg shadow-black/5 backdrop-blur-md sm:px-6">
           <QuoteFlowLogo size="md" linkToHome />
 
-          <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
+          <nav className="hidden items-center gap-5 text-xs font-semibold text-muted-foreground lg:flex">
+            <a href="#" className="transition-colors hover:text-foreground">
+              Home
+            </a>
             <a href="#features" className="transition-colors hover:text-foreground">
               Features
-            </a>
-            <a href="#calculator" className="transition-colors hover:text-foreground">
-              Interactive Demo
             </a>
             <a href="#how-it-works" className="transition-colors hover:text-foreground">
               How It Works
@@ -264,19 +302,28 @@ function Landing() {
             <a href="#pricing" className="transition-colors hover:text-foreground">
               Pricing
             </a>
+            <a href="#faq" className="transition-colors hover:text-foreground">
+              FAQ
+            </a>
+            <Link to="/founder" className="transition-colors hover:text-foreground">
+              About
+            </Link>
+            <a href="#contact" className="transition-colors hover:text-foreground">
+              Contact
+            </a>
           </nav>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <Button
               asChild
               variant="ghost"
               size="sm"
-              className="font-semibold text-muted-foreground hover:text-foreground"
+              className="text-xs font-bold text-muted-foreground hover:text-foreground"
             >
-              <Link to="/login">Log In</Link>
+              <Link to="/login">Login</Link>
             </Button>
-            <Button asChild variant="hero" size="sm" className="shadow-xs font-semibold">
-              <Link to="/signup">Start Free Trial</Link>
+            <Button asChild variant="hero" size="sm" className="shadow-xs text-xs font-bold px-3">
+              <Link to="/signup">Get Started</Link>
             </Button>
           </div>
         </div>
@@ -323,7 +370,7 @@ function Landing() {
                   className="h-12 px-6 text-base shadow-lift font-semibold transition-transform hover:scale-105"
                 >
                   <Link to="/signup">
-                    Start 7-Day Free Trial <ArrowRight className="size-4.5" />
+                    Get Started Free <ArrowRight className="size-4.5" />
                   </Link>
                 </Button>
                 <Button
@@ -455,37 +502,54 @@ function Landing() {
       <section className="border-y border-border/80 bg-surface/50 py-8">
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-5 sm:grid-cols-4 sm:gap-8 text-center">
           {[
-            { value: "$180K+", label: "Quotes generated for detailers", color: "text-foreground" },
+            { value: "$240K+", label: "Quotes generated for detailers", color: "text-foreground" },
             { value: "< 20s", label: "Average time to customer quote", color: "text-emerald-600" },
             { value: "100%", label: "Direct profits kept (0% fee)", color: "text-primary" },
             { value: "3.2x", label: "Higher lead conversion rate", color: "text-foreground" },
           ].map((metric, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-            >
+            <div key={i}>
               <p className={`font-display text-3xl font-bold sm:text-4xl ${metric.color}`}>
                 {metric.value}
               </p>
               <p className="mt-1 text-xs text-muted-foreground font-medium">{metric.label}</p>
-            </motion.div>
+            </div>
           ))}
+        </div>
+      </section>
+
+      {/* Special Feature Highlight: Our Trial System */}
+      <section className="py-12 bg-primary/5 border-b border-border/60">
+        <div className="mx-auto max-w-4xl px-5">
+          <div className="rounded-3xl border border-primary/25 bg-card p-6 sm:p-10 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
+            <div className="flex flex-col md:flex-row gap-6 md:items-center">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/15 text-primary shrink-0">
+                <Clock className="size-7" />
+              </div>
+              <div className="space-y-2">
+                <span className="rounded-full bg-primary/15 px-3 py-0.5 text-[11px] font-bold text-primary uppercase tracking-wider">
+                  Unusual Trial Guarantee
+                </span>
+                <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
+                  7-Day Trial — Activated When Your First Customer Visits
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Creating your Detailr account doesn't start your trial clock. Your 7-day free
+                  trial countdown begins <strong className="text-foreground">only</strong> when a
+                  real customer first visits your customized Detailr customer link. This gives you
+                  absolute freedom to configure your services, set perfect rates, and connect
+                  Telegram alerts without a single day of your trial being wasted.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Interactive Pricing Calculator Section */}
       <section id="calculator" className="py-20">
         <div className="mx-auto max-w-5xl px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
+          <div className="text-center">
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Live Product Experience
             </span>
@@ -496,15 +560,9 @@ function Landing() {
               Try the interactive estimator below. This is exactly what customers experience on your
               custom link.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="mt-10 overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl"
-          >
+          <div className="mt-10 overflow-hidden rounded-3xl border border-border/80 bg-card shadow-2xl">
             <div className="border-b border-border/80 bg-surface/60 p-4 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -695,20 +753,14 @@ function Landing() {
                 </Button>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Features Grid */}
       <section id="features" className="border-t border-border/70 bg-surface/40 py-20">
         <div className="mx-auto max-w-6xl px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5 }}
-            className="text-center"
-          >
+          <div className="text-center">
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Built Specifically For Detailing
             </span>
@@ -719,17 +771,11 @@ function Landing() {
               Zero complex software. No apps for customers to download. Just instant quotes that
               close.
             </p>
-          </motion.div>
+          </div>
 
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((f, i) => (
-              <motion.div
-                key={f.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-              >
+            {features.map((f) => (
+              <div key={f.title}>
                 <Card className="group h-full border-border/80 bg-card p-6 shadow-sm transition-all hover:border-primary/40 hover:shadow-md">
                   <div className="flex items-center justify-between">
                     <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-105">
@@ -742,7 +788,7 @@ function Landing() {
                   <h3 className="mt-5 text-lg font-bold text-foreground">{f.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -751,20 +797,14 @@ function Landing() {
       {/* How It Works in 3 Steps */}
       <section id="how-it-works" className="py-20">
         <div className="mx-auto max-w-5xl px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5 }}
-            className="text-center"
-          >
+          <div className="text-center">
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Quick 3-Minute Setup
             </span>
             <h2 className="mt-3 font-display text-3xl font-bold text-foreground sm:text-4xl">
               From Sign-up to First Lead in Minutes
             </h2>
-          </motion.div>
+          </div>
 
           <div className="mt-14 grid gap-8 md:grid-cols-3">
             {[
@@ -784,12 +824,8 @@ function Landing() {
                 body: "The moment a customer submits, your Telegram alerts you with their name, phone, and vehicle details. Call them back in seconds.",
               },
             ].map((s, i) => (
-              <motion.div
+              <div
                 key={s.step}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.6, delay: i * 0.15 }}
                 className="relative rounded-2xl border border-border/80 bg-card p-6 shadow-sm transition-transform hover:-translate-y-1"
               >
                 <span className="font-display text-4xl font-extrabold text-primary/30">
@@ -797,7 +833,7 @@ function Landing() {
                 </span>
                 <h3 className="mt-3 text-lg font-bold text-foreground">{s.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -806,30 +842,18 @@ function Landing() {
       {/* Testimonials */}
       <section className="border-t border-border/80 bg-surface/50 py-20">
         <div className="mx-auto max-w-5xl px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5 }}
-            className="text-center"
-          >
+          <div className="text-center">
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Mobile Detailer Stories
             </span>
             <h2 className="mt-3 font-display text-3xl font-bold text-foreground sm:text-4xl">
               Loved by Detailers Across the US & UK
             </h2>
-          </motion.div>
+          </div>
 
           <div className="mt-12 grid gap-6 md:grid-cols-2">
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={t.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-              >
+            {testimonials.map((t) => (
+              <div key={t.name}>
                 <Card className="h-full border-border/80 bg-card p-6 shadow-sm">
                   <div className="flex gap-1 text-amber-500">
                     {Array.from({ length: t.rating }).map((_, i) => (
@@ -844,7 +868,7 @@ function Landing() {
                     </p>
                   </div>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -853,13 +877,7 @@ function Landing() {
       {/* Pricing Section */}
       <section id="pricing" className="py-20">
         <div className="mx-auto max-w-5xl px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12 space-y-3"
-          >
+          <div className="text-center mb-12 space-y-3">
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Simple, Transparent Pricing
             </span>
@@ -870,16 +888,11 @@ function Landing() {
               Start with a 7-day free trial (starts only after your first customer visit). Zero
               commission fees on your detailing jobs.
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
             {/* Monthly Plan Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
+            <div>
               <Card className="h-full flex flex-col justify-between border-border/60 bg-card/50 p-6 sm:p-8 shadow-lg relative overflow-hidden transition-all duration-200 hover:border-border hover:bg-card/80 rounded-2xl">
                 <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-border/40 pb-4">
@@ -950,15 +963,10 @@ function Landing() {
                   </Button>
                 </div>
               </Card>
-            </motion.div>
+            </div>
 
             {/* Annual Plan Card (Featured) */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
+            <div>
               <Card className="h-full flex flex-col justify-between border-primary bg-card p-6 sm:p-8 shadow-2xl relative overflow-hidden transition-all duration-200 ring-2 ring-primary/30 rounded-2xl">
                 {/* Top Accent Bar */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-primary to-amber-500" />
@@ -1039,7 +1047,7 @@ function Landing() {
                   </Button>
                 </div>
               </Card>
-            </motion.div>
+            </div>
           </div>
 
           <div className="mt-8 text-center">
@@ -1054,15 +1062,9 @@ function Landing() {
       </section>
 
       {/* FAQ Section */}
-      <section className="border-t border-border/80 bg-surface/30 py-20">
+      <section id="faq" className="border-t border-border/80 bg-surface/30 py-20">
         <div className="mx-auto max-w-4xl px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12"
-          >
+          <div className="text-center mb-12">
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Frequently Asked Questions
             </span>
@@ -1072,16 +1074,12 @@ function Landing() {
             <p className="mt-2 text-sm text-muted-foreground">
               Learn how mobile detailers use instant quotes to capture more leads.
             </p>
-          </motion.div>
+          </div>
 
           <div className="space-y-4">
             {homepageFaqs.map((faq, idx) => (
-              <motion.div
+              <div
                 key={faq.question}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-30px" }}
-                transition={{ duration: 0.4, delay: idx * 0.08 }}
                 className="rounded-2xl border border-border/80 bg-card p-6 shadow-2xs"
               >
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
@@ -1106,89 +1104,139 @@ function Landing() {
                     </a>
                   </div>
                 )}
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Modern Redesigned Footer */}
-      <footer className="border-t border-border/80 bg-surface/50 py-16 text-sm text-muted-foreground">
-        <div className="mx-auto max-w-6xl px-5">
-          <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Brand */}
-            <div className="space-y-4">
-              <QuoteFlowLogo size="md" linkToHome />
-              <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
-                The modern, instant quote software built specifically for mobile auto detailers to
-                close leads in seconds.
-              </p>
-            </div>
-
-            {/* Links */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">
-                Product
-              </h4>
-              <ul className="space-y-2 text-xs">
-                <li>
-                  <a href="#features" className="hover:text-primary transition-colors">
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#calculator" className="hover:text-primary transition-colors">
-                    Interactive Demo
-                  </a>
-                </li>
-                <li>
-                  <a href="#pricing" className="hover:text-primary transition-colors">
-                    Pricing
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">
-                Company
-              </h4>
-              <ul className="space-y-2 text-xs">
-                <li>
-                  <Link to="/login" className="hover:text-primary transition-colors">
-                    Detailer Log In
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/signup" className="hover:text-primary transition-colors">
-                    Start Free Trial
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Status */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">
-                System
-              </h4>
-              <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium">
-                <span className="size-2 rounded-full bg-emerald-500" />
-                <span>All Systems Operational</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-16 border-t border-border/60 pt-8 text-center text-xs text-muted-foreground flex flex-col items-center gap-4">
-            <p>
-              © {new Date().getFullYear()}{" "}
-              <strong className="font-semibold text-foreground">Nerochaze</strong> · Detailr · Built
-              for mobile auto detailers.
-            </p>
+      {/* About Section: Introducing Nerochaze */}
+      <section id="about" className="py-20 border-t border-border/70 bg-card">
+        <div className="mx-auto max-w-4xl px-5 text-center space-y-6">
+          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+            Meet the Founder
+          </span>
+          <h2 className="text-3xl font-display font-extrabold text-foreground tracking-tight max-w-xl mx-auto">
+            Designed & Developed by Nerochaze
+          </h2>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+            "I built Detailr with one goal: to protect your detailing time. When you are busy
+            working, Detailr handles your quotes and delivers leads instantly to your Telegram."
+          </p>
+          <div className="pt-2">
+            <Button asChild variant="hero" size="sm" className="font-semibold shadow-lift">
+              <Link to="/founder">
+                Read Nerochaze's Full Story <ArrowRight className="size-4 ml-1.5" />
+              </Link>
+            </Button>
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-20 border-t border-border/70 bg-surface/30">
+        <div className="mx-auto max-w-3xl px-5">
+          <div className="text-center mb-10">
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+              Have Questions?
+            </span>
+            <h2 className="mt-3 text-3xl font-display font-extrabold text-foreground">
+              Get in Touch with Nerochaze
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Send us a message and we'll get back to you directly within a few hours.
+            </p>
+          </div>
+
+          <Card className="border-border bg-card p-6 sm:p-8 shadow-xl rounded-2xl">
+            {submitSuccess ? (
+              <div className="text-center py-8 space-y-3">
+                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+                  <CheckCircle2 className="size-6" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">Message Sent Successfully!</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                  Thank you for reaching out. Founder Nerochaze or our team will review your message
+                  and reply to you via email within 4 hours.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground">Your Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        required
+                        value={contactName}
+                        onChange={(e) => setContactName(e.target.value)}
+                        placeholder="John Doe"
+                        className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground">Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                      <input
+                        type="email"
+                        required
+                        value={contactEmail}
+                        onChange={(e) => setContactEmail(e.target.value)}
+                        placeholder="john@example.com"
+                        className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground">
+                    Phone Number (Optional)
+                  </label>
+                  <div className="relative">
+                    <Smartphone className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="(512) 555-0199"
+                      className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground">Message</label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={contactMessage}
+                    onChange={(e) => setContactMessage(e.target.value)}
+                    placeholder="Tell Nerochaze what questions you have or features you would like to see in Detailr..."
+                    className="w-full rounded-xl border border-border bg-background p-3.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all resize-none"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  variant="hero"
+                  className="w-full h-11 font-bold text-sm shadow-lift"
+                >
+                  {isSubmitting ? "Sending..." : "Send Message to Nerochaze"}
+                </Button>
+              </form>
+            )}
+          </Card>
+        </div>
+      </section>
+
+      {/* Modern Redesigned Footer with Legal & Trust Pages */}
+      <Footer />
     </div>
   );
 }
