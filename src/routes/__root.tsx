@@ -156,8 +156,8 @@ const schemaJson = {
       "@type": "WebSite",
       "@id": "https://detailr.online/#website",
       url: "https://detailr.online",
-      name: "Detailr Online",
-      alternateName: ["Detailr", "Detailr Software", "Detailr Mobile Detailing"],
+      name: "Detailr",
+      alternateName: ["Detailr Software", "Detailr Mobile Detailing", "detailr.online"],
       description: "Instant Mobile Auto Detailing Quotes & Real-Time Lead Alerts",
       publisher: { "@id": "https://detailr.online/#organization" },
       inLanguage: "en-US",
@@ -241,7 +241,7 @@ const schemaJson = {
     {
       "@type": "SoftwareApplication",
       "@id": "https://detailr.online/#webapp",
-      name: "Detailr Online",
+      name: "Detailr",
       url: "https://detailr.online",
       applicationCategory: "BusinessApplication",
       operatingSystem: "All",
@@ -266,7 +266,7 @@ const schemaJson = {
     {
       "@type": "Organization",
       "@id": "https://detailr.online/#organization",
-      name: "Detailr Online",
+      name: "Detailr",
       url: "https://detailr.online",
       logo: "https://detailr.online/logo.png",
       image: "https://detailr.online/logo.png",
@@ -284,12 +284,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Detailr (detailr.online) is the modern software built for mobile auto detailers. Give customers instant vehicle pricing estimates and receive new qualified leads directly in Telegram with photos.",
+          "Detailr Online (detailr.online) is the modern software built for mobile auto detailers. Give customers instant vehicle pricing estimates and receive new qualified leads directly in Telegram with photos.",
       },
       {
         name: "keywords",
         content:
-          "mobile auto detailing software, car detailing quote calculator, detailer instant estimate, telegram lead alerts, auto detailing CRM, ceramic coating quote builder, mobile detailer booking, detailr online",
+          "mobile auto detailing software, car detailing quote calculator, detailer instant estimate, telegram lead alerts, auto detailing CRM, ceramic coating quote builder, mobile detailer booking, detailr, detailr online",
       },
       { name: "author", content: "Detailr Online" },
       { name: "google-site-verification", content: "KcgCWTCmUyxEVd1lRMq6xabTrWkbMo0rsUFleV8q2m0" },
@@ -298,13 +298,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
       },
       { name: "theme-color", content: "#0284c7" },
-      { name: "application-name", content: "Detailr Online" },
-      { name: "apple-mobile-web-app-title", content: "Detailr Online" },
+      { name: "application-name", content: "Detailr" },
+      { name: "apple-mobile-web-app-title", content: "Detailr" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
 
       // Open Graph / Facebook / LinkedIn
-      { property: "og:site_name", content: "Detailr Online" },
+      { property: "og:site_name", content: "Detailr" },
       {
         property: "og:title",
         content: "Detailr Online — Instant Mobile Detailing Quotes & Telegram Alerts",
@@ -346,7 +346,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image:alt", content: "Detailr Online Auto Detailing Quote Software" },
 
       // Schema.org itemprops for crawlers
-      { name: "itemprop:name", content: "Detailr Online" },
+      { name: "itemprop:name", content: "Detailr" },
       {
         name: "itemprop:description",
         content:

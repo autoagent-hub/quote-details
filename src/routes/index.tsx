@@ -37,7 +37,7 @@ export const Route = createFileRoute("/")({
         content:
           "Never lose a detailing lead while mid-wash. Detailr Online sends customers an instant price estimate and pings you on Telegram the second a quote lands.",
       },
-      { property: "og:site_name", content: "Detailr Online" },
+      { property: "og:site_name", content: "Detailr" },
       {
         property: "og:title",
         content: "Detailr Online — Instant Quotes & Telegram Alerts for Mobile Detailers",
@@ -74,7 +74,7 @@ export const Route = createFileRoute("/")({
       { name: "twitter:image", content: "https://detailr.online/og-image.jpg" },
       { name: "twitter:image:src", content: "https://detailr.online/og-image.jpg" },
       { name: "twitter:image:alt", content: "Detailr Online Auto Detailing Quote Software" },
-      { name: "itemprop:name", content: "Detailr Online" },
+      { name: "itemprop:name", content: "Detailr" },
       {
         name: "itemprop:description",
         content: "Instant web quotes and real-time Telegram alerts for mobile auto detailers.",
@@ -84,6 +84,18 @@ export const Route = createFileRoute("/")({
     links: [
       { rel: "canonical", href: "https://detailr.online/" },
       { rel: "image_src", href: "https://detailr.online/og-image.jpg" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Detailr",
+          alternateName: ["Detailr Online", "detailr.online"],
+          url: "https://detailr.online/",
+        }),
+      },
     ],
   }),
   component: Landing,

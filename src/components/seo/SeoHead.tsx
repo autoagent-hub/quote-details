@@ -92,7 +92,7 @@ export function SeoHead({
     );
 
     // Open Graph
-    setMetaTag('meta[property="og:site_name"]', "property", "og:site_name", "Detailr Online");
+    setMetaTag('meta[property="og:site_name"]', "property", "og:site_name", "Detailr");
     setMetaTag('meta[property="og:title"]', "property", "og:title", title);
     setMetaTag('meta[property="og:description"]', "property", "og:description", description);
     setMetaTag('meta[property="og:url"]', "property", "og:url", currentCanonical);
