@@ -8,10 +8,8 @@ const DEFAULT_APP_URL = "https://detailr.online";
 import { getAdminClient } from "@/lib/admin.server";
 
 export const getUpgradeCheckout = createServerFn({ method: "GET" })
-  .validator((data?: { plan?: "monthly" | "yearly" }) => data)
   .middleware([requireSupabaseAuth])
-  .handler(async ({ data, context }) => {
-    const requestedPlan = data?.plan || "monthly";
+  .handler(async ({ context }) => {
     const defaultMonthlyUrl =
       process.env["WHOP_CHECKOUT_URL"] ?? "https://whop.com/checkout/plan_IrzVc4vCnCiQ1";
     const defaultYearlyUrl =
@@ -27,16 +25,17 @@ export const getUpgradeCheckout = createServerFn({ method: "GET" })
           "3c7f1a25-615e-4cfc-9c23-a049bafe9337",
         );
         const meta = user?.user?.user_metadata || {};
-        if (meta["custom_checkout_url"]) {
+        if (meta["custom_checkout_url"] && String(meta["custom_checkout_url"]).trim()) {
           monthlyBaseUrl = String(meta["custom_checkout_url"]).trim();
         }
-        if (meta["custom_yearly_checkout_url"]) {
+        if (
+          meta["custom_yearly_checkout_url"] &&
+          String(meta["custom_yearly_checkout_url"]).trim()
+        ) {
           yearlyBaseUrl = String(meta["custom_yearly_checkout_url"]).trim();
-        } else if (meta["custom_checkout_url"]) {
-          yearlyBaseUrl = String(meta["custom_checkout_url"]).trim();
         }
       } catch {
-        // Fallback to default
+        // Fallback to defaults
       }
     }
 
@@ -62,7 +61,6 @@ export const getUpgradeCheckout = createServerFn({ method: "GET" })
     };
 
     return {
-      href: buildUrl(requestedPlan === "yearly" ? yearlyBaseUrl : monthlyBaseUrl, requestedPlan),
       monthlyHref: buildUrl(monthlyBaseUrl, "monthly"),
       yearlyHref: buildUrl(yearlyBaseUrl, "yearly"),
     };

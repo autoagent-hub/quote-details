@@ -95,8 +95,8 @@ function Upgrade() {
   });
 
   const { data: checkout } = useQuery({
-    queryKey: ["upgrade-checkout", selectedPlan],
-    queryFn: () => fetchCheckout({ data: { plan: selectedPlan } }),
+    queryKey: ["upgrade-checkout"],
+    queryFn: () => fetchCheckout(),
   });
 
   const status = data?.status ?? "TRIAL";
@@ -105,10 +105,9 @@ function Upgrade() {
     note: "You're currently on trial. Pick a plan to lock in uninterrupted access.",
   };
   const subscribed = status === "SUBSCRIBED";
-  const checkoutHref =
-    selectedPlan === "yearly"
-      ? checkout?.yearlyHref || checkout?.href
-      : checkout?.monthlyHref || checkout?.href;
+
+  const monthlyHref = checkout?.monthlyHref || "https://whop.com/checkout/plan_IrzVc4vCnCiQ1";
+  const yearlyHref = checkout?.yearlyHref || "https://whop.com/checkout/plan_Gmhnwjw8YVRyQ";
 
   return (
     <div className="min-h-screen bg-surface pb-16">
@@ -133,10 +132,11 @@ function Upgrade() {
             {copy.label}
           </Badge>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-            Simple, Transparent Pricing
+            Choose Your Detailr Pro Billing Plan
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            {copy.note} Choose month-to-month flexibility or lock in 12 months with our Annual Pass.
+            Both plans include 100% of Detailr Pro features with zero limitations. Choose
+            month-to-month flexibility or lock in 12 months with our Annual Pass.
           </p>
 
           {/* Billing Cycle Selector Tabs */}
@@ -144,7 +144,7 @@ function Upgrade() {
             <button
               type="button"
               onClick={() => setSelectedPlan("monthly")}
-              className={`px-5 py-2 text-xs font-bold rounded-xl transition-all ${
+              className={`px-5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                 selectedPlan === "monthly"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -155,7 +155,7 @@ function Upgrade() {
             <button
               type="button"
               onClick={() => setSelectedPlan("yearly")}
-              className={`px-5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+              className={`px-5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                 selectedPlan === "yearly"
                   ? "bg-primary text-primary-foreground shadow-md"
                   : "text-muted-foreground hover:text-foreground"
@@ -177,7 +177,7 @@ function Upgrade() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch pt-2">
             {/* 1 Month Plan Card */}
             <Card
-              className={`relative overflow-hidden transition-all flex flex-col justify-between ${
+              className={`relative overflow-hidden transition-all flex flex-col justify-between cursor-pointer ${
                 selectedPlan === "monthly"
                   ? "border-2 border-primary shadow-xl ring-2 ring-primary/20 bg-card"
                   : "border-border/60 bg-card/60 opacity-90 hover:opacity-100"
@@ -188,7 +188,7 @@ function Upgrade() {
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      Monthly Plan
+                      Monthly Membership
                     </span>
                     <Badge variant="secondary" className="text-[10px] font-bold">
                       1 Month
@@ -200,15 +200,18 @@ function Upgrade() {
                       <span className="text-sm font-normal text-muted-foreground">/ month</span>
                     </p>
                     <p className="text-xs text-muted-foreground pt-1">
-                      Flexible month-to-month subscription
+                      Pay as you go · Billed monthly · Cancel anytime
                     </p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-2">
+                    Included in Monthly Plan:
+                  </p>
                   <ul className="space-y-2.5 text-xs">
                     {perks.map((perk) => (
                       <li key={`monthly-${perk}`} className="flex items-start gap-2">
-                        <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
+                        <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-500 font-bold" />
                         <span className="text-foreground">{perk}</span>
                       </li>
                     ))}
@@ -225,11 +228,11 @@ function Upgrade() {
                   <Button
                     asChild
                     variant={selectedPlan === "monthly" ? "hero" : "outline"}
-                    className="w-full rounded-xl font-bold"
+                    className="w-full rounded-xl font-bold h-12 text-sm shadow-md"
                   >
-                    <a href={checkoutHref} target="_blank" rel="noreferrer">
+                    <a href={monthlyHref} target="_blank" rel="noreferrer">
                       <CreditCard className="size-4 mr-2" />
-                      Get Monthly ($9.99/mo)
+                      Subscribe Monthly ($9.99/mo)
                     </a>
                   </Button>
                 )}
@@ -238,22 +241,22 @@ function Upgrade() {
 
             {/* 1 Year Plan Card */}
             <Card
-              className={`relative overflow-hidden transition-all flex flex-col justify-between ${
+              className={`relative overflow-hidden transition-all flex flex-col justify-between cursor-pointer ${
                 selectedPlan === "yearly"
                   ? "border-2 border-primary shadow-2xl ring-4 ring-primary/20 bg-card"
                   : "border-border/60 bg-card/60 opacity-90 hover:opacity-100"
               }`}
               onClick={() => setSelectedPlan("yearly")}
             >
-              <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-amber-600 text-black font-extrabold text-[10px] uppercase tracking-wider px-3 py-1 rounded-bl-xl shadow-sm flex items-center gap-1">
-                <Sparkles className="size-3" /> Recommended
+              <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-amber-600 text-black font-extrabold text-[10px] uppercase tracking-wider px-3 py-1 rounded-bl-xl shadow-xs flex items-center gap-1">
+                <Sparkles className="size-3" /> Recommended · Annual Pass
               </div>
 
               <div>
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1">
-                      <Calendar className="size-3.5" /> Annual Plan
+                      <Calendar className="size-3.5" /> Annual Membership
                     </span>
                   </div>
                   <div className="pt-2">
@@ -262,19 +265,22 @@ function Upgrade() {
                       <span className="text-sm font-normal text-muted-foreground">/ year</span>
                     </p>
                     <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold pt-1">
-                      12 Months Full Uninterrupted Access
+                      12 Months Full Uninterrupted Access · Billed annually
                     </p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-2">
+                    Included in Annual Plan:
+                  </p>
                   <ul className="space-y-2.5 text-xs">
-                    <li className="flex items-start gap-2 font-semibold text-foreground">
-                      <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
-                      <span>All Monthly features included for 12 months</span>
+                    <li className="flex items-start gap-2 font-bold text-foreground">
+                      <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-amber-500 font-bold" />
+                      <span>Guaranteed price lock for 12 full months</span>
                     </li>
                     {perks.map((perk) => (
                       <li key={`yearly-${perk}`} className="flex items-start gap-2">
-                        <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
+                        <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-500 font-bold" />
                         <span className="text-foreground">{perk}</span>
                       </li>
                     ))}
@@ -291,11 +297,11 @@ function Upgrade() {
                   <Button
                     asChild
                     variant="hero"
-                    className="w-full rounded-xl font-bold shadow-lg shadow-primary/20"
+                    className="w-full rounded-xl font-bold h-12 text-sm shadow-xl shadow-primary/20"
                   >
-                    <a href={checkoutHref} target="_blank" rel="noreferrer">
+                    <a href={yearlyHref} target="_blank" rel="noreferrer">
                       <CreditCard className="size-4 mr-2" />
-                      Get Yearly ($119.99/yr)
+                      Subscribe Yearly ($119.99/yr)
                     </a>
                   </Button>
                 )}

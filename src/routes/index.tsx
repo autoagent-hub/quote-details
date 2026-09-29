@@ -839,84 +839,163 @@ function Landing() {
 
       {/* Pricing Section */}
       <section id="pricing" className="py-20">
-        <div className="mx-auto max-w-lg px-5">
+        <div className="mx-auto max-w-5xl px-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-8"
+            className="text-center mb-12 space-y-3"
           >
             <span className="rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
               Simple, Transparent Pricing
             </span>
-            <h2 className="mt-3 font-display text-3xl font-bold text-foreground sm:text-4xl">
-              One Flat Rate. Unlimited Leads.
+            <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+              100% Features Included. Choose Your Billing Term.
             </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              No hidden fees, no tiers, no per-lead charges.
+            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+              Start with a 7-day free trial (starts only after your first customer visit). Zero
+              commission fees on your detailing jobs.
             </p>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <Card className="overflow-hidden border-border/80 shadow-2xl transition-transform hover:-translate-y-1">
-              <div className="gradient-ink p-8 text-white text-center relative overflow-hidden">
-                <div className="pointer-events-none absolute -right-10 -bottom-10 size-40 rounded-full bg-primary/30 blur-2xl" />
-                <p className="text-xs font-bold uppercase tracking-widest text-primary-foreground/90">
-                  Everything Included
-                </p>
-                <div className="mt-4 flex items-baseline justify-center gap-1 font-display">
-                  <span className="text-6xl font-extrabold text-white">$9.99</span>
-                  <span className="text-base text-white/80">/ month</span>
-                </div>
-                <p className="mt-2 text-xs text-white/90">
-                  7-day 100% free trial · Cancel anytime with one click
-                </p>
-              </div>
-
-              <CardContent className="p-8 space-y-6">
-                <ul className="space-y-3.5 text-sm">
-                  {[
-                    "Unlimited instant customer quote requests",
-                    "Real-time Telegram alerts sent to your phone",
-                    "Customized vehicle rates & add-on pricing",
-                    "Dedicated branded quote link (e.g. detailr.online/your-shop)",
-                    "Full customer CRM with 1-tap call & SMS",
-                    "Customer photo upload capabilities",
-                    "Zero commission fees on your detailing jobs",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-3">
-                      <Check className="mt-0.5 size-4.5 shrink-0 text-primary font-bold" />
-                      <span className="text-foreground">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button
-                  asChild
-                  variant="hero"
-                  size="xl"
-                  className="shadow-lift font-semibold text-base transition-transform hover:scale-105"
-                >
-                  <Link to="/signup">Start 7-Day Free Trial</Link>
-                </Button>
-
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground">
-                    Already have an account?{" "}
-                    <Link to="/login" className="font-semibold text-primary hover:underline">
-                      Sign in here
-                    </Link>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+            {/* Monthly Plan Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <Card className="h-full flex flex-col justify-between border-border/80 bg-card p-8 shadow-xl relative overflow-hidden transition-all hover:-translate-y-1">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      Monthly Membership
+                    </span>
+                    <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
+                      Flexible
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-baseline gap-1 font-display">
+                    <span className="text-5xl font-extrabold text-foreground">$9.99</span>
+                    <span className="text-sm font-normal text-muted-foreground">/ month</span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Billed monthly · Cancel anytime with 1 click
                   </p>
+
+                  <div className="mt-6 border-t border-border/60 pt-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                      Included in Monthly Plan:
+                    </p>
+                    <ul className="space-y-3 text-xs">
+                      {[
+                        "Unlimited instant customer quote requests",
+                        "Real-time Telegram alerts sent to your phone",
+                        "Customized vehicle rates & add-on pricing",
+                        "Dedicated branded quote link (detailr.online/your-shop)",
+                        "Full customer CRM with 1-tap call & SMS",
+                        "Customer photo upload capabilities",
+                        "Zero commission fees on your detailing jobs",
+                      ].map((item) => (
+                        <li key={`landing-monthly-${item}`} className="flex items-start gap-2.5">
+                          <Check className="mt-0.5 size-4 shrink-0 text-emerald-500 font-bold" />
+                          <span className="text-foreground">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+
+                <div className="mt-8 pt-4 border-t border-border/60">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="xl"
+                    className="w-full font-bold h-12 text-sm"
+                  >
+                    <Link to="/signup">Start 7-Day Trial — Monthly ($9.99/mo)</Link>
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* Annual Plan Card (Featured) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Card className="h-full flex flex-col justify-between border-2 border-primary bg-card p-8 shadow-2xl relative overflow-hidden transition-all hover:-translate-y-1 ring-4 ring-primary/10">
+                <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-amber-600 text-black font-extrabold text-[10px] uppercase tracking-wider px-3.5 py-1 rounded-bl-xl shadow-xs flex items-center gap-1">
+                  <Sparkles className="size-3" /> Recommended · Annual Pass
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-widest text-amber-500 flex items-center gap-1">
+                      Annual Membership
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-baseline gap-1 font-display">
+                    <span className="text-5xl font-extrabold text-foreground">$119.99</span>
+                    <span className="text-sm font-normal text-muted-foreground">/ year</span>
+                  </div>
+                  <p className="mt-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    12 Months Full Uninterrupted Access · Billed annually
+                  </p>
+
+                  <div className="mt-6 border-t border-border/60 pt-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                      Included in Annual Plan:
+                    </p>
+                    <ul className="space-y-3 text-xs">
+                      <li className="flex items-start gap-2.5 font-bold text-foreground">
+                        <ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber-500 font-bold" />
+                        <span>Guaranteed price lock for 12 full months</span>
+                      </li>
+                      {[
+                        "Unlimited instant customer quote requests",
+                        "Real-time Telegram alerts sent to your phone",
+                        "Customized vehicle rates & add-on pricing",
+                        "Dedicated branded quote link (detailr.online/your-shop)",
+                        "Full customer CRM with 1-tap call & SMS",
+                        "Customer photo upload capabilities",
+                        "Zero commission fees on your detailing jobs",
+                      ].map((item) => (
+                        <li key={`landing-yearly-${item}`} className="flex items-start gap-2.5">
+                          <Check className="mt-0.5 size-4 shrink-0 text-emerald-500 font-bold" />
+                          <span className="text-foreground">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="mt-8 pt-4 border-t border-border/60">
+                  <Button
+                    asChild
+                    variant="hero"
+                    size="xl"
+                    className="w-full font-bold h-12 text-sm shadow-xl shadow-primary/20"
+                  >
+                    <Link to="/signup">Start 7-Day Trial — Yearly ($119.99/yr)</Link>
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-xs text-muted-foreground">
+              Already have an account?{" "}
+              <Link to="/login" className="font-semibold text-primary hover:underline">
+                Sign in here
+              </Link>
+            </p>
+          </div>
         </div>
       </section>
 
