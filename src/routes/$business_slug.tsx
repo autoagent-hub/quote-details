@@ -16,6 +16,9 @@ import {
   ChevronRight,
   Sparkles,
   User,
+  Phone,
+  MessageSquare,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -539,38 +542,159 @@ function QuoteForm() {
 
   if (done) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-surface px-6 text-center">
-        <span className="gradient-primary flex size-14 items-center justify-center rounded-2xl text-primary-foreground shadow-lift">
-          <CheckCircle2 className="size-7" />
-        </span>
-        <h1 className="mt-6 text-2xl font-bold">Request sent</h1>
-        <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-          {profile.business_name} just got an alert with your details and will text or call{" "}
-          {fullPhone} shortly.
-        </p>
-        <div className="mt-6 w-full max-w-sm rounded-xl border border-border bg-card p-5 text-left shadow-card">
-          <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-            Your estimate
-          </p>
-          <p className="mt-1 font-display text-3xl font-bold">{money(quote.total, currency)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {chosenPackage?.label}
-            {addons.length ? ` + ${addons.length} add-on${addons.length === 1 ? "" : "s"}` : ""} ·
-            final price confirmed on inspection.
-          </p>
-        </div>
-        {profile.phone ? (
-          <Button asChild variant="outline" className="mt-5">
-            <a href={`tel:${profile.phone}`}>Call {profile.business_name}</a>
-          </Button>
-        ) : null}
-        <div className="mt-8">
-          <QuoteFlowLogo
-            size="xs"
-            linkToHome
-            className="text-muted-foreground hover:text-foreground opacity-85"
-          />
-        </div>
+      <div className="min-h-screen bg-surface/50 flex flex-col items-center justify-center p-4 sm:p-6 text-foreground font-sans">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="w-full max-w-lg space-y-6"
+        >
+          {/* Top Shop Identity & Success Badge */}
+          <div className="text-center space-y-3">
+            <div className="relative inline-flex items-center justify-center">
+              <div className="absolute -inset-2 rounded-full bg-emerald-500/20 blur-xl animate-pulse" />
+              {profile.logo_url ? (
+                <img
+                  src={profile.logo_url}
+                  alt={profile.business_name}
+                  className="relative size-20 rounded-2xl object-cover border-2 border-emerald-500 shadow-xl shadow-emerald-500/10 bg-background"
+                />
+              ) : (
+                <div className="relative size-20 rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-white font-bold text-2xl flex items-center justify-center border-2 border-emerald-500 shadow-xl shadow-emerald-500/20">
+                  {profile.business_name?.[0] || "D"}
+                </div>
+              )}
+              <span className="absolute -bottom-1 -right-1 size-7 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-background shadow-md">
+                <CheckCircle2 className="size-4" />
+              </span>
+            </div>
+
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs font-bold mb-2">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-ping" />
+                <span>Quote Request Received</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-display">
+                Request Sent to {profile.business_name}!
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto mt-1.5 leading-relaxed">
+                We've alerted{" "}
+                <span className="font-semibold text-foreground">{profile.business_name}</span>. A
+                detailer will review your vehicle specs and reach out to{" "}
+                <span className="font-semibold text-foreground">{fullPhone}</span> shortly.
+              </p>
+            </div>
+          </div>
+
+          {/* Itemized Estimate Card */}
+          <div className="rounded-3xl border border-border/80 bg-card p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <div>
+                <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">
+                  Estimated Total
+                </p>
+                <p className="text-3xl font-extrabold text-foreground font-display mt-0.5">
+                  {money(quote.total, currency)}
+                </p>
+              </div>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl">
+                ✓ Quote Saved
+              </span>
+            </div>
+
+            {/* Spec Breakdown */}
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between py-1 border-b border-border/20 text-muted-foreground">
+                <span className="font-medium">Vehicle Specs</span>
+                <span className="font-bold text-foreground">
+                  {vehicleDesc.trim() || chosenCategory?.label || "Vehicle"} (
+                  {chosenCategory?.label})
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-1 border-b border-border/20 text-muted-foreground">
+                <span className="font-medium">Selected Package</span>
+                <span className="font-bold text-foreground">
+                  {chosenPackage?.label} ({money(quote.servicePrice, currency)})
+                </span>
+              </div>
+
+              {addons.length > 0 && (
+                <div className="flex items-start justify-between py-1 border-b border-border/20 text-muted-foreground">
+                  <span className="font-medium">Add-ons ({addons.length})</span>
+                  <span className="font-bold text-foreground text-right max-w-[200px]">
+                    {addons
+                      .map((key) => services.find((a) => a.key === key)?.label || key)
+                      .join(", ")}
+                  </span>
+                </div>
+              )}
+
+              {notes.trim() && (
+                <div className="pt-1 text-muted-foreground">
+                  <span className="font-medium block mb-1">Your Notes:</span>
+                  <p className="text-[11px] bg-muted/40 p-2.5 rounded-xl border border-border/30 text-foreground italic">
+                    "{notes.trim()}"
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <p className="text-[11px] text-muted-foreground/80 text-center pt-2 italic">
+              * Estimate calculated based on standard package rates. Final price confirmed upon shop
+              inspection.
+            </p>
+          </div>
+
+          {/* Action Buttons for Customer (Call, Text, Submit Another) */}
+          <div className="space-y-2.5">
+            {profile.phone && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <Button
+                  asChild
+                  variant="default"
+                  size="lg"
+                  className="w-full rounded-2xl h-12 font-bold text-xs gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+                >
+                  <a href={`tel:${profile.phone}`}>
+                    <Phone className="size-4" />
+                    <span>Call {profile.business_name}</span>
+                  </a>
+                </Button>
+
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="w-full rounded-2xl h-12 font-bold text-xs gap-2 border-border/80 hover:bg-surface"
+                >
+                  <a href={`sms:${profile.phone}`}>
+                    <MessageSquare className="size-4 text-emerald-600" />
+                    <span>Text {profile.business_name}</span>
+                  </a>
+                </Button>
+              </div>
+            )}
+
+            <Button
+              variant="ghost"
+              size="default"
+              onClick={() => {
+                setDone(false);
+                setActiveStep(1);
+              }}
+              className="w-full rounded-2xl h-10 font-bold text-xs gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="size-3.5" />
+              <span>Submit Another Vehicle</span>
+            </Button>
+          </div>
+
+          {/* Subtle Shop Footer Notice (No SaaS redirects) */}
+          <div className="text-center pt-4 border-t border-border/30 text-[11px] text-muted-foreground/60">
+            <span>{profile.business_name} · Instant Online Estimates</span>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -1212,12 +1336,10 @@ function QuoteForm() {
         <div className="pt-4 pb-6 flex flex-col items-center justify-center gap-1">
           <QuoteFlowLogo
             size="xs"
-            linkToHome
-            className="text-muted-foreground hover:text-foreground opacity-80"
+            linkToHome={false}
+            className="text-muted-foreground opacity-80"
           />
-          <span className="text-[10px] text-muted-foreground/80">
-            Powered by Detailr · A Nerochaze Company
-          </span>
+          <span className="text-[10px] text-muted-foreground/80">Powered by Detailr Online</span>
         </div>
       </form>
 

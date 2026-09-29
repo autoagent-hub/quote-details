@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,10 +36,17 @@ export function PricingCard({ profile }: { profile: Profile }) {
       label,
       categories.map((c) => c.key),
     );
-    setCategories((prev) => [
-      ...prev,
-      { key, label, sub: "Long bed or dually truck", uplift: 40, enabled: true },
-    ]);
+    const newItem: VehicleCategory = {
+      key,
+      label,
+      sub: "Long bed or dually truck",
+      uplift: 40,
+      enabled: true,
+    };
+    setCategories((prev) => [newItem, ...prev]);
+    toast.success("New vehicle size added at top!", {
+      description: "Edit the label, description, and fee uplift rate above.",
+    });
   };
 
   const addPackage = () => {
@@ -46,10 +55,17 @@ export function PricingCard({ profile }: { profile: Profile }) {
       label,
       packages.map((p) => p.key),
     );
-    setPackages((prev) => [
-      ...prev,
-      { key, label, sub: "Paint prep & 3-yr ceramic coating", price: 500, enabled: true },
-    ]);
+    const newItem: PackageItem = {
+      key,
+      label,
+      sub: "Paint prep & 3-yr ceramic coating",
+      price: 500,
+      enabled: true,
+    };
+    setPackages((prev) => [newItem, ...prev]);
+    toast.success("New package added at top!", {
+      description: "Edit the package name, description, and rate above.",
+    });
   };
 
   const addAddon = () => {
@@ -58,10 +74,17 @@ export function PricingCard({ profile }: { profile: Profile }) {
       label,
       addons.map((a) => a.key),
     );
-    setAddons((prev) => [
-      ...prev,
-      { key, label, sub: "Degreased and dressed", price: 45, enabled: true },
-    ]);
+    const newItem: ServiceItem = {
+      key,
+      label,
+      sub: "Degreased and dressed",
+      price: 45,
+      enabled: true,
+    };
+    setAddons((prev) => [newItem, ...prev]);
+    toast.success("New extra service added at top!", {
+      description: "Edit the service title, description, and price above.",
+    });
   };
 
   return (
@@ -236,61 +259,67 @@ function EditableRows<F extends string, T extends BaseRow & Record<F, number>>({
 
   return (
     <div className="space-y-2.5">
-      {items.map((s, i) => (
-        <div
-          key={s.key}
-          className={`group flex items-center gap-4 rounded-xl border border-border/40 bg-background/40 p-3.5 transition-all hover:border-border/80 hover:bg-background/80 ${s.enabled ? "" : "opacity-40 grayscale-[0.5]"}`}
-        >
-          <Switch
-            checked={s.enabled}
-            aria-label={`Offer ${s.label}`}
-            onCheckedChange={(checked) => patch(i, { enabled: checked })}
-            className="scale-90"
-          />
-          <div className="min-w-0 flex-1 space-y-1">
-            <Input
-              aria-label={`${s.label} name`}
-              className="h-8 border-none bg-transparent p-0 text-xs font-bold focus-visible:ring-0 shadow-none"
-              value={s.label}
-              onChange={(e) => patch(i, { label: e.target.value })}
+      <AnimatePresence initial={false}>
+        {items.map((s, i) => (
+          <motion.div
+            key={s.key}
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className={`group flex items-center gap-4 rounded-xl border border-border/40 bg-background/40 p-3.5 transition-all hover:border-border/80 hover:bg-background/80 ${s.enabled ? "" : "opacity-40 grayscale-[0.5]"}`}
+          >
+            <Switch
+              checked={s.enabled}
+              aria-label={`Offer ${s.label}`}
+              onCheckedChange={(checked) => patch(i, { enabled: checked })}
+              className="scale-90"
             />
-            <Input
-              aria-label={`${s.label} description`}
-              placeholder="Short description"
-              className="h-5 border-none bg-transparent p-0 text-[10px] font-medium text-muted-foreground focus-visible:ring-0 shadow-none"
-              value={s.sub}
-              onChange={(e) => patch(i, { sub: e.target.value })}
-            />
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="relative group/price">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground pointer-events-none opacity-50 uppercase">
-                {unitLabel.includes("+") ? "+" : ""}
-              </span>
+            <div className="min-w-0 flex-1 space-y-1">
               <Input
-                type="number"
-                step={1}
-                inputMode="numeric"
-                aria-label={`${s.label} ${unitLabel} in ${currency}`}
-                className="h-8 w-16 text-right font-mono text-[11px] font-bold pl-5 pr-2 rounded-lg bg-muted/30 border-border/40 focus-visible:ring-primary/20"
-                value={s[field] === 0 ? "0" : s[field] || ""}
-                onChange={(e) => patch(i, { [field]: Number(e.target.value) || 0 })}
+                aria-label={`${s.label} name`}
+                className="h-8 border-none bg-transparent p-0 text-xs font-bold focus-visible:ring-0 shadow-none"
+                value={s.label}
+                onChange={(e) => patch(i, { label: e.target.value })}
+              />
+              <Input
+                aria-label={`${s.label} description`}
+                placeholder="Short description"
+                className="h-5 border-none bg-transparent p-0 text-[10px] font-medium text-muted-foreground focus-visible:ring-0 shadow-none"
+                value={s.sub}
+                onChange={(e) => patch(i, { sub: e.target.value })}
               />
             </div>
-            {!lockedKeys.includes(s.key) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5 transition-colors opacity-0 group-hover:opacity-100"
-                aria-label={`Remove ${s.label}`}
-                onClick={() => onChange(items.filter((_, idx) => idx !== i))}
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            )}
-          </div>
-        </div>
-      ))}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="relative group/price">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground pointer-events-none opacity-50 uppercase">
+                  {unitLabel.includes("+") ? "+" : ""}
+                </span>
+                <Input
+                  type="number"
+                  step={1}
+                  inputMode="numeric"
+                  aria-label={`${s.label} ${unitLabel} in ${currency}`}
+                  className="h-8 w-16 text-right font-mono text-[11px] font-bold pl-5 pr-2 rounded-lg bg-muted/30 border-border/40 focus-visible:ring-primary/20"
+                  value={s[field] === 0 ? "0" : s[field] || ""}
+                  onChange={(e) => patch(i, { [field]: Number(e.target.value) || 0 })}
+                />
+              </div>
+              {!lockedKeys.includes(s.key) && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5 transition-colors opacity-0 group-hover:opacity-100"
+                  aria-label={`Remove ${s.label}`}
+                  onClick={() => onChange(items.filter((_, idx) => idx !== i))}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

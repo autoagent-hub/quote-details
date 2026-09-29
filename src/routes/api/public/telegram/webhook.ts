@@ -93,13 +93,43 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
 
         // 0. Check if this is a Quote Lookup request (/start quote_c03f9e21 or /start q_c03f9e21)
         if (code.startsWith("quote_") || code.startsWith("q_")) {
-          const rawId = code.replace(/^(quote_|q_)/i, "").toLowerCase();
-          const { data: q } = await admin
-            .from("quotes")
-            .select("*")
-            .or(`id.ilike.${rawId}%,id.eq.${rawId}`)
-            .limit(1)
-            .maybeSingle();
+          const rawId = code
+            .replace(/^(quote_|q_)/i, "")
+            .toLowerCase()
+            .trim();
+          let q: {
+            id: string;
+            customer_name: string;
+            customer_phone: string;
+            vehicle_type: string;
+            vehicle_desc?: string | null;
+            service_label?: string | null;
+            addons?: string[] | null;
+            estimated_price: number;
+            created_at: string;
+            notes?: string | null;
+          } | null = null;
+
+          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)) {
+            const { data } = await admin.from("quotes").select("*").eq("id", rawId).maybeSingle();
+            q = data;
+          } else {
+            const { data: list } = await admin
+              .from("quotes")
+              .select("*")
+              .order("created_at", { ascending: false })
+              .limit(100);
+
+            if (list && list.length > 0) {
+              q =
+                list.find((item) => {
+                  if (!item?.id) return false;
+                  const cleanUuid = item.id.toLowerCase();
+                  const noHyphens = cleanUuid.replace(/-/g, "");
+                  return cleanUuid.startsWith(rawId) || noHyphens.startsWith(rawId);
+                }) || null;
+            }
+          }
 
           const escStr = (str: string) =>
             String(str || "")
@@ -126,7 +156,8 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
               })}\n` +
               (q.notes ? `\n📝 <b>Customer Notes:</b>\n${escStr(q.notes)}\n` : "") +
               `\n🏷️ <b>Search Tags:</b> #${shortId} #quote_${shortId.toLowerCase()}\n` +
-              `\n💬 <i>Tip: Tap <b>#${shortId}</b> above to immediately search chat history and highlight attached photos!</i>`;
+              `\n💬 <i>Tip: Tap <b>#${shortId}</b> above to search chat history and highlight attached photos!</i>\n` +
+              `👉 <a href="https://detailr.online/dashboard/quotes">Open in Dashboard</a>`;
 
             await send(token, chatId, msg);
             return Response.json({ ok: true, quoteFound: true });
