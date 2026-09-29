@@ -110,7 +110,7 @@ export function TrialExpiredLock({ profile, trial }: TrialExpiredLockProps) {
             <span className="text-xs font-bold uppercase tracking-wider text-rose-500 flex items-center gap-1.5">
               <Lock className="size-3.5" /> Temporarily Locked Features
             </span>
-            <span className="text-xs font-mono text-muted-foreground">Detailr Pro ($9.99/mo)</span>
+            <span className="text-xs font-mono text-muted-foreground">$9.99/mo or $119.99/yr</span>
           </div>
 
           <ul className="space-y-3 text-xs text-muted-foreground">
@@ -143,15 +143,11 @@ export function TrialExpiredLock({ profile, trial }: TrialExpiredLockProps) {
             size="xl"
             className="w-full h-14 rounded-2xl text-base font-bold shadow-xl shadow-primary/20 gap-2"
           >
-            <a
-              href={checkoutHref}
-              target={checkoutHref.startsWith("http") ? "_blank" : undefined}
-              rel="noreferrer"
-            >
+            <Link to="/upgrade">
               <CreditCard className="size-5" />
-              <span>Upgrade to Pro ($9.99/month)</span>
+              <span>Choose Pro Plan ($9.99/mo or $119.99/yr)</span>
               <ArrowRight className="size-5 ml-auto" />
-            </a>
+            </Link>
           </Button>
 
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
@@ -160,7 +156,7 @@ export function TrialExpiredLock({ profile, trial }: TrialExpiredLockProps) {
             </span>
             <span>·</span>
             <span className="flex items-center gap-1">
-              <CheckCircle2 className="size-3.5 text-emerald-500" /> Cancel anytime
+              <CheckCircle2 className="size-3.5 text-emerald-500" /> Monthly or Annual billing
             </span>
           </div>
         </div>

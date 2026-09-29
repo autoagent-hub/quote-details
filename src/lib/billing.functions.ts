@@ -8,18 +8,32 @@ const DEFAULT_APP_URL = "https://detailr.online";
 import { getAdminClient } from "@/lib/admin.server";
 
 export const getUpgradeCheckout = createServerFn({ method: "GET" })
+  .validator((data?: { plan?: "monthly" | "yearly" }) => data)
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    let baseUrl = process.env["WHOP_CHECKOUT_URL"] ?? DEFAULT_CHECKOUT_URL;
+  .handler(async ({ data, context }) => {
+    const requestedPlan = data?.plan || "monthly";
+    const defaultMonthlyUrl =
+      process.env["WHOP_CHECKOUT_URL"] ?? "https://whop.com/checkout/plan_IrzVc4vCnCiQ1";
+    const defaultYearlyUrl =
+      process.env["WHOP_YEARLY_CHECKOUT_URL"] ?? "https://whop.com/checkout/plan_Gmhnwjw8YVRyQ";
+
+    let monthlyBaseUrl = defaultMonthlyUrl;
+    let yearlyBaseUrl = defaultYearlyUrl;
+
     const admin = getAdminClient();
     if (admin) {
       try {
         const { data: user } = await admin.auth.admin.getUserById(
           "3c7f1a25-615e-4cfc-9c23-a049bafe9337",
         );
-        const customUrl = user?.user?.user_metadata?.["custom_checkout_url"] as string | undefined;
-        if (customUrl && customUrl.trim()) {
-          baseUrl = customUrl.trim();
+        const meta = user?.user?.user_metadata || {};
+        if (meta["custom_checkout_url"]) {
+          monthlyBaseUrl = String(meta["custom_checkout_url"]).trim();
+        }
+        if (meta["custom_yearly_checkout_url"]) {
+          yearlyBaseUrl = String(meta["custom_yearly_checkout_url"]).trim();
+        } else if (meta["custom_checkout_url"]) {
+          yearlyBaseUrl = String(meta["custom_checkout_url"]).trim();
         }
       } catch {
         // Fallback to default
@@ -27,21 +41,31 @@ export const getUpgradeCheckout = createServerFn({ method: "GET" })
     }
 
     const appUrl = process.env["PUBLIC_APP_URL"] ?? DEFAULT_APP_URL;
+    const { data: userData } = await context.supabase.auth.getUser();
 
-    const { data } = await context.supabase.auth.getUser();
-    let url: URL;
-    try {
-      url = new URL(baseUrl);
-    } catch {
-      url = new URL(DEFAULT_CHECKOUT_URL);
-    }
+    const buildUrl = (baseUrl: string, planType: string) => {
+      let url: URL;
+      try {
+        url = new URL(baseUrl);
+      } catch {
+        url = new URL(planType === "yearly" ? defaultYearlyUrl : defaultMonthlyUrl);
+      }
+      url.searchParams.set("metadata[user_id]", context.userId);
+      url.searchParams.set("metadata[plan_type]", planType);
+      url.searchParams.set("d2c", "true");
+      url.searchParams.set(
+        "redirect_url",
+        `${appUrl.replace(/\/$/, "")}/upgrade?checkout=success&plan=${planType}`,
+      );
+      if (userData.user?.email) url.searchParams.set("email", userData.user.email);
+      return url.toString();
+    };
 
-    url.searchParams.set("metadata[user_id]", context.userId);
-    url.searchParams.set("d2c", "true");
-    url.searchParams.set("redirect_url", `${appUrl.replace(/\/$/, "")}/upgrade?checkout=success`);
-    if (data.user?.email) url.searchParams.set("email", data.user.email);
-
-    return { href: url.toString() };
+    return {
+      href: buildUrl(requestedPlan === "yearly" ? yearlyBaseUrl : monthlyBaseUrl, requestedPlan),
+      monthlyHref: buildUrl(monthlyBaseUrl, "monthly"),
+      yearlyHref: buildUrl(yearlyBaseUrl, "yearly"),
+    };
   });
 
 /**

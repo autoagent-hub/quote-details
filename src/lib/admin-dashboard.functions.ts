@@ -705,32 +705,48 @@ export const getAdminAuditLogs = createServerFn({ method: "GET" }).handler(async
  */
 export const getAdminCheckoutUrl = createServerFn({ method: "GET" }).handler(async () => {
   const admin = getAdminClient();
-  const defaultUrl =
+  const defaultMonthlyUrl =
     process.env["WHOP_CHECKOUT_URL"] ?? "https://whop.com/checkout/plan_IrzVc4vCnCiQ1";
-  if (!admin) return { checkoutUrl: defaultUrl, isDefault: true };
+  const defaultYearlyUrl =
+    process.env["WHOP_YEARLY_CHECKOUT_URL"] ?? "https://whop.com/checkout/plan_Gmhnwjw8YVRyQ";
 
-  const { data: user } = await admin.auth.admin.getUserById("3c7f1a25-615e-4cfc-9c23-a049bafe9337");
-  const customUrl = user?.user?.user_metadata?.["custom_checkout_url"] as string | undefined;
-
-  if (customUrl && customUrl.trim()) {
-    return { checkoutUrl: customUrl.trim(), isDefault: false };
+  if (!admin) {
+    return {
+      checkoutUrl: defaultMonthlyUrl,
+      yearlyCheckoutUrl: defaultYearlyUrl,
+      isDefault: true,
+    };
   }
 
-  return { checkoutUrl: defaultUrl, isDefault: true };
+  const { data: user } = await admin.auth.admin.getUserById("3c7f1a25-615e-4cfc-9c23-a049bafe9337");
+  const meta = user?.user?.user_metadata || {};
+  const customUrl = meta["custom_checkout_url"] as string | undefined;
+  const customYearlyUrl = meta["custom_yearly_checkout_url"] as string | undefined;
+
+  return {
+    checkoutUrl: customUrl?.trim() || defaultMonthlyUrl,
+    yearlyCheckoutUrl: customYearlyUrl?.trim() || defaultYearlyUrl,
+    isDefault: !customUrl && !customYearlyUrl,
+  };
 });
 
 /**
  * Update global checkout URL from admin dashboard
  */
 export const updateAdminCheckoutUrl = createServerFn({ method: "POST" })
-  .validator((data: { checkoutUrl: string }) => data)
+  .validator((data: { checkoutUrl?: string; yearlyCheckoutUrl?: string }) => data)
   .handler(async ({ data }) => {
     const admin = getAdminClient();
     if (!admin) return { success: false, error: "Admin database client unavailable" };
 
-    const url = data.checkoutUrl.trim();
+    const url = (data.checkoutUrl || "").trim();
+    const yearlyUrl = (data.yearlyCheckoutUrl || "").trim();
+
     if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
-      return { success: false, error: "Checkout URL must start with http:// or https://" };
+      return { success: false, error: "Monthly checkout URL must start with http:// or https://" };
+    }
+    if (yearlyUrl && !yearlyUrl.startsWith("http://") && !yearlyUrl.startsWith("https://")) {
+      return { success: false, error: "Yearly checkout URL must start with http:// or https://" };
     }
 
     const { data: user } = await admin.auth.admin.getUserById(
@@ -742,17 +758,18 @@ export const updateAdminCheckoutUrl = createServerFn({ method: "POST" })
       user_metadata: {
         ...meta,
         custom_checkout_url: url || null,
+        custom_yearly_checkout_url: yearlyUrl || null,
       },
     });
 
     await logAdminAction({
       action: "UPDATE_CHECKOUT_URL",
-      details: { newCheckoutUrl: url || "reset_to_default" },
+      details: { newCheckoutUrl: url || "default", newYearlyCheckoutUrl: yearlyUrl || "default" },
     });
 
     return {
       success: true,
-      message: url ? "Checkout link updated successfully!" : "Checkout link reset to default.",
+      message: "Checkout links updated successfully!",
     };
   });
 

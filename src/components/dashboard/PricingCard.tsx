@@ -31,60 +31,42 @@ export function PricingCard({ profile }: { profile: Profile }) {
   const [addons, setAddons] = useState<ServiceItem[]>(() => parseServices(profile.services));
 
   const addCategory = () => {
-    const label = "Extra Large / Dually";
-    const key = makeKey(
-      label,
-      categories.map((c) => c.key),
-    );
+    const key = `cat_${Date.now()}`;
     const newItem: VehicleCategory = {
       key,
-      label,
-      sub: "Long bed or dually truck",
-      uplift: 40,
+      label: "",
+      sub: "",
+      uplift: 0,
       enabled: true,
     };
     setCategories((prev) => [newItem, ...prev]);
-    toast.success("New vehicle size added at top!", {
-      description: "Edit the label, description, and fee uplift rate above.",
-    });
+    toast.success("New empty vehicle size added at top!");
   };
 
   const addPackage = () => {
-    const label = "Ceramic Coating";
-    const key = makeKey(
-      label,
-      packages.map((p) => p.key),
-    );
+    const key = `pkg_${Date.now()}`;
     const newItem: PackageItem = {
       key,
-      label,
-      sub: "Paint prep & 3-yr ceramic coating",
-      price: 500,
+      label: "",
+      sub: "",
+      price: 0,
       enabled: true,
     };
     setPackages((prev) => [newItem, ...prev]);
-    toast.success("New package added at top!", {
-      description: "Edit the package name, description, and rate above.",
-    });
+    toast.success("New empty package added at top!");
   };
 
   const addAddon = () => {
-    const label = "Engine Bay Clean";
-    const key = makeKey(
-      label,
-      addons.map((a) => a.key),
-    );
+    const key = `srv_${Date.now()}`;
     const newItem: ServiceItem = {
       key,
-      label,
-      sub: "Degreased and dressed",
-      price: 45,
+      label: "",
+      sub: "",
+      price: 0,
       enabled: true,
     };
     setAddons((prev) => [newItem, ...prev]);
-    toast.success("New extra service added at top!", {
-      description: "Edit the service title, description, and price above.",
-    });
+    toast.success("New empty extra service added at top!");
   };
 
   return (
@@ -130,6 +112,7 @@ export function PricingCard({ profile }: { profile: Profile }) {
               unitLabel={`+${currency}`}
               currency={currency}
               lockedKeys={DEFAULT_VEHICLE_CATEGORIES.map((c) => c.key)}
+              namePlaceholder="e.g. Extra Large / Dually"
               onChange={setCategories}
             />
           </CardContent>
@@ -162,6 +145,7 @@ export function PricingCard({ profile }: { profile: Profile }) {
               unitLabel={currency}
               currency={currency}
               lockedKeys={DEFAULT_PACKAGES.map((p) => p.key)}
+              namePlaceholder="e.g. Ceramic Coating"
               onChange={setPackages}
             />
           </CardContent>
@@ -194,6 +178,7 @@ export function PricingCard({ profile }: { profile: Profile }) {
               unitLabel={currency}
               currency={currency}
               lockedKeys={DEFAULT_SERVICES.map((s) => s.key)}
+              namePlaceholder="e.g. Engine Bay Clean"
               onChange={setAddons}
             />
           </CardContent>
@@ -245,6 +230,7 @@ function EditableRows<F extends string, T extends BaseRow & Record<F, number>>({
   unitLabel,
   currency,
   lockedKeys,
+  namePlaceholder = "Enter item name...",
   onChange,
 }: {
   items: T[];
@@ -252,6 +238,7 @@ function EditableRows<F extends string, T extends BaseRow & Record<F, number>>({
   unitLabel: string;
   currency: string;
   lockedKeys: string[];
+  namePlaceholder?: string;
   onChange: (next: T[]) => void;
 }) {
   const patch = (i: number, changes: Record<string, unknown>) =>
@@ -267,25 +254,33 @@ function EditableRows<F extends string, T extends BaseRow & Record<F, number>>({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className={`group flex items-center gap-4 rounded-xl border border-border/40 bg-background/40 p-3.5 transition-all hover:border-border/80 hover:bg-background/80 ${s.enabled ? "" : "opacity-40 grayscale-[0.5]"}`}
+            className={`group flex items-center gap-4 rounded-xl border p-3.5 transition-all hover:border-border/80 hover:bg-background/80 ${
+              s.enabled ? "" : "opacity-40 grayscale-[0.5]"
+            } ${
+              !s.label
+                ? "border-primary/50 bg-primary/5 ring-1 ring-primary/30"
+                : "border-border/40 bg-background/40"
+            }`}
           >
             <Switch
               checked={s.enabled}
-              aria-label={`Offer ${s.label}`}
+              aria-label={`Offer ${s.label || namePlaceholder}`}
               onCheckedChange={(checked) => patch(i, { enabled: checked })}
               className="scale-90"
             />
             <div className="min-w-0 flex-1 space-y-1">
               <Input
-                aria-label={`${s.label} name`}
-                className="h-8 border-none bg-transparent p-0 text-xs font-bold focus-visible:ring-0 shadow-none"
+                autoFocus={i === 0 && !s.label}
+                placeholder={namePlaceholder}
+                aria-label={`${s.label || namePlaceholder} name`}
+                className="h-8 border-none bg-transparent p-0 text-xs font-bold focus-visible:ring-0 shadow-none placeholder:text-muted-foreground/50"
                 value={s.label}
                 onChange={(e) => patch(i, { label: e.target.value })}
               />
               <Input
-                aria-label={`${s.label} description`}
-                placeholder="Short description"
-                className="h-5 border-none bg-transparent p-0 text-[10px] font-medium text-muted-foreground focus-visible:ring-0 shadow-none"
+                placeholder="Short description..."
+                aria-label={`${s.label || namePlaceholder} description`}
+                className="h-5 border-none bg-transparent p-0 text-[10px] font-medium text-muted-foreground focus-visible:ring-0 shadow-none placeholder:text-muted-foreground/40"
                 value={s.sub}
                 onChange={(e) => patch(i, { sub: e.target.value })}
               />
