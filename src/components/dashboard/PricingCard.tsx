@@ -22,7 +22,7 @@ import { useProfileUpdate } from "./useProfileUpdate";
 
 export function PricingCard({ profile }: { profile: Profile }) {
   const save = useProfileUpdate("Pricing rates saved");
-  const currency = profile.currency;
+  const currency = profile.currency || "USD";
 
   const [categories, setCategories] = useState<VehicleCategory[]>(() =>
     parseVehicleCategories(profile.vehicle_categories),
@@ -293,19 +293,22 @@ function EditableRows<F extends string, T extends BaseRow & Record<F, number>>({
             <div className="flex items-center gap-2 shrink-0">
               <div className="relative group/price">
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground pointer-events-none opacity-50 uppercase">
-                  {unitLabel.includes("+") ? "+" : ""}
+                  {(unitLabel || "").includes("+") ? "+" : ""}
                 </span>
                 <Input
                   type="number"
                   step={1}
                   inputMode="numeric"
-                  aria-label={`${s.label} ${unitLabel} in ${currency}`}
+                  placeholder="0"
+                  aria-label={`${s.label} ${unitLabel || ""} in ${currency || "USD"}`}
                   className="h-8 w-16 text-right font-mono text-[11px] font-bold pl-5 pr-2 rounded-lg bg-muted/30 border-border/40 focus-visible:ring-primary/20"
-                  value={s[field] === 0 ? "0" : s[field] || ""}
-                  onChange={(e) => patch(i, { [field]: Number(e.target.value) || 0 })}
+                  value={s[field] === 0 ? "" : (s[field] ?? "")}
+                  onChange={(e) =>
+                    patch(i, { [field]: e.target.value === "" ? 0 : Number(e.target.value) })
+                  }
                 />
               </div>
-              {!lockedKeys.includes(s.key) && (
+              {!(lockedKeys || []).includes(s.key) && (
                 <Button
                   variant="ghost"
                   size="icon"

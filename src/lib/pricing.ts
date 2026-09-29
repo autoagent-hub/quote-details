@@ -373,7 +373,8 @@ export function formatWhen(iso: string, timezone?: string): string {
 export function slugify(val: string): string {
   return val
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48);
+    .trim()
+    .replace(/[^a-z0-9\-_.~]+/g, "-")
+    .replace(/^[-_.~]+|[-_.~]+$/g, "")
+    .slice(0, 60);
 }
