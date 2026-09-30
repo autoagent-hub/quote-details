@@ -10,6 +10,7 @@ import {
   Sparkles,
   Calendar,
   ShieldCheck,
+  Clock,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";

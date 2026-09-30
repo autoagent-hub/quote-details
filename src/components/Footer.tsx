@@ -99,6 +99,14 @@ export function Footer() {
                   Cookie Policy
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/whois"
+                  className="hover:text-primary transition-colors text-left font-semibold text-foreground block"
+                >
+                  Domain WHOIS Registry (NEW)
+                </Link>
+              </li>
             </ul>
           </div>
 
