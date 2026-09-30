@@ -110,7 +110,7 @@ export function TrialExpiredLock({ profile, trial }: TrialExpiredLockProps) {
             <span className="text-xs font-bold uppercase tracking-wider text-rose-500 flex items-center gap-1.5">
               <Lock className="size-3.5" /> Temporarily Locked Features
             </span>
-            <span className="text-xs font-mono text-muted-foreground">$9.99/mo or $119.99/yr</span>
+            <span className="text-xs font-mono text-muted-foreground">$9.99/mo or $110.99/yr</span>
           </div>
 
           <ul className="space-y-3 text-xs text-muted-foreground">
@@ -145,7 +145,7 @@ export function TrialExpiredLock({ profile, trial }: TrialExpiredLockProps) {
           >
             <Link to="/upgrade">
               <CreditCard className="size-5" />
-              <span>Choose Pro Plan ($9.99/mo or $119.99/yr)</span>
+              <span>Choose Pro Plan ($9.99/mo or $110.99/yr)</span>
               <ArrowRight className="size-5 ml-auto" />
             </Link>
           </Button>

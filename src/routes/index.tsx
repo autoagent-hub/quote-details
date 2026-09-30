@@ -992,13 +992,13 @@ function Landing() {
                   <div className="space-y-1">
                     <div className="flex items-baseline gap-2 font-mono">
                       <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
-                        $119.99
+                        $110.99
                       </span>
                       <span className="text-xs font-sans font-medium text-muted-foreground">
                         / year
                       </span>
                       <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans text-[11px] font-bold ml-auto">
-                        ~$10/mo equivalent
+                        ~$9/mo equivalent
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground pt-1">
@@ -1043,7 +1043,7 @@ function Landing() {
                     size="xl"
                     className="w-full h-12 rounded-xl font-bold text-sm shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all"
                   >
-                    <Link to="/signup">Start 7-Day Trial — Yearly ($119.99/yr)</Link>
+                    <Link to="/signup">Start 7-Day Trial — Yearly ($110.99/yr)</Link>
                   </Button>
                 </div>
               </Card>

@@ -28,13 +28,13 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
       {
         name: "description",
         content:
-          "Choose between $9.99/month or $119.99/year for unlimited auto detailing quote requests and real-time Telegram alerts on detailr.online.",
+          "Choose between $9.99/month or $110.99/year for unlimited auto detailing quote requests and real-time Telegram alerts on detailr.online.",
       },
       { property: "og:title", content: "Upgrade to Detailr Pro — Detailr Online" },
       {
         property: "og:description",
         content:
-          "Unlimited quote requests, Telegram alerts and your branded quote link for $9.99/month or $119.99/year on Detailr Online.",
+          "Unlimited quote requests, Telegram alerts and your branded quote link for $9.99/month or $110.99/year on Detailr Online.",
       },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "https://detailr.online/og-image.jpg" },
@@ -162,7 +162,7 @@ function Upgrade() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <span>Annual Pass ($119.99/yr)</span>
+              <span>Annual Pass ($110.99/yr)</span>
               <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-full bg-amber-400 text-black font-extrabold">
                 Best Value
               </span>
@@ -290,13 +290,13 @@ function Upgrade() {
                 <div className="space-y-1">
                   <div className="flex items-baseline gap-2 font-mono">
                     <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
-                      $119.99
+                      $110.99
                     </span>
                     <span className="text-xs font-sans font-medium text-muted-foreground">
                       / year
                     </span>
                     <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans text-[11px] font-bold ml-auto">
-                      ~$10/mo equivalent
+                      ~$9/mo equivalent
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground pt-1">
@@ -339,7 +339,7 @@ function Upgrade() {
                   >
                     <a href={yearlyHref} target="_blank" rel="noreferrer">
                       <CreditCard className="size-4 mr-2" />
-                      Subscribe Yearly ($119.99/yr)
+                      Subscribe Yearly ($110.99/yr)
                     </a>
                   </Button>
                 )}

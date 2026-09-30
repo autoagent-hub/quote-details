@@ -32,7 +32,7 @@ async function handleCronRequest(request: Request) {
   const isAuthorized =
     (providedBearer && allowedSecrets.includes(providedBearer)) ||
     (providedKey && allowedSecrets.includes(providedKey)) ||
-    url.searchParams.get("dev") === "true";
+    (url.searchParams.get("dev") === "true" && process.env.NODE_ENV === "development");
 
   if (!isAuthorized) {
     return Response.json(
