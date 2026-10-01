@@ -151,6 +151,23 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
           return Response.json({ ok: false }, { status: 500 });
         }
 
+        // Securely stamp verified Whop subscription state in auth user_metadata
+        try {
+          const { data: authUser } = await admin.auth.admin.getUserById(profileId);
+          const currentMeta = authUser?.user?.user_metadata || {};
+          await admin.auth.admin.updateUserById(profileId, {
+            user_metadata: {
+              ...currentMeta,
+              whop_verified: newStatus === "SUBSCRIBED",
+              whop_membership_id: membershipId || currentMeta["whop_membership_id"],
+              whop_status: newStatus,
+              whop_verified_at: new Date().toISOString(),
+            },
+          });
+        } catch (metaErr) {
+          console.warn("Could not stamp whop verification metadata:", metaErr);
+        }
+
         return Response.json({ ok: true, matched: true, trial_status: newStatus });
       },
     },

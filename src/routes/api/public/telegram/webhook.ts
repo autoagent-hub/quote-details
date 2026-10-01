@@ -50,29 +50,70 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           return Response.json({ ok: false }, { status: 503 });
         }
 
-        // Handle /stats command for administrator
+        // Handle /stats command with strict authorization
         if (/^\/(?:stats|metrics)(?:[@\w]*)?$/i.test(text)) {
-          const { count: totalDetailers } = await admin
+          const adminChatId = process.env["ADMIN_TELEGRAM_CHAT_ID"];
+          const isMasterAdmin = !!adminChatId && chatId === adminChatId;
+
+          const { data: detailerProfile } = await admin
             .from("profiles")
-            .select("id", { count: "exact", head: true });
-          const { data: quotes } = await admin.from("quotes").select("estimated_price");
+            .select("id, business_name")
+            .eq("telegram_chat_id", chatId)
+            .maybeSingle();
 
-          const totalQuotes = quotes?.length || 0;
-          const pipelineValue = (quotes || []).reduce(
-            (acc, q) => acc + (Number(q.estimated_price) || 0),
-            0,
-          );
+          if (!isMasterAdmin && !detailerProfile) {
+            await send(
+              token,
+              chatId,
+              "🔒 <b>Access Denied:</b> This bot command is restricted to linked shop owners.",
+            );
+            return Response.json({ ok: true });
+          }
 
-          await send(
-            token,
-            chatId,
-            `📊 <b>Detailr Platform Overview</b>\n\n` +
-              `👥 <b>Total Detailers:</b> ${totalDetailers || 0}\n` +
-              `📋 <b>Total Quotes Generated:</b> ${totalQuotes}\n` +
-              `💰 <b>Total Pipeline Value:</b> $${Math.round(pipelineValue).toLocaleString()}\n\n` +
-              `👉 <a href="https://detailr.online/master-hq">Open Admin HQ</a>`,
-          );
-          return Response.json({ ok: true });
+          if (isMasterAdmin) {
+            const { count: totalDetailers } = await admin
+              .from("profiles")
+              .select("id", { count: "exact", head: true });
+            const { data: quotes } = await admin.from("quotes").select("estimated_price");
+
+            const totalQuotes = quotes?.length || 0;
+            const pipelineValue = (quotes || []).reduce(
+              (acc, q) => acc + (Number(q.estimated_price) || 0),
+              0,
+            );
+
+            await send(
+              token,
+              chatId,
+              `📊 <b>Detailr Platform Overview</b>\n\n` +
+                `👥 <b>Total Detailers:</b> ${totalDetailers || 0}\n` +
+                `📋 <b>Total Quotes Generated:</b> ${totalQuotes}\n` +
+                `💰 <b>Total Pipeline Value:</b> $${Math.round(pipelineValue).toLocaleString()}\n\n` +
+                `👉 <a href="https://detailr.online/master-hq">Open Admin HQ</a>`,
+            );
+            return Response.json({ ok: true });
+          } else if (detailerProfile) {
+            const { data: myQuotes } = await admin
+              .from("quotes")
+              .select("estimated_price")
+              .eq("detailer_id", detailerProfile.id);
+
+            const totalQuotes = myQuotes?.length || 0;
+            const pipelineValue = (myQuotes || []).reduce(
+              (acc, q) => acc + (Number(q.estimated_price) || 0),
+              0,
+            );
+
+            await send(
+              token,
+              chatId,
+              `📊 <b>${detailerProfile.business_name || "Shop"} Overview</b>\n\n` +
+                `📋 <b>Total Quotes Received:</b> ${totalQuotes}\n` +
+                `💰 <b>Total Pipeline Value:</b> $${Math.round(pipelineValue).toLocaleString()}\n\n` +
+                `👉 <a href="https://detailr.online/dashboard/quotes">View Quotes</a>`,
+            );
+            return Response.json({ ok: true });
+          }
         }
 
         const match = /^\/start(?:[@\w]*)?(?:\s+(\S+))?$/.exec(text);
@@ -93,10 +134,27 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
 
         // 0. Check if this is a Quote Lookup request (/start quote_c03f9e21 or /start q_c03f9e21)
         if (code.startsWith("quote_") || code.startsWith("q_")) {
+          // Security Check: Verify that the requesting Telegram chat belongs to a registered detailer
+          const { data: detailerProfile } = await admin
+            .from("profiles")
+            .select("id, business_name")
+            .eq("telegram_chat_id", chatId)
+            .maybeSingle();
+
+          if (!detailerProfile) {
+            await send(
+              token,
+              chatId,
+              "🔒 <b>Access Restricted</b>\n\nThis Telegram account is not linked to any registered shop on Detailr.\n\nTo view shop quotes, please link your Telegram bot from your shop dashboard first.",
+            );
+            return Response.json({ ok: true });
+          }
+
           const rawId = code
             .replace(/^(quote_|q_)/i, "")
             .toLowerCase()
             .trim();
+
           let q: {
             id: string;
             customer_name: string;
@@ -108,15 +166,24 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
             estimated_price: number;
             created_at: string;
             notes?: string | null;
+            photo_urls?: string[] | null;
           } | null = null;
 
           if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)) {
-            const { data } = await admin.from("quotes").select("*").eq("id", rawId).maybeSingle();
+            // Strictly scoped to the authenticated detailer's shop
+            const { data } = await admin
+              .from("quotes")
+              .select("*")
+              .eq("id", rawId)
+              .eq("detailer_id", detailerProfile.id)
+              .maybeSingle();
             q = data;
           } else {
+            // Strictly scoped to the authenticated detailer's shop
             const { data: list } = await admin
               .from("quotes")
               .select("*")
+              .eq("detailer_id", detailerProfile.id)
               .order("created_at", { ascending: false })
               .limit(100);
 
@@ -129,6 +196,15 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
                   return cleanUuid.startsWith(rawId) || noHyphens.startsWith(rawId);
                 }) || null;
             }
+          }
+
+          if (!q) {
+            await send(
+              token,
+              chatId,
+              "⚠️ <b>Quote Not Found</b>\n\nNo quote matching that reference was found for your shop. Quotes belonging to other shops cannot be accessed.",
+            );
+            return Response.json({ ok: true });
           }
 
           const escStr = (str: string) =>

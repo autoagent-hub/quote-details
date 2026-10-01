@@ -128,17 +128,13 @@ export const getTrialState = createServerFn({ method: "GET" })
       };
     }
 
-    // 1. Anti-Cheat: Validate SUBSCRIBED status against whop_membership_id
-    // Only genuine Whop webhooks with verified HMAC signatures or admin overrides can attach a whop_membership_id
-    const hasValidMembership =
-      !!profile.whop_membership_id &&
-      typeof profile.whop_membership_id === "string" &&
-      (profile.whop_membership_id.startsWith("mem_") ||
-        profile.whop_membership_id.startsWith("pay_"));
+    // 1. Anti-Cheat: Validate ADMIN claims
+    const MASTER_ADMIN_ID = "3c7f1a25-615e-4cfc-9c23-a049bafe9337";
+    const isMasterAdmin = context.userId === MASTER_ADMIN_ID;
 
-    if (rawStatus === "SUBSCRIBED" && !hasValidMembership) {
+    if (rawStatus === "ADMIN" && !isMasterAdmin) {
       console.warn(
-        `[anti-cheat] Profile ${context.userId} marked SUBSCRIBED without authentic Whop membership. Reverting to TRIAL_PENDING.`,
+        `[anti-cheat] User ${context.userId} attempted to spoof ADMIN status. Reverting.`,
       );
       await client
         .from("profiles")
@@ -147,11 +143,35 @@ export const getTrialState = createServerFn({ method: "GET" })
       rawStatus = "TRIAL_PENDING";
     }
 
-    const isSubscribed =
-      (rawStatus === "SUBSCRIBED" || rawStatus === "ADMIN") &&
-      (hasValidMembership || rawStatus === "ADMIN");
+    // 2. Anti-Cheat: Validate SUBSCRIBED status against cryptographic server metadata
+    let hasAuthenticWhopSubscription = false;
+    if (admin) {
+      const { data: authUser } = await admin.auth.admin.getUserById(context.userId);
+      const meta = authUser?.user?.user_metadata || {};
+      const isWhopVerified = meta["whop_verified"] === true;
+      const isAdminGrantedPro = meta["admin_granted_pro"] === true;
+      const isMembershipMatch =
+        !!profile.whop_membership_id &&
+        (profile.whop_membership_id === meta["whop_membership_id"] || isAdminGrantedPro);
 
-    // 2. Check if trial is pending first customer visit
+      hasAuthenticWhopSubscription = (isWhopVerified && isMembershipMatch) || isAdminGrantedPro;
+    }
+
+    if (rawStatus === "SUBSCRIBED" && !hasAuthenticWhopSubscription && !isMasterAdmin) {
+      console.warn(
+        `[anti-cheat] Profile ${context.userId} claimed SUBSCRIBED without verified Whop webhook or admin grant. Reverting to TRIAL_PENDING.`,
+      );
+      await client
+        .from("profiles")
+        .update({ trial_status: "TRIAL_PENDING", whop_membership_id: null })
+        .eq("id", context.userId);
+      rawStatus = "TRIAL_PENDING";
+    }
+
+    const isSubscribed =
+      isMasterAdmin || (rawStatus === "SUBSCRIBED" && hasAuthenticWhopSubscription);
+
+    // 3. Check if trial is pending first customer visit
     const isPendingFirstVisit =
       !isSubscribed &&
       (rawStatus === "TRIAL_PENDING" || (!profile.trial_expiry && rawStatus !== "TRIAL"));
@@ -171,8 +191,24 @@ export const getTrialState = createServerFn({ method: "GET" })
       };
     }
 
-    // 3. Active trial validation
-    const expiresAt = profile.trial_expiry ?? null;
+    // 4. Active trial validation with expiry clamping against script tampering
+    let expiresAt = profile.trial_expiry ?? null;
+    if (!isSubscribed && expiresAt) {
+      const expiryMs = new Date(expiresAt).getTime();
+      const maxAllowedExpiry = now + 14 * 24 * 60 * 60 * 1000;
+      if (expiryMs > maxAllowedExpiry) {
+        console.warn(
+          `[anti-cheat] Profile ${context.userId} had artificially inflated trial_expiry. Clamping.`,
+        );
+        const correctedExpiry = new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString();
+        await client
+          .from("profiles")
+          .update({ trial_expiry: correctedExpiry })
+          .eq("id", context.userId);
+        expiresAt = correctedExpiry;
+      }
+    }
+
     const expired = !isSubscribed && !!expiresAt && new Date(expiresAt).getTime() < now;
     const daysLeft =
       !isSubscribed && expiresAt

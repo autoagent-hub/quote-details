@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getAdminClient } from "@/lib/admin.server";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeText, sanitizePhone, sanitizeStringArray } from "@/lib/sanitize";
 
 export type PublicQuoteInput = {
   detailerId: string;
@@ -24,23 +25,44 @@ export const submitPublicQuote = createServerFn({ method: "POST" })
     const admin = getAdminClient();
     const db = admin ?? supabase;
 
+    // Security check: Validate detailerId is a valid UUID
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.detailerId)) {
+      throw new Error("Invalid shop identifier.");
+    }
+
+    // Sanitize all inputs to strip HTML and script tags
+    const cleanCustomerName = sanitizeText(data.customerName, 100);
+    const cleanCustomerPhone = sanitizePhone(data.customerPhone, 30);
+    const cleanVehicleDesc = sanitizeText(data.vehicleDesc, 150);
+    const cleanServiceLabel = sanitizeText(data.serviceLabel, 100);
+    const cleanServiceKey = sanitizeText(data.serviceKey, 50);
+    const cleanNotes = sanitizeText(data.notes, 1500);
+    const cleanAddons = sanitizeStringArray(data.addons, 15, 60);
+
+    if (!cleanCustomerName || cleanCustomerName.length < 2) {
+      throw new Error("Customer name is required.");
+    }
+    if (!cleanCustomerPhone || cleanCustomerPhone.length < 5) {
+      throw new Error("Valid customer phone number is required.");
+    }
+
     // 1. Insert quote record securely on server
     const { data: newQuote, error: insertError } = await db
       .from("quotes")
       .insert({
         detailer_id: data.detailerId,
-        customer_name: data.customerName.trim(),
-        customer_phone: data.customerPhone.trim(),
-        vehicle_type: data.vehicleType,
-        vehicle_desc: data.vehicleDesc.trim(),
-        service_key: data.serviceKey,
-        service_label: data.serviceLabel,
-        service_price: data.servicePrice,
-        addons: data.addons,
-        notes: data.notes.trim(),
+        customer_name: cleanCustomerName,
+        customer_phone: cleanCustomerPhone,
+        vehicle_type: sanitizeText(data.vehicleType, 50),
+        vehicle_desc: cleanVehicleDesc,
+        service_key: cleanServiceKey,
+        service_label: cleanServiceLabel,
+        service_price: Math.max(0, Number(data.servicePrice) || 0),
+        addons: cleanAddons,
+        notes: cleanNotes,
         photo_urls: [],
-        currency: data.currency,
-        estimated_price: data.estimatedPrice,
+        currency: sanitizeText(data.currency, 10) || "USD",
+        estimated_price: Math.max(0, Number(data.estimatedPrice) || 0),
         is_test: !!data.isTest,
       })
       .select("id")

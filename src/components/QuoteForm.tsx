@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, composePhone, defaultCountryForCurrency } from "@/lib/countries";
+import { sanitizeText, sanitizePhone } from "@/lib/sanitize";
 import { sendQuoteAlert } from "@/lib/telegram.functions";
 
 import {
@@ -198,19 +199,24 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
       // Process photos in memory for Telegram transmission without storing in database/bucket
       const photosBase64 = photos.length ? await prepareBase64Photos() : [];
 
+      const cleanName = sanitizeText(name, 100);
+      const cleanPhone = sanitizePhone(fullPhone, 30);
+      const cleanDesc = sanitizeText(vehicleDesc, 150);
+      const cleanNotes = sanitizeText(notes, 1500);
+
       const { data: newQuote, error } = await supabase
         .from("quotes")
         .insert({
           detailer_id: profile.id,
-          customer_name: name.trim(),
-          customer_phone: fullPhone,
+          customer_name: cleanName,
+          customer_phone: cleanPhone,
           vehicle_type: categoryKey!,
-          vehicle_desc: vehicleDesc.trim(),
+          vehicle_desc: cleanDesc,
           service_key: chosenPackage.key,
           service_label: chosenPackage.label,
           service_price: quote.servicePrice,
           addons,
-          notes: notes.trim(),
+          notes: cleanNotes,
           photo_urls: [], // Zero photos saved in database/storage
           currency,
           estimated_price: quote.total,
@@ -226,10 +232,10 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
         data: {
           quoteId: newQuote?.id,
           detailerId: profile.id,
-          customerName: name.trim(),
-          customerPhone: fullPhone,
-          vehicle: vehicleDesc.trim()
-            ? `${vehicleDesc.trim()} (${chosenCategory?.label ?? ""})`
+          customerName: cleanName,
+          customerPhone: cleanPhone,
+          vehicle: cleanDesc
+            ? `${cleanDesc} (${chosenCategory?.label ?? ""})`
             : (chosenCategory?.label ?? ""),
           service: { label: chosenPackage.label, price: quote.servicePrice },
           addons: addons.map((key) => {
@@ -237,7 +243,7 @@ export function QuoteForm({ profile, isTest = false }: QuoteFormProps) {
             return { label: found?.label ?? key, price: Number(found?.price) || 0 };
           }),
           estimate: quote.total,
-          notes: notes.trim(),
+          notes: cleanNotes,
           photosBase64,
           isTest: !!isTest,
         },

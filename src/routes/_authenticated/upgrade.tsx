@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { supabase } from "@/integrations/supabase/client";
-import { getUpgradeCheckout } from "@/lib/billing.functions";
+import { getUpgradeCheckout, getTrialState } from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
   ssr: false,
@@ -75,6 +75,12 @@ const statusCopy: Record<string, { label: string; note: string }> = {
 function Upgrade() {
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("yearly");
   const fetchCheckout = useServerFn(getUpgradeCheckout);
+  const fetchTrial = useServerFn(getTrialState);
+
+  const { data: trial } = useQuery({
+    queryKey: ["trial-state"],
+    queryFn: () => fetchTrial(),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["upgrade-account"],
@@ -100,12 +106,12 @@ function Upgrade() {
     queryFn: () => fetchCheckout(),
   });
 
-  const status = data?.status ?? "TRIAL";
+  const subscribed = !!trial?.isSubscribed;
+  const status = subscribed ? "SUBSCRIBED" : (data?.status ?? "TRIAL");
   const copy = statusCopy[status] ?? {
     label: "Free trial",
     note: "You're currently on trial. Pick a plan to lock in uninterrupted access.",
   };
-  const subscribed = status === "SUBSCRIBED";
 
   const monthlyHref = checkout?.monthlyHref || "https://whop.com/checkout/plan_IrzVc4vCnCiQ1";
   const yearlyHref = checkout?.yearlyHref || "https://whop.com/checkout/plan_Gmhnwjw8YVRyQ";
