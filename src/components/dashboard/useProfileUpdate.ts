@@ -20,6 +20,17 @@ export function useProfileUpdate(onDone: string) {
       void queryClient.invalidateQueries({ queryKey: ["profile"] });
       void queryClient.invalidateQueries({ queryKey: ["trial-state"] });
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => {
+      if (
+        error.message?.includes("profiles_slug_key") ||
+        error.message?.includes("duplicate key")
+      ) {
+        toast.error(
+          "This URL slug is already taken by another shop. Please select an available alternative.",
+        );
+      } else {
+        toast.error(error.message);
+      }
+    },
   });
 }

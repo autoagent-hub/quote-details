@@ -1,38 +1,12 @@
-import { supabase } from "@/integrations/supabase/client";
+import { getAdminClient } from "@/lib/admin.server";
 import { slugify } from "@/lib/pricing";
-
-export const RESERVED_SLUGS = new Set([
-  "admin",
-  "auth",
-  "login",
-  "signup",
-  "dashboard",
-  "quotes",
-  "pricing",
-  "notifications",
-  "profile",
-  "settings",
-  "help",
-  "master-hq",
-  "api",
-  "demo",
-  "upgrade",
-]);
-
-export type SlugValidationResult = {
-  cleanSlug: string;
-  isValid: boolean;
-  isTaken: boolean;
-  isReserved: boolean;
-  isCurrentOwner: boolean;
-  suggestions: string[];
-  message: string | null;
-};
+import { RESERVED_SLUGS, type SlugValidationResult } from "@/lib/slug-validator";
 
 /**
- * Checks if a slug is taken and finds available alternative suggestions.
+ * Server-side check that bypasses Supabase RLS using the service role client
+ * to verify if a slug is taken across ALL shop profiles in the database.
  */
-export async function checkSlugAvailability(
+export async function checkSlugAvailabilityOnServer(
   inputSlug: string,
   currentUserId?: string | null,
 ): Promise<SlugValidationResult> {
@@ -50,9 +24,9 @@ export async function checkSlugAvailability(
     };
   }
 
-  // 1. Check reserved system slugs
+  // 1. Check system reserved slugs
   if (RESERVED_SLUGS.has(cleanSlug)) {
-    const suggestions = await findAvailableAlternatives(cleanSlug, currentUserId);
+    const suggestions = await findAvailableAlternativesServer(cleanSlug, currentUserId);
     return {
       cleanSlug,
       isValid: false,
@@ -64,35 +38,30 @@ export async function checkSlugAvailability(
     };
   }
 
-  // 2. Query the server endpoint which bypasses Supabase RLS and checks ALL shop profiles
-  if (typeof window !== "undefined") {
-    try {
-      const params = new URLSearchParams({ slug: cleanSlug });
-      if (currentUserId) params.set("userId", currentUserId);
-
-      const response = await fetch(`/api/public/check-slug?${params.toString()}`);
-      if (response.ok) {
-        const result = (await response.json()) as SlugValidationResult;
-        return result;
-      }
-    } catch (apiErr) {
-      console.warn(
-        "[checkSlugAvailability] Server API fetch failed, falling back to client query:",
-        apiErr,
-      );
-    }
+  // 2. Query all profiles via admin client (bypasses RLS)
+  const admin = getAdminClient();
+  if (!admin) {
+    console.warn("[checkSlugAvailabilityOnServer] Admin client unavailable");
+    return {
+      cleanSlug,
+      isValid: true,
+      isTaken: false,
+      isReserved: false,
+      isCurrentOwner: false,
+      suggestions: [],
+      message: null,
+    };
   }
 
-  // 3. Fallback client-side query (e.g. if completely offline)
   try {
-    const { data: existingProfile, error } = await supabase
+    const { data: existingProfile, error } = await admin
       .from("profiles")
       .select("id, slug")
       .eq("slug", cleanSlug)
       .maybeSingle();
 
     if (error) {
-      console.warn("[checkSlugAvailability] Supabase select error:", error);
+      console.error("[checkSlugAvailabilityOnServer] Database query error:", error);
     }
 
     if (existingProfile) {
@@ -108,7 +77,7 @@ export async function checkSlugAvailability(
           message: null,
         };
       } else {
-        const suggestions = await findAvailableAlternatives(cleanSlug, currentUserId);
+        const suggestions = await findAvailableAlternativesServer(cleanSlug, currentUserId);
         return {
           cleanSlug,
           isValid: false,
@@ -121,7 +90,6 @@ export async function checkSlugAvailability(
       }
     }
 
-    // 3. Not taken
     return {
       cleanSlug,
       isValid: true,
@@ -132,7 +100,7 @@ export async function checkSlugAvailability(
       message: null,
     };
   } catch (err) {
-    console.warn("[checkSlugAvailability] exception:", err);
+    console.error("[checkSlugAvailabilityOnServer] Exception:", err);
     return {
       cleanSlug,
       isValid: true,
@@ -146,16 +114,18 @@ export async function checkSlugAvailability(
 }
 
 /**
- * Generates 2-3 available alternative suggestions for a taken slug.
+ * Generates verified available alternative suggestions using the admin client.
  */
-export async function findAvailableAlternatives(
+export async function findAvailableAlternativesServer(
   baseSlug: string,
   currentUserId?: string | null,
 ): Promise<string[]> {
+  const admin = getAdminClient();
   const candidates = [
     `${baseSlug}-detailing`,
     `${baseSlug}-auto`,
     `${baseSlug}-mobile`,
+    `${baseSlug}-pro`,
     `${baseSlug}-hq`,
     `${baseSlug}-official`,
     `${baseSlug}-1`,
@@ -168,7 +138,12 @@ export async function findAvailableAlternatives(
     const cleanCandidate = slugify(candidate);
     if (!cleanCandidate || RESERVED_SLUGS.has(cleanCandidate)) continue;
 
-    const { data } = await supabase
+    if (!admin) {
+      results.push(cleanCandidate);
+      continue;
+    }
+
+    const { data } = await admin
       .from("profiles")
       .select("id")
       .eq("slug", cleanCandidate)

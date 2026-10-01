@@ -154,6 +154,21 @@ Host: https://detailr.online
       }
 
       if (url.pathname.startsWith("/api/")) {
+        // Fast-path for real-time slug availability check
+        if (url.pathname === "/api/public/check-slug") {
+          const { checkSlugAvailabilityOnServer } = await import("@/lib/slug-validator.server");
+          const slug = url.searchParams.get("slug") || "";
+          const userId = url.searchParams.get("userId") || null;
+          const result = await checkSlugAvailabilityOnServer(slug, userId);
+          return new Response(JSON.stringify(result), {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-store, max-age=0",
+            },
+          });
+        }
+
         const clientIp = request.headers.get("x-forwarded-for") ?? "127.0.0.1";
         const { allowed } = checkRateLimit(clientIp);
         if (!allowed) {
