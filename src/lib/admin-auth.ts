@@ -1,6 +1,6 @@
 // Admin authorization helper
 
-export const ADMIN_EMAILS = ["me@detailr.online", "ayinlasalami6@gmail.com"];
+export const ADMIN_EMAILS = ["support@detailr.online", "teamnerochaze@gmail.com"];
 
 export function isAdminEmail(email?: string | null): boolean {
   if (!email) return false;

@@ -79,14 +79,14 @@ function SupportPage() {
                   <Mail className="size-4 text-primary shrink-0" />
                   <div>
                     <p className="font-bold text-foreground">Developer Support Email</p>
-                    <p className="text-muted-foreground">me@detailr.online</p>
+                    <p className="text-muted-foreground">support@detailr.online</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-surface p-3 border border-border/80">
                   <Mail className="size-4 text-primary shrink-0" />
                   <div>
                     <p className="font-bold text-foreground">Backup Support</p>
-                    <p className="text-muted-foreground">ayinlasalami6@gmail.com</p>
+                    <p className="text-muted-foreground">teamnerochaze@gmail.com</p>
                   </div>
                 </div>
               </div>

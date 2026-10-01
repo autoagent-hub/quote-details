@@ -4,7 +4,7 @@ import { sendWeeklySummaryToDetailer } from "@/lib/weekly-summary.functions";
 import { sendAdminTelegramAlert } from "@/lib/admin-telegram.functions";
 import { logAdminAction } from "@/lib/audit-logger.server";
 
-const ADMIN_EMAIL = "me@detailr.online";
+const ADMIN_EMAIL = "support@detailr.online";
 
 export interface AdminDetailerSummary {
   id: string;
@@ -52,7 +52,7 @@ export interface AdminMetrics {
 }
 
 /**
- * Helper to verify that the request comes from the admin user me@detailr.online
+ * Helper to verify that the request comes from the admin user support@detailr.online
  */
 async function verifyAdminCaller(adminEmailOrId?: string): Promise<boolean> {
   // If explicitly passed or verified

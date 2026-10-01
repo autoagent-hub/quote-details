@@ -122,17 +122,25 @@ export const prepareTelegramLink = createServerFn({ method: "POST" })
     };
   });
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  NGN: "₦",
+  GBP: "£",
+  EUR: "€",
+  CAD: "$",
+  AUD: "$",
+  ZAR: "R",
+  INR: "₹",
+  KES: "KSh ",
+  GHS: "GH₵ ",
+};
+
 function fmt(value: number, currency: string): string {
   const amount = Math.round(Number(value) || 0);
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `$${amount}`;
-  }
+  const code = (currency || "USD").toUpperCase();
+  const symbol = CURRENCY_SYMBOLS[code] || `${code} `;
+  const formattedAmount = amount.toLocaleString("en-US");
+  return `${symbol}${formattedAmount}`;
 }
 
 function esc(text: string): string {

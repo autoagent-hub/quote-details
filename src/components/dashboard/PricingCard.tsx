@@ -303,17 +303,18 @@ function EditableRows<F extends string, T extends BaseRow & Record<F, number>>({
                   }
                 />
               </div>
-              {!(lockedKeys || []).includes(s.key) && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5 transition-colors opacity-0 group-hover:opacity-100"
-                  aria-label={`Remove ${s.label}`}
-                  onClick={() => onChange(items.filter((_, idx) => idx !== i))}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg text-destructive/70 hover:text-destructive hover:bg-destructive/10 bg-destructive/5 sm:bg-transparent transition-colors shrink-0"
+                aria-label={`Remove ${s.label}`}
+                onClick={() => {
+                  onChange(items.filter((_, idx) => idx !== i));
+                  toast.success(`Removed "${s.label || "pricing item"}" from list`);
+                }}
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
             </div>
           </motion.div>
         ))}
