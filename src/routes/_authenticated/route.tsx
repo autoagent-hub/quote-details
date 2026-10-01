@@ -9,7 +9,32 @@ import { getTrialState } from "@/lib/billing.functions";
 import { TrialExpiredLock } from "@/components/dashboard/TrialExpiredLock";
 import { ensureGoogleUserOnboarded } from "@/lib/auth-codes.functions";
 
+function isModuleImportError(error?: Error | null): boolean {
+  if (!error?.message) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes("importing a module script failed") ||
+    msg.includes("failed to fetch dynamically imported module") ||
+    msg.includes("error loading dynamically imported module") ||
+    msg.includes("loading chunk") ||
+    msg.includes("dynamically imported module")
+  );
+}
+
 function AuthenticatedErrorComponent({ error, reset }: { error: Error | null; reset: () => void }) {
+  const isChunkError = isModuleImportError(error);
+
+  const handleReload = () => {
+    if (typeof window !== "undefined") {
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: "CLEAR_ALL_CACHES" });
+      }
+      window.location.href = window.location.pathname + "?_v=" + Date.now();
+      return;
+    }
+    reset();
+  };
+
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background px-4 py-12">
       <div className="max-w-md text-center rounded-2xl border border-border bg-card p-8 shadow-xl shadow-black/5">
@@ -17,23 +42,24 @@ function AuthenticatedErrorComponent({ error, reset }: { error: Error | null; re
           <QuoteFlowLogo size="lg" linkToHome />
         </div>
         <h2 className="text-xl font-bold tracking-tight text-foreground">
-          Dashboard Error Encountered
+          {isChunkError ? "Dashboard Update Available" : "Dashboard Error Encountered"}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          An unexpected error occurred while loading your dashboard or data. Please try again or
-          return to the main view.
+          {isChunkError
+            ? "A newer version of the Detailr application was deployed. Please reload your dashboard to load the newest components."
+            : "An unexpected error occurred while loading your dashboard or data. Please try again or return to the main view."}
         </p>
-        {error?.message && (
+        {error?.message && !isChunkError && (
           <div className="mt-4 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-left">
             <p className="font-mono text-xs text-destructive break-all">{error.message}</p>
           </div>
         )}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <button
-            onClick={() => reset()}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:brightness-105 transition-all"
+            onClick={handleReload}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:brightness-105 transition-all"
           >
-            <RefreshCw className="size-4" /> Try Again
+            <RefreshCw className="size-4" /> {isChunkError ? "Reload Dashboard" : "Try Again"}
           </button>
           <a
             href="/dashboard"

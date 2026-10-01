@@ -15,6 +15,19 @@ interface State {
   error: Error | null;
 }
 
+function isChunkLoadError(error?: Error | null): boolean {
+  if (!error?.message) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes("importing a module script failed") ||
+    msg.includes("failed to fetch dynamically imported module") ||
+    msg.includes("error loading dynamically imported module") ||
+    msg.includes("loading chunk") ||
+    msg.includes("loading css chunk") ||
+    msg.includes("dynamically imported module")
+  );
+}
+
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
@@ -31,6 +44,21 @@ export class ErrorBoundary extends Component<Props, State> {
       error,
       errorInfo,
     );
+
+    // If dynamic chunk loading failed due to a new deployment, auto-reload once to fetch fresh assets
+    if (isChunkLoadError(error) && typeof window !== "undefined") {
+      const lastReload = sessionStorage.getItem("detailr_chunk_auto_reload");
+      const now = Date.now();
+      if (!lastReload || now - Number(lastReload) > 15000) {
+        sessionStorage.setItem("detailr_chunk_auto_reload", String(now));
+        if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: "CLEAR_ALL_CACHES" });
+        }
+        window.location.reload();
+        return;
+      }
+    }
+
     try {
       reportLovableError(error, {
         boundary: this.props.boundaryName || "react_error_boundary",
@@ -43,6 +71,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleReset = () => {
+    if (isChunkLoadError(this.state.error) && typeof window !== "undefined") {
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: "CLEAR_ALL_CACHES" });
+      }
+      window.location.href = window.location.pathname + "?_v=" + Date.now();
+      return;
+    }
     this.setState({ hasError: false, error: null });
   };
 
@@ -55,6 +90,8 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const isChunkError = isChunkLoadError(this.state.error);
+
       return (
         <div className="flex min-h-[50vh] w-full items-center justify-center bg-background px-4 py-12">
           <div className="max-w-md text-center rounded-2xl border border-border bg-card p-8 shadow-xl shadow-black/5">
@@ -62,13 +99,14 @@ export class ErrorBoundary extends Component<Props, State> {
               <QuoteFlowLogo size="lg" linkToHome />
             </div>
             <h2 className="text-xl font-bold tracking-tight text-foreground">
-              Something went wrong in this section
+              {isChunkError ? "Dashboard Update Available" : "Something went wrong in this section"}
             </h2>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              An unexpected state error occurred. You can try refreshing this view or reloading the
-              page.
+              {isChunkError
+                ? "A new version of the Detailr application was deployed. Please reload the dashboard to load the latest components."
+                : "An unexpected state error occurred. You can try refreshing this view or reloading the page."}
             </p>
-            {this.state.error?.message && (
+            {this.state.error?.message && !isChunkError && (
               <div className="mt-4 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-left">
                 <p className="font-mono text-xs text-destructive break-all">
                   {this.state.error.message}
@@ -78,9 +116,9 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <button
                 onClick={this.handleReset}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:brightness-105 transition-all"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:brightness-105 transition-all"
               >
-                <RefreshCw className="size-4" /> Try Again
+                <RefreshCw className="size-4" /> {isChunkError ? "Reload Dashboard" : "Try Again"}
               </button>
               <a
                 href="/dashboard"

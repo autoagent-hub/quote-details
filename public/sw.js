@@ -1,5 +1,5 @@
-const CACHE_NAME = "detailr-assets-v1";
-const API_CACHE_NAME = "detailr-api-v1";
+const CACHE_NAME = "detailr-assets-v3";
+const API_CACHE_NAME = "detailr-api-v2";
 
 const PRECACHE_URLS = [
   "/",
@@ -10,22 +10,19 @@ const PRECACHE_URLS = [
   "/keywords.txt",
 ];
 
-// Install event - precache core assets
+// Install event - precache core assets and skip waiting immediately
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => {
-        console.log("[ServiceWorker] Precaching core app assets");
-        return cache.addAll(PRECACHE_URLS).catch((err) => {
-          console.warn("[ServiceWorker] Precache partial error:", err);
-        });
-      })
-      .then(() => self.skipWaiting()),
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(PRECACHE_URLS).catch((err) => {
+        console.warn("[ServiceWorker] Precache partial error:", err);
+      });
+    }),
   );
 });
 
-// Activate event - clean up legacy caches
+// Activate event - clean up all legacy caches and claim clients immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -34,7 +31,7 @@ self.addEventListener("activate", (event) => {
         return Promise.all(
           cacheNames.map((cache) => {
             if (cache !== CACHE_NAME && cache !== API_CACHE_NAME) {
-              console.log("[ServiceWorker] Deleting old cache:", cache);
+              console.log("[ServiceWorker] Purging stale cache:", cache);
               return caches.delete(cache);
             }
           }),
@@ -42,6 +39,16 @@ self.addEventListener("activate", (event) => {
       })
       .then(() => self.clients.claim()),
   );
+});
+
+// Allow client pages to trigger immediate update or cache purge
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+  if (event.data?.type === "CLEAR_ALL_CACHES") {
+    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))));
+  }
 });
 
 // Fetch event handler
@@ -53,7 +60,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Handle document navigations (HTML pages like /, /$business_slug, /demo)
+  // Handle document navigations (HTML pages like /, /$business_slug, /demo, /dashboard)
+  // Always Network-First so newly published chunk hashes are immediately received
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
@@ -67,10 +75,8 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch(async () => {
-          console.log("[ServiceWorker] Network offline, serving cached page or root fallback");
           const cachedResponse = await caches.match(event.request);
           if (cachedResponse) return cachedResponse;
-          // Fallback to cached root or demo page so quote form functions offline
           const fallback = (await caches.match("/")) || (await caches.match("/demo"));
           return (
             fallback ||
@@ -84,7 +90,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Handle Supabase API calls (e.g. fetching detailer pricing / business profiles)
+  // Handle Supabase API calls
   if (url.hostname.includes("supabase") || url.pathname.includes("/rest/v1/")) {
     event.respondWith(
       fetch(event.request)
@@ -98,10 +104,6 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch(async () => {
-          console.log(
-            "[ServiceWorker] API request offline, checking API cache for:",
-            event.request.url,
-          );
           const cachedApiResponse = await caches.match(event.request);
           if (cachedApiResponse) return cachedApiResponse;
           return new Response(JSON.stringify({ offline: true, error: "Network unavailable" }), {
@@ -114,9 +116,17 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Handle static assets (scripts, styles, images, fonts)
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request)
+  // CRITICAL: Use Network-First for JS and CSS module scripts so version updates never fail with "Importing a module script failed"
+  const isScriptOrStyle =
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".mjs") ||
+    url.pathname.endsWith(".css") ||
+    url.pathname.includes("/_build/") ||
+    url.pathname.includes("/assets/");
+
+  if (isScriptOrStyle) {
+    event.respondWith(
+      fetch(event.request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const responseToCache = networkResponse.clone();
@@ -126,9 +136,29 @@ self.addEventListener("fetch", (event) => {
           }
           return networkResponse;
         })
-        .catch(() => cachedResponse);
+        .catch(async () => {
+          // If offline, attempt to serve cached version
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          throw new Error(`Offline and asset not cached: ${event.request.url}`);
+        }),
+    );
+    return;
+  }
 
-      return cachedResponse || fetchPromise;
+  // For images and other static assets, cache-first is acceptable
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) return cachedResponse;
+      return fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      });
     }),
   );
 });

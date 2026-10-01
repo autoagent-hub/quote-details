@@ -461,10 +461,39 @@ function RootComponent() {
       });
     };
 
+    const handlePreloadError = () => {
+      const lastReload = sessionStorage.getItem("detailr_preload_reload");
+      const now = Date.now();
+      if (!lastReload || now - Number(lastReload) > 15000) {
+        sessionStorage.setItem("detailr_preload_reload", String(now));
+        window.location.reload();
+      }
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason?.message || String(event.reason || "");
+      if (
+        reason.includes("Importing a module script failed") ||
+        reason.includes("Failed to fetch dynamically imported module") ||
+        reason.includes("error loading dynamically imported module")
+      ) {
+        const lastReload = sessionStorage.getItem("detailr_preload_reload");
+        const now = Date.now();
+        if (!lastReload || now - Number(lastReload) > 15000) {
+          sessionStorage.setItem("detailr_preload_reload", String(now));
+          window.location.reload();
+        }
+      }
+    };
+
+    window.addEventListener("vite:preloadError", handlePreloadError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
     return () => {
+      window.removeEventListener("vite:preloadError", handlePreloadError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
