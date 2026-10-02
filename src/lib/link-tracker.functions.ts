@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getAdminClient } from "@/lib/admin.server";
+import { verifyServerSubscriptionAccess } from "@/lib/subscription-guard.server";
 
 export interface LinkVisitResult {
   ok: boolean;
@@ -12,7 +13,7 @@ export interface LinkVisitResult {
 /**
  * Server function invoked when a visitor opens a detailer's public quote page (detailr.online/$slug).
  *
- * 1. Checks if the detailer is banned / suspended.
+ * 1. Checks if the detailer is banned / suspended / expired against database.
  * 2. Increments the detailer's link view counter.
  * 3. Starts the 7-day free trial IF this is the first customer visit (trial_status === 'TRIAL_PENDING').
  */
@@ -35,23 +36,15 @@ export const recordPublicLinkVisit = createServerFn({ method: "POST" })
         return { ok: false, isSuspended: false };
       }
 
-      // 1. Check if user is suspended, banned, or 7-day trial has expired
-      const isSubscribed =
-        profile.trial_status === "SUBSCRIBED" || profile.trial_status === "ADMIN";
-      const isTrialExpired =
-        !isSubscribed &&
-        !!profile.trial_expiry &&
-        new Date(profile.trial_expiry).getTime() < Date.now();
+      // 1. Check if user is suspended, banned, or 7-day trial has expired against database
+      const subAccess = await verifyServerSubscriptionAccess(profile.id);
 
-      if (
-        profile.trial_status === "SUSPENDED" ||
-        profile.trial_status === "BANNED" ||
-        isTrialExpired
-      ) {
+      if (!subAccess.hasAccess) {
         return {
           ok: true,
           isSuspended: true,
           suspensionReason:
+            subAccess.reason ||
             "This shop quote form is currently inactive. Please contact the business directly.",
         };
       }

@@ -1,19 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { updateDetailerProfile } from "@/lib/profile.functions";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 
 export function useProfileUpdate(onDone: string) {
   const queryClient = useQueryClient();
+  const doUpdate = useServerFn(updateDetailerProfile);
+
   return useMutation({
     mutationFn: async (payload: TablesUpdate<"profiles"> & { id: string }) => {
-      const { id, ...rest } = payload;
-      // Anti-cheat: strip protected billing and subscription fields
-      delete (rest as Record<string, unknown>).trial_status;
-      delete (rest as Record<string, unknown>).trial_expiry;
-      delete (rest as Record<string, unknown>).whop_membership_id;
-      const { error } = await supabase.from("profiles").update(rest).eq("id", id);
-      if (error) throw error;
+      const { id: _id, ...rest } = payload;
+      // Executes server-side validation against database subscription status
+      await doUpdate({ data: rest });
     },
     onSuccess: () => {
       toast.success(onDone);

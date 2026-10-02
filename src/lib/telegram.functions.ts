@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createHash } from "crypto";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  requireActiveSubscription,
+  verifyServerSubscriptionAccess,
+} from "@/lib/subscription-guard.server";
 
 type AlertInput = {
   quoteId?: string;
@@ -40,7 +43,7 @@ export const getTelegramBotUsername = createServerFn({ method: "GET" }).handler(
 });
 
 export const prepareTelegramLink = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveSubscription])
   .handler(async ({ context }) => {
     const token = process.env["TELEGRAM_BOT_TOKEN"];
     if (!token) {
@@ -178,25 +181,15 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
     if (!chatId) return { sent: false, reason: "not_connected" as const };
     if (profile.notify_telegram === false) return { sent: false, reason: "muted" as const };
 
-    // Anti-cheat: Verify detailer has active access (valid Whop subscription, pending trial, or active trial)
-    const isSubscribed =
-      (profile.trial_status === "SUBSCRIBED" || profile.trial_status === "ADMIN") &&
-      (profile.trial_status === "ADMIN" ||
-        (!!profile.whop_membership_id &&
-          (profile.whop_membership_id.startsWith("mem_") ||
-            profile.whop_membership_id.startsWith("pay_"))));
+    // Server-Side Subscription Check: Validate against database
+    const subAccess = await verifyServerSubscriptionAccess(data.detailerId);
 
-    const isPendingTrial =
-      profile.trial_status === "TRIAL_PENDING" ||
-      profile.trial_status === "TRIAL" ||
-      !profile.trial_expiry;
+    if (subAccess.isSuspended) {
+      return { sent: false, reason: "account_suspended" as const };
+    }
 
-    const isTrialActive =
-      isPendingTrial ||
-      (!!profile.trial_expiry && new Date(profile.trial_expiry).getTime() > Date.now());
-
-    if (!isSubscribed && !isTrialActive && !data.isTest) {
-      // Trial expired and not subscribed: send upgrade notification instead of full quote
+    if (!subAccess.hasAccess && !data.isTest) {
+      // Trial expired and not subscribed: send upgrade notification instead of leaking full quote
       const appUrl = process.env["PUBLIC_APP_URL"] || "https://detailr.online";
       const upgradeUrl = `${appUrl.replace(/\/$/, "")}/upgrade`;
       await fetch(`${API}${token}/sendMessage`, {

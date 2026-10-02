@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveSubscription } from "@/lib/subscription-guard.server";
 import { getAdminClient } from "@/lib/admin.server";
 import { money } from "@/lib/pricing";
 import { sendWelcomeEmail } from "@/lib/welcome-email.server";
@@ -437,7 +438,7 @@ export async function getWeeklySummaryData(detailerId: string): Promise<WeeklySu
  * Server Function: Send weekly summary directly to the authenticated detailer's email.
  */
 export const sendMyWeeklySummary = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveSubscription])
   .handler(async ({ context }) => {
     const summaryData = await getWeeklySummaryData(context.userId);
     if (!summaryData) {

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getAdminClient } from "@/lib/admin.server";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeText, sanitizePhone, sanitizeStringArray } from "@/lib/sanitize";
+import { verifyServerSubscriptionAccess } from "@/lib/subscription-guard.server";
 
 export type PublicQuoteInput = {
   detailerId: string;
@@ -30,7 +31,20 @@ export const submitPublicQuote = createServerFn({ method: "POST" })
       throw new Error("Invalid shop identifier.");
     }
 
-    // Sanitize all inputs to strip HTML and script tags
+    // Server-Side Subscription Check: Validate against database
+    const subAccess = await verifyServerSubscriptionAccess(data.detailerId);
+    if (!subAccess.hasAccess && !data.isTest) {
+      throw new Error(
+        subAccess.reason ||
+          "Subscription Required: This shop's free trial has expired. Quote requests are paused until upgraded.",
+      );
+    }
+
+    if (subAccess.isSuspended) {
+      throw new Error("Access Denied: This shop is currently suspended.");
+    }
+
+    // Sanitize all inputs to strip HTML, script tags, and protect against injection
     const cleanCustomerName = sanitizeText(data.customerName, 100);
     const cleanCustomerPhone = sanitizePhone(data.customerPhone, 30);
     const cleanVehicleDesc = sanitizeText(data.vehicleDesc, 150);
@@ -73,15 +87,9 @@ export const submitPublicQuote = createServerFn({ method: "POST" })
       throw new Error(`Could not record quote: ${insertError.message}`);
     }
 
-    // 2. If detailer is in TRIAL_PENDING, automatically activate 7-day trial starting now
-    try {
-      const { data: profile } = await db
-        .from("profiles")
-        .select("trial_status, trial_expiry")
-        .eq("id", data.detailerId)
-        .maybeSingle();
-
-      if (profile && (profile.trial_status === "TRIAL_PENDING" || !profile.trial_expiry)) {
+    // 2. If detailer is in TRIAL_PENDING, activate 7-day countdown starting from this first customer submission
+    if (subAccess.isPendingFirstVisit) {
+      try {
         const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
         const expiry = new Date(Date.now() + sevenDaysMs).toISOString();
         await db
@@ -91,9 +99,9 @@ export const submitPublicQuote = createServerFn({ method: "POST" })
             trial_expiry: expiry,
           })
           .eq("id", data.detailerId);
+      } catch (e) {
+        console.warn("[submitPublicQuote] trial activation notice:", e);
       }
-    } catch (e) {
-      console.warn("[submitPublicQuote] trial activation notice:", e);
     }
 
     return { quoteId: newQuote?.id ?? null };
