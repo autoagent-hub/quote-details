@@ -249,8 +249,6 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
             ...(membershipId ? { whop_membership_id: membershipId } : {}),
             ...(newStatus === "SUBSCRIBED"
               ? {
-                  next_billing_date: nextBillingDate,
-                  subscription_started_at: new Date().toISOString(),
                   trial_expiry: nextBillingDate,
                 }
               : {}),
@@ -273,6 +271,9 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
                 whop_email: email || currentMeta["whop_email"],
                 whop_status: newStatus,
                 whop_plan_type: planType,
+                next_billing_date: nextBillingDate,
+                subscription_started_at:
+                  currentMeta["subscription_started_at"] || new Date().toISOString(),
                 whop_verified_at: new Date().toISOString(),
               },
             });

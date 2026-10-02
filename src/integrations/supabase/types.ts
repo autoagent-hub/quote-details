@@ -37,8 +37,6 @@ export type Database = {
           trial_status: string;
           trial_expiry: string;
           whop_membership_id: string | null;
-          next_billing_date: string | null;
-          subscription_started_at: string | null;
         };
         Insert: {
           addon_ceramic?: number;
@@ -68,8 +66,6 @@ export type Database = {
           trial_status?: string;
           trial_expiry?: string;
           whop_membership_id?: string | null;
-          next_billing_date?: string | null;
-          subscription_started_at?: string | null;
         };
         Update: {
           addon_ceramic?: number;
@@ -99,8 +95,6 @@ export type Database = {
           trial_status?: string;
           trial_expiry?: string;
           whop_membership_id?: string | null;
-          next_billing_date?: string | null;
-          subscription_started_at?: string | null;
         };
         Relationships: [];
       };

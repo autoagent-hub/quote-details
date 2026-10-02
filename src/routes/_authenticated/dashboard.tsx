@@ -100,7 +100,7 @@ function DashboardPage() {
       <main className="mx-auto max-w-7xl space-y-8 px-4 sm:px-8 py-8">
         {profile ? (
           <>
-            <TrialBanner />
+            <TrialBanner profile={profile} />
 
             {/* Welcome Guide */}
             <div data-tour="welcome-hero">

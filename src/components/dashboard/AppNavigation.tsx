@@ -74,8 +74,11 @@ export function AppNavigation({
     queryKey: ["trial-state"],
     queryFn: () => fetchTrial(),
   });
-  const isSubscribed = !!trial?.isSubscribed;
-  const isCancelled = !!trial?.isCancelled;
+  const isSubscribed =
+    profile?.trial_status === "SUBSCRIBED" ||
+    profile?.trial_status === "ADMIN" ||
+    !!trial?.isSubscribed;
+  const isCancelled = profile?.trial_status === "CANCELLED" || !!trial?.isCancelled;
 
   const isUserAdmin = isAdminEmail(userEmail);
 

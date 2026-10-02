@@ -15,7 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getTrialState } from "@/lib/billing.functions";
 
-export function TrialBanner() {
+export function TrialBanner({
+  profile,
+}: {
+  profile?: { trial_status?: string | null; trial_expiry?: string | null };
+} = {}) {
   const [isDismissed, setIsDismissed] = useState(() => {
     try {
       return localStorage.getItem("detailr_dismissed_pending_trial_banner") === "true";
@@ -30,21 +34,56 @@ export function TrialBanner() {
     queryFn: async () => fetchTrial(),
   });
 
-  if (isLoading || !trial) return null;
-  const {
-    status,
-    daysLeft,
-    firstVisitAt,
-    isSuspended,
-    suspensionReason,
-    isSubscribed,
-    isCancelled,
-    nextBillingDateFormatted,
-    renewalDaysLeft,
-  } = trial;
+  const isSubscribed =
+    profile?.trial_status === "SUBSCRIBED" ||
+    profile?.trial_status === "ADMIN" ||
+    !!trial?.isSubscribed;
+
+  const isCancelled = profile?.trial_status === "CANCELLED" || !!trial?.isCancelled;
+
+  const isSuspended =
+    profile?.trial_status === "SUSPENDED" ||
+    profile?.trial_status === "BANNED" ||
+    !!trial?.isSuspended;
+
+  const effectiveStatus = isSuspended
+    ? "SUSPENDED"
+    : isSubscribed
+      ? "ACTIVE"
+      : isCancelled
+        ? "CANCELLED"
+        : trial?.status ||
+          (profile?.trial_status === "TRIAL_PENDING" ? "TRIAL_PENDING" : "TRIALING");
+
+  const effectiveNextBillingDate =
+    trial?.nextBillingDateFormatted ||
+    (profile?.trial_expiry
+      ? new Date(profile.trial_expiry).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : null);
+
+  const effectiveRenewalDays =
+    trial?.renewalDaysLeft ??
+    (profile?.trial_expiry
+      ? Math.max(
+          0,
+          Math.ceil(
+            (new Date(profile.trial_expiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+          ),
+        )
+      : undefined);
+
+  if (isLoading && !profile) return null;
+
+  const daysLeft = trial?.daysLeft ?? 7;
+  const firstVisitAt = trial?.firstVisitAt ?? null;
+  const suspensionReason = trial?.suspensionReason;
 
   // 1. Account Suspended
-  if (isSuspended) {
+  if (effectiveStatus === "SUSPENDED") {
     return (
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-rose-500/30 bg-rose-500/5 backdrop-blur-sm px-5 py-3 text-xs text-rose-950 dark:text-rose-200 shadow-sm">
         <div className="flex items-center gap-3">
@@ -66,7 +105,7 @@ export function TrialBanner() {
   }
 
   // 2. SUBSCRIBED: Show PRO BADGE and Next Billing Date on Dashboard
-  if (status === "ACTIVE" || isSubscribed) {
+  if (effectiveStatus === "ACTIVE" || isSubscribed) {
     return (
       <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-teal-500/10 p-4 sm:p-5 text-xs shadow-md backdrop-blur-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -80,15 +119,16 @@ export function TrialBanner() {
                   <CheckCircle2 className="size-3" />
                   PRO MEMBER
                 </Badge>
-                {nextBillingDateFormatted && (
+                {effectiveNextBillingDate && (
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
                     <Calendar className="size-3 opacity-80" />
-                    Next billing date: <strong>{nextBillingDateFormatted}</strong>
+                    Next billing date: <strong>{effectiveNextBillingDate}</strong>
                   </span>
                 )}
-                {renewalDaysLeft !== undefined && renewalDaysLeft > 0 && (
+                {effectiveRenewalDays !== undefined && effectiveRenewalDays > 0 && (
                   <span className="text-[11px] text-muted-foreground font-medium">
-                    ({renewalDaysLeft} {renewalDaysLeft === 1 ? "day" : "days"} remaining in cycle)
+                    ({effectiveRenewalDays} {effectiveRenewalDays === 1 ? "day" : "days"} remaining
+                    in cycle)
                   </span>
                 )}
               </div>
@@ -115,7 +155,7 @@ export function TrialBanner() {
   }
 
   // 3. Subscription Cancelled
-  if (isCancelled || status === "CANCELLED") {
+  if (isCancelled || effectiveStatus === "CANCELLED") {
     return (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 backdrop-blur-sm px-5 py-3.5 text-xs text-amber-950 dark:text-amber-200 shadow-sm">
         <div className="flex items-center gap-3">
@@ -127,9 +167,9 @@ export function TrialBanner() {
               <span className="font-bold uppercase tracking-widest text-[10px] text-amber-600 opacity-90 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
                 Subscription Cancelled
               </span>
-              {nextBillingDateFormatted && (
+              {effectiveNextBillingDate && (
                 <span className="text-[11px] font-semibold">
-                  Access active until: <strong>{nextBillingDateFormatted}</strong>
+                  Access active until: <strong>{effectiveNextBillingDate}</strong>
                 </span>
               )}
             </div>
@@ -152,7 +192,7 @@ export function TrialBanner() {
   }
 
   // 4. Trial Pending First Customer Visit
-  if (status === "TRIAL_PENDING") {
+  if (effectiveStatus === "TRIAL_PENDING") {
     if (isDismissed) return null;
 
     return (
@@ -206,7 +246,7 @@ export function TrialBanner() {
   }
 
   // 5. Active Trial Countdown
-  if (status === "TRIALING") {
+  if (effectiveStatus === "TRIALING") {
     return (
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 backdrop-blur-sm px-5 py-3 text-xs text-amber-950 dark:text-amber-200 shadow-sm">
         <div className="flex items-center gap-3">

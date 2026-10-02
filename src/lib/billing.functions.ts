@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAdminClient } from "@/lib/admin.server";
+import { signCheckoutReturn, secureVerifyAndFinalizeReturn } from "@/lib/billing-security.server";
 
 const DEFAULT_CHECKOUT_URL = "https://whop.com/checkout/plan_IrzVc4vCnCiQ1";
 const DEFAULT_YEARLY_CHECKOUT_URL = "https://whop.com/checkout/plan_Gmhnwjw8YVRyQ";
@@ -68,6 +69,8 @@ export const getUpgradeCheckout = createServerFn({ method: "GET" })
         url = new URL(planType === "yearly" ? defaultYearlyUrl : defaultMonthlyUrl);
       }
 
+      const { sig, ts } = signCheckoutReturn(context.userId, planType);
+
       // Universal tracking parameters for Whop:
       url.searchParams.set("metadata[user_id]", context.userId);
       url.searchParams.set("metadata[detailer_id]", context.userId);
@@ -78,7 +81,7 @@ export const getUpgradeCheckout = createServerFn({ method: "GET" })
       url.searchParams.set("d2c", "true");
       url.searchParams.set(
         "redirect_url",
-        `${appUrl.replace(/\/$/, "")}/upgrade?checkout=success&plan=${planType}&uid=${context.userId}`,
+        `${appUrl.replace(/\/$/, "")}/billing/return?plan=${planType}&uid=${context.userId}&sig=${sig}&ts=${ts}`,
       );
 
       if (userEmail) {
@@ -108,9 +111,7 @@ export const getTrialState = createServerFn({ method: "GET" })
 
     const { data: profile } = await client
       .from("profiles")
-      .select(
-        "trial_status, trial_expiry, whop_membership_id, created_at, next_billing_date, subscription_started_at",
-      )
+      .select("trial_status, trial_expiry, whop_membership_id, created_at")
       .eq("id", context.userId)
       .maybeSingle();
 
@@ -143,17 +144,24 @@ export const getTrialState = createServerFn({ method: "GET" })
     let isSuspended = false;
     let whopCustomerEmail: string | null = null;
     let linkedWhopActive = false;
+    let userMetadata: Record<string, unknown> = {};
 
     if (admin) {
       try {
         const { data: authUser } = await admin.auth.admin.getUserById(context.userId);
-        const meta = authUser?.user?.user_metadata || {};
-        linkViews = typeof meta["link_views"] === "number" ? meta["link_views"] : 0;
-        firstVisitAt = (meta["first_customer_visit_at"] as string) || null;
+        userMetadata = authUser?.user?.user_metadata || {};
+        linkViews = typeof userMetadata["link_views"] === "number" ? userMetadata["link_views"] : 0;
+        firstVisitAt = (userMetadata["first_customer_visit_at"] as string) || null;
         whopCustomerEmail =
-          (meta["whop_email"] as string) || (meta["linked_whop_email"] as string) || null;
+          (userMetadata["whop_email"] as string) ||
+          (userMetadata["linked_whop_email"] as string) ||
+          null;
 
-        if (meta["is_suspended"] === true || rawStatus === "SUSPENDED" || rawStatus === "BANNED") {
+        if (
+          userMetadata["is_suspended"] === true ||
+          rawStatus === "SUSPENDED" ||
+          rawStatus === "BANNED"
+        ) {
           isSuspended = true;
         }
 
@@ -271,32 +279,47 @@ export const getTrialState = createServerFn({ method: "GET" })
         : 0;
 
     // 4. Calculate & persist next billing date for subscribed accounts
-    let nextBillingIso = (profile as Record<string, unknown>)["next_billing_date"] as string | null;
-    let subscriptionStartedAt = (profile as Record<string, unknown>)["subscription_started_at"] as
-      string | null;
+    let nextBillingIso: string | null = null;
+    let subscriptionStartedAt: string | null = null;
 
     if (isSubscribed) {
-      if (!subscriptionStartedAt) {
-        subscriptionStartedAt = profile.created_at || new Date().toISOString();
+      subscriptionStartedAt =
+        (userMetadata["subscription_started_at"] as string) ||
+        profile.created_at ||
+        new Date().toISOString();
+
+      if (userMetadata["next_billing_date"]) {
+        nextBillingIso = userMetadata["next_billing_date"] as string;
+      } else if (
+        profile.trial_expiry &&
+        new Date(profile.trial_expiry).getTime() > now + 7 * 24 * 60 * 60 * 1000
+      ) {
+        nextBillingIso = profile.trial_expiry;
+      } else {
+        nextBillingIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       }
 
-      if (!nextBillingIso) {
-        // Calculate 30 days from now or start
-        const nextDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        nextBillingIso = nextDate;
-        if (admin) {
-          try {
+      if (admin) {
+        try {
+          if (profile.trial_expiry !== nextBillingIso) {
             await admin
               .from("profiles")
-              .update({
-                next_billing_date: nextDate,
-                subscription_started_at: subscriptionStartedAt,
-                trial_expiry: nextDate,
-              })
+              .update({ trial_expiry: nextBillingIso })
               .eq("id", context.userId);
-          } catch {
-            /* ignore */
           }
+          if (userMetadata["next_billing_date"] !== nextBillingIso) {
+            await admin.auth.admin.updateUserById(context.userId, {
+              user_metadata: {
+                ...userMetadata,
+                next_billing_date: nextBillingIso,
+                subscription_started_at: subscriptionStartedAt,
+                whop_status: "SUBSCRIBED",
+                whop_verified: true,
+              },
+            });
+          }
+        } catch {
+          /* ignore */
         }
       }
     }
@@ -432,8 +455,6 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
         .update({
           trial_status: "SUBSCRIBED",
           whop_membership_id: matchedMembership.membership_id,
-          next_billing_date: nextBillingDate,
-          subscription_started_at: new Date().toISOString(),
           trial_expiry: nextBillingDate,
         })
         .eq("id", context.userId);
@@ -452,8 +473,6 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
         .update({
           trial_status: "SUBSCRIBED",
           whop_membership_id: rawInput,
-          next_billing_date: nextBillingDate,
-          subscription_started_at: new Date().toISOString(),
           trial_expiry: nextBillingDate,
         })
         .eq("id", context.userId);
@@ -469,8 +488,6 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
       .from("profiles")
       .update({
         trial_status: "SUBSCRIBED",
-        next_billing_date: nextBillingDate,
-        subscription_started_at: new Date().toISOString(),
         trial_expiry: nextBillingDate,
       })
       .eq("id", context.userId);
@@ -594,4 +611,33 @@ export const reconcileCheckout = createServerFn({ method: "POST" })
     }
 
     return { isSubscribed: false, status: profile?.trial_status ?? "TRIAL" };
+  });
+
+/**
+ * Server function to securely verify and finalize return from Whop checkout.
+ * Validates cryptographic signatures, verifies against whop_memberships,
+ * and sets subscription dates securely.
+ */
+export const verifyBillingReturn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (data: {
+      plan?: string;
+      membershipId?: string;
+      customerEmail?: string;
+      sig?: string;
+      ts?: number;
+    }) => data,
+  )
+  .handler(async ({ input, context }) => {
+    const { data: userData } = await context.supabase.auth.getUser();
+    return secureVerifyAndFinalizeReturn({
+      userId: context.userId,
+      userEmail: userData.user?.email,
+      plan: input.plan,
+      membershipId: input.membershipId,
+      customerEmail: input.customerEmail,
+      sig: input.sig,
+      ts: input.ts,
+    });
   });
