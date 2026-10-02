@@ -42,8 +42,8 @@ function BlogPage() {
               The Detailr Blog
             </h1>
             <p className="text-sm text-muted-foreground max-w-xl">
-              Practical guides and business tips written by founder Nerochaze to help mobile auto
-              detailers increase margins and secure leads.
+              Practical guides and business tips to help mobile auto detailers increase margins and
+              secure leads.
             </p>
           </div>
 
@@ -63,7 +63,7 @@ function BlogPage() {
                 </p>
               </div>
               <p className="text-[10px] font-semibold text-muted-foreground pt-3 border-t">
-                Written by Nerochaze • 5 min read
+                By Detailr Team • 5 min read
               </p>
             </Card>
 
@@ -82,7 +82,7 @@ function BlogPage() {
                 </p>
               </div>
               <p className="text-[10px] font-semibold text-muted-foreground pt-3 border-t">
-                Written by Nerochaze • 4 min read
+                By Detailr Team • 4 min read
               </p>
             </Card>
 
@@ -101,7 +101,7 @@ function BlogPage() {
                 </p>
               </div>
               <p className="text-[10px] font-semibold text-muted-foreground pt-3 border-t">
-                Written by Nerochaze • 6 min read
+                By Detailr Team • 6 min read
               </p>
             </Card>
 
@@ -120,7 +120,7 @@ function BlogPage() {
                 </p>
               </div>
               <p className="text-[10px] font-semibold text-muted-foreground pt-3 border-t">
-                Written by Nerochaze • 3 min read
+                By Detailr Team • 3 min read
               </p>
             </Card>
           </div>

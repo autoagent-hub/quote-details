@@ -18,8 +18,6 @@ import {
   Star,
   Zap,
   Lock,
-  Mail,
-  User,
   Activity,
   BookOpen,
   ChevronRight,
@@ -224,28 +222,6 @@ function Landing() {
   // Active document modal overlay
   const [activeDoc, setActiveDoc] = useState<string | null>(null);
 
-  // Contact form state
-  const [contactName, setContactName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [contactMessage, setContactMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmitSuccess(true);
-      setContactName("");
-      setContactEmail("");
-      setContactPhone("");
-      setContactMessage("");
-      setTimeout(() => setSubmitSuccess(false), 6000);
-    }, 1200);
-  };
-
   // Price calculations for interactive demo
   const vehicleUplift = vehicle === "sedan" ? 0 : vehicle === "suv" ? 40 : 70;
   const basePrice = tier === "express" ? 110 : tier === "full" ? 210 : 450;
@@ -304,12 +280,6 @@ function Landing() {
             </a>
             <a href="#faq" className="transition-colors hover:text-foreground">
               FAQ
-            </a>
-            <Link to="/founder" className="transition-colors hover:text-foreground">
-              About
-            </Link>
-            <a href="#contact" className="transition-colors hover:text-foreground">
-              Contact
             </a>
           </nav>
 
@@ -1107,131 +1077,6 @@ function Landing() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* About Section: Introducing Nerochaze */}
-      <section id="about" className="py-20 border-t border-border/70 bg-card">
-        <div className="mx-auto max-w-4xl px-5 text-center space-y-6">
-          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-            Meet the Founder
-          </span>
-          <h2 className="text-3xl font-display font-extrabold text-foreground tracking-tight max-w-xl mx-auto">
-            Designed & Developed by Nerochaze
-          </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            "I built Detailr with one goal: to protect your detailing time. When you are busy
-            working, Detailr handles your quotes and delivers leads instantly to your Telegram."
-          </p>
-          <div className="pt-2">
-            <Button asChild variant="hero" size="sm" className="font-semibold shadow-lift">
-              <Link to="/founder">
-                Read Nerochaze's Full Story <ArrowRight className="size-4 ml-1.5" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-20 border-t border-border/70 bg-surface/30">
-        <div className="mx-auto max-w-3xl px-5">
-          <div className="text-center mb-10">
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-              Have Questions?
-            </span>
-            <h2 className="mt-3 text-3xl font-display font-extrabold text-foreground">
-              Get in Touch with Nerochaze
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Send us a message and we'll get back to you directly within a few hours.
-            </p>
-          </div>
-
-          <Card className="border-border bg-card p-6 sm:p-8 shadow-xl rounded-2xl">
-            {submitSuccess ? (
-              <div className="text-center py-8 space-y-3">
-                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
-                  <CheckCircle2 className="size-6" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground">Message Sent Successfully!</h3>
-                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                  Thank you for reaching out. Founder Nerochaze or our team will review your message
-                  and reply to you via email within 4 hours.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground">Your Name</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                      <input
-                        type="text"
-                        required
-                        value={contactName}
-                        onChange={(e) => setContactName(e.target.value)}
-                        placeholder="John Doe"
-                        className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground">Email Address</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                      <input
-                        type="email"
-                        required
-                        value={contactEmail}
-                        onChange={(e) => setContactEmail(e.target.value)}
-                        placeholder="john@example.com"
-                        className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">
-                    Phone Number (Optional)
-                  </label>
-                  <div className="relative">
-                    <Smartphone className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      value={contactPhone}
-                      onChange={(e) => setContactPhone(e.target.value)}
-                      placeholder="(512) 555-0199"
-                      className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground">Message</label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={contactMessage}
-                    onChange={(e) => setContactMessage(e.target.value)}
-                    placeholder="Tell Nerochaze what questions you have or features you would like to see in Detailr..."
-                    className="w-full rounded-xl border border-border bg-background p-3.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all resize-none"
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  variant="hero"
-                  className="w-full h-11 font-bold text-sm shadow-lift"
-                >
-                  {isSubmitting ? "Sending..." : "Send Message to Nerochaze"}
-                </Button>
-              </form>
-            )}
-          </Card>
         </div>
       </section>
 

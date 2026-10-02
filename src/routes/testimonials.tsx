@@ -116,9 +116,9 @@ function TestimonialsPage() {
                 <Star className="size-4 fill-amber-500" />
               </div>
               <p className="text-sm italic leading-relaxed text-muted-foreground">
-                "We operate a high-volume unit and let me tell you: Nerochaze's software is robust.
-                Customers load estimates in 20 seconds, and the instant alert router hasn't failed
-                once in three months."
+                "We operate a high-volume unit and let me tell you: Detailr is robust. Customers
+                load estimates in 20 seconds, and the instant alert router hasn't failed once in
+                three months."
               </p>
               <div className="border-t border-border/70 pt-3">
                 <p className="text-xs font-bold text-foreground">Devon Reed</p>

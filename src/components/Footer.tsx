@@ -11,7 +11,6 @@ export function Footer() {
             <QuoteFlowLogo size="md" linkToHome />
             <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
               The modern, instant quote software built specifically for mobile auto detailers.
-              Founded by Nerochaze.
             </p>
             <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium">
               <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -99,14 +98,6 @@ export function Footer() {
                   Cookie Policy
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/whois"
-                  className="hover:text-primary transition-colors text-left font-semibold text-foreground block"
-                >
-                  Domain WHOIS Registry (NEW)
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -121,7 +112,7 @@ export function Footer() {
                   to="/blog"
                   className="hover:text-primary transition-colors text-left font-semibold text-foreground block"
                 >
-                  Blog & Articles (NEW)
+                  Blog & Articles
                 </Link>
               </li>
               <li>
@@ -140,14 +131,7 @@ export function Footer() {
 
         <div className="mt-16 border-t border-border/60 pt-8 text-center text-xs text-muted-foreground flex flex-col items-center gap-4">
           <p>
-            © {new Date().getFullYear()}{" "}
-            <Link
-              to="/founder"
-              className="font-semibold text-foreground hover:underline hover:text-primary transition-colors"
-            >
-              Nerochaze
-            </Link>{" "}
-            · Detailr · Built for professional mobile auto detailers.
+            © {new Date().getFullYear()} Detailr · Built for professional mobile auto detailers.
           </p>
         </div>
       </div>

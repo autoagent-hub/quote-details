@@ -35,7 +35,7 @@ function SupportPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
       <SeoHead
         title="Help & Support — Detailr"
-        description="Need support with your automated quote calculator or Telegram connections? Contact founder Nerochaze directly."
+        description="Need support with your automated quote calculator or Telegram connections? Contact our support team directly."
       />
 
       {/* Header */}
@@ -62,7 +62,7 @@ function SupportPage() {
                 Help & Support
               </h1>
               <p className="text-xs text-muted-foreground mt-1">
-                Get in touch directly with developer Nerochaze
+                Get in touch directly with our support team
               </p>
             </div>
           </div>
@@ -72,21 +72,14 @@ function SupportPage() {
               <h3 className="text-base font-bold text-foreground">Direct Technical Channels</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 If you are running into issues with your automated Telegram integration or
-                configuring your custom pricing matrix, Nerochaze is active online to troubleshoot.
+                configuring your custom pricing matrix, our team is active online to troubleshoot.
               </p>
               <div className="space-y-2 text-xs">
                 <div className="flex items-center gap-2 rounded-xl bg-surface p-3 border border-border/80">
                   <Mail className="size-4 text-primary shrink-0" />
                   <div>
-                    <p className="font-bold text-foreground">Developer Support Email</p>
+                    <p className="font-bold text-foreground">Support Email</p>
                     <p className="text-muted-foreground">support@detailr.online</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 rounded-xl bg-surface p-3 border border-border/80">
-                  <Mail className="size-4 text-primary shrink-0" />
-                  <div>
-                    <p className="font-bold text-foreground">Backup Support</p>
-                    <p className="text-muted-foreground">teamnerochaze@gmail.com</p>
                   </div>
                 </div>
               </div>
@@ -100,8 +93,8 @@ function SupportPage() {
                   </div>
                   <h4 className="text-sm font-bold text-foreground">Support Ticket Opened</h4>
                   <p className="text-xs text-muted-foreground">
-                    Thanks for reaching out! Founder Nerochaze or our team will reply directly to
-                    your email address within 4 hours.
+                    Thanks for reaching out! Our support team will reply directly to your email
+                    address within a few hours.
                   </p>
                 </div>
               ) : (

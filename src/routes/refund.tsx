@@ -47,7 +47,7 @@ function RefundPage() {
 
           <div className="text-sm text-muted-foreground leading-relaxed space-y-5">
             <p>
-              Nerochaze believes in absolute transparency and zero-stress contracts. Our refund and
+              Detailr believes in absolute transparency and zero-stress contracts. Our refund and
               cancellation policy is designed to be fair, frictionless, and simple:
             </p>
 
@@ -76,8 +76,8 @@ function RefundPage() {
             </h2>
             <p>
               If you are billed for any monthly or annual cycle and are unsatisfied with the leads
-              or services, email Nerochaze within 14 days and we will issue a full, prompt refund.
-              No questions asked.
+              or services, email support@detailr.online within 14 days and we will issue a full,
+              prompt refund. No questions asked.
             </p>
           </div>
         </div>

@@ -15,7 +15,7 @@ function SecurityPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
       <SeoHead
         title="Security & Data Protection — Detailr"
-        description="Learn about the enterprise-grade database encryption, secure hosting, and secure Telegram gateways configured by Nerochaze."
+        description="Learn about the enterprise-grade database encryption, secure hosting, and secure Telegram gateways configured on Detailr."
       />
 
       {/* Header */}
@@ -47,9 +47,9 @@ function SecurityPage() {
 
           <div className="text-sm text-muted-foreground leading-relaxed space-y-5">
             <p>
-              Security is baked directly into Detailr's infrastructure. Founder Nerochaze has
-              architected the application to enforce strict separation of duties, secure
-              authentication protocols, and highly robust database routing:
+              Security is baked directly into Detailr's infrastructure. The platform is architected
+              to enforce strict separation of duties, secure authentication protocols, and highly
+              robust database routing:
             </p>
 
             <h2 className="text-lg font-bold text-foreground pt-4">1. Encryption of Data</h2>

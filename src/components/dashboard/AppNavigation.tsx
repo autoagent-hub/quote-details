@@ -42,7 +42,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getTrialState } from "@/lib/billing.functions";
 import type { Profile } from "@/components/dashboard/types";
 import { isAdminEmail } from "@/lib/admin-auth";
 
@@ -66,6 +68,14 @@ export function AppNavigation({
   const [copied, setCopied] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+
+  const fetchTrial = useServerFn(getTrialState);
+  const { data: trial } = useQuery({
+    queryKey: ["trial-state"],
+    queryFn: () => fetchTrial(),
+  });
+  const isSubscribed = !!trial?.isSubscribed;
+  const isCancelled = !!trial?.isCancelled;
 
   const isUserAdmin = isAdminEmail(userEmail);
 
@@ -276,16 +286,40 @@ export function AppNavigation({
                 </Button>
               )}
 
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="h-8 rounded-xl px-3 border-border/60 font-bold text-[10px] uppercase tracking-wider transition-all hover:bg-surface"
-              >
-                <Link to="/upgrade">
-                  <CreditCard className="size-3.5 mr-1 opacity-60" /> Upgrade
-                </Link>
-              </Button>
+              {isSubscribed ? (
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-xl px-2.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 font-bold text-[10px] uppercase tracking-wider transition-all"
+                >
+                  <Link to="/upgrade">
+                    <Sparkles className="size-3.5 mr-1 text-emerald-600" /> Pro Plan
+                  </Link>
+                </Button>
+              ) : isCancelled ? (
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-xl px-2.5 border-amber-500/30 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 font-bold text-[10px] uppercase tracking-wider transition-all"
+                >
+                  <Link to="/upgrade">
+                    <CreditCard className="size-3.5 mr-1 text-amber-600" /> Cancelled
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-xl px-3 border-border/60 font-bold text-[10px] uppercase tracking-wider transition-all hover:bg-surface"
+                >
+                  <Link to="/upgrade">
+                    <CreditCard className="size-3.5 mr-1 opacity-60" /> Upgrade
+                  </Link>
+                </Button>
+              )}
 
               <Button
                 variant="ghost"
@@ -496,10 +530,24 @@ export function AppNavigation({
                 asChild
                 variant="ghost"
                 size="sm"
-                className="h-9 rounded-xl px-3 font-bold text-xs gap-1.5"
+                className={`h-9 rounded-xl px-3 font-bold text-xs gap-1.5 ${
+                  isSubscribed ? "text-emerald-600 dark:text-emerald-400" : ""
+                }`}
               >
                 <Link to="/upgrade">
-                  <CreditCard className="size-4 opacity-60" /> Upgrade Plan
+                  {isSubscribed ? (
+                    <>
+                      <Sparkles className="size-4 text-emerald-600" /> Pro Plan (Active)
+                    </>
+                  ) : isCancelled ? (
+                    <>
+                      <CreditCard className="size-4 text-amber-600" /> Plan Cancelled
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="size-4 opacity-60" /> Upgrade Plan
+                    </>
+                  )}
                 </Link>
               </Button>
 

@@ -12,8 +12,6 @@ function verifyWhopSignature(
   signatureHeader: string,
   body: string,
 ): boolean {
-  // Support both key formats: Standard Webhooks ("whsec_" + base64)
-  // and opaque keys ("ws_..." used as-is).
   const keys: Buffer[] = [];
   if (secret.startsWith("whsec_")) {
     try {
@@ -32,7 +30,6 @@ function verifyWhopSignature(
   const signed = `${id}.${timestamp}.${body}`;
   const expectedList = keys.map((key) => createHmac("sha256", key).update(signed).digest("base64"));
 
-  // Header may contain multiple space-separated "v1,<sig>" entries.
   for (const part of signatureHeader.split(" ")) {
     const [version, sig] = part.split(",", 2);
     if (version !== "v1" || !sig) continue;
@@ -47,13 +44,7 @@ function verifyWhopSignature(
 
 type WhopEvent = {
   type?: string;
-  data?: {
-    id?: string; // payment or membership id
-    membership_id?: string;
-    user?: { email?: string | null; id?: string } | null;
-    email?: string | null;
-    metadata?: Record<string, unknown> | null;
-  };
+  data?: Record<string, unknown>;
 };
 
 async function getAdminClient() {
@@ -65,16 +56,6 @@ async function getAdminClient() {
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-}
-
-async function findProfileIdByEmail(
-  admin: NonNullable<Awaited<ReturnType<typeof getAdminClient>>>,
-  email: string,
-): Promise<string | null> {
-  // Profiles mirror auth.users, so resolve the auth user by email.
-  const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  const user = data?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-  return user?.id ?? null;
 }
 
 export const Route = createFileRoute("/api/public/whop-webhook")({
@@ -105,70 +86,209 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
           return new Response("Invalid JSON", { status: 400 });
         }
 
-        // Map Whop events to the resulting trial_status.
+        // Comprehensive mapping of Whop events to subscription status
         const statusByEvent: Record<string, string> = {
+          "membership.went_valid": "SUBSCRIBED",
           "membership.activated": "SUBSCRIBED",
+          "membership.created": "SUBSCRIBED",
           "payment.succeeded": "SUBSCRIBED",
+          "membership.went_invalid": "CANCELLED",
+          "membership.cancelled": "CANCELLED",
+          "membership.cancel": "CANCELLED",
           "membership.deactivated": "CANCELLED",
+          "membership.deleted": "CANCELLED",
           "payment.failed": "PAST_DUE",
+          "payment.refunded": "CANCELLED",
         };
+
         const newStatus = event.type ? statusByEvent[event.type] : undefined;
         if (!event.type || !newStatus) {
           return Response.json({ ok: true, ignored: event.type ?? "unknown" });
         }
 
-        const data = event.data ?? {};
-        const email = data.user?.email ?? data.email ?? null;
+        const data = (event.data ?? {}) as Record<string, unknown>;
+        const dataUser = data["user"] as Record<string, unknown> | undefined;
+        const dataMembership = data["membership"] as Record<string, unknown> | undefined;
+        const dataWallet = data["wallet"] as Record<string, unknown> | undefined;
+        const metadata = ((data["metadata"] || data["checkout_metadata"]) ?? {}) as Record<
+          string,
+          unknown
+        >;
+        const customFields = (data["custom_fields"] ?? {}) as Record<string, unknown>;
+
+        // 1. Extract membership or payment ID
+        const membershipId =
+          (typeof data["membership_id"] === "string" && data["membership_id"]) ||
+          (typeof data["id"] === "string" && data["id"]) ||
+          (typeof dataMembership?.["id"] === "string" && (dataMembership["id"] as string)) ||
+          null;
+
+        // 2. Extract customer email (may differ from Detailr signup email)
+        const email =
+          (typeof dataUser?.["email"] === "string" && dataUser["email"].toLowerCase().trim()) ||
+          (typeof data["email"] === "string" && (data["email"] as string).toLowerCase().trim()) ||
+          (typeof dataWallet?.["email"] === "string" &&
+            (dataWallet["email"] as string).toLowerCase().trim()) ||
+          null;
+
+        // 3. Extract user ID passed through checkout URL metadata or client reference
         const metadataUserId =
-          typeof data.metadata?.["user_id"] === "string"
-            ? (data.metadata["user_id"] as string)
-            : null;
-        const membershipId = data.membership_id ?? data.id ?? null;
+          (typeof metadata["user_id"] === "string" && metadata["user_id"]) ||
+          (typeof metadata["userId"] === "string" && metadata["userId"]) ||
+          (typeof metadata["detailer_id"] === "string" && metadata["detailer_id"]) ||
+          (typeof customFields["user_id"] === "string" && (customFields["user_id"] as string)) ||
+          (typeof customFields["userId"] === "string" && (customFields["userId"] as string)) ||
+          (typeof data["client_reference_id"] === "string" &&
+            (data["client_reference_id"] as string)) ||
+          (typeof data["external_id"] === "string" && (data["external_id"] as string)) ||
+          null;
+
+        const planType =
+          (typeof metadata["plan_type"] === "string" && metadata["plan_type"]) ||
+          (typeof data["plan_id"] === "string" && (data["plan_id"] as string).includes("Gmhn")
+            ? "yearly"
+            : "monthly");
 
         const admin = await getAdminClient();
         if (!admin) return new Response("Not configured", { status: 503 });
 
-        let profileId = metadataUserId;
+        let profileId: string | null = null;
+
+        // Match Strategy A: Direct metadata user_id from checkout URL
+        if (
+          metadataUserId &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(metadataUserId)
+        ) {
+          const { data: p } = await admin
+            .from("profiles")
+            .select("id")
+            .eq("id", metadataUserId)
+            .maybeSingle();
+          if (p?.id) profileId = p.id;
+        }
+
+        // Match Strategy B: Check if this membership_id was previously linked to a user in whop_memberships
+        if (!profileId && membershipId) {
+          try {
+            const { data: existingMem } = await admin
+              .from("whop_memberships")
+              .select("user_id")
+              .eq("membership_id", membershipId)
+              .maybeSingle();
+            if (existingMem?.user_id) profileId = existingMem.user_id;
+          } catch {
+            /* table may be newly created */
+          }
+        }
+
+        // Match Strategy C: Email match against auth.users (primary email or linked whop email in metadata)
         if (!profileId && email) {
-          profileId = await findProfileIdByEmail(admin, email);
-        }
-
-        if (!profileId) {
-          // Return 200 so Whop doesn't retry forever; nothing to update.
-          return Response.json({ ok: true, matched: false });
-        }
-
-        const { error } = await admin
-          .from("profiles")
-          .update({
-            trial_status: newStatus,
-            ...(membershipId ? { whop_membership_id: membershipId } : {}),
-          })
-          .eq("id", profileId);
-
-        if (error) {
-          console.error("whop-webhook update failed:", error.message);
-          return Response.json({ ok: false }, { status: 500 });
-        }
-
-        // Securely stamp verified Whop subscription state in auth user_metadata
-        try {
-          const { data: authUser } = await admin.auth.admin.getUserById(profileId);
-          const currentMeta = authUser?.user?.user_metadata || {};
-          await admin.auth.admin.updateUserById(profileId, {
-            user_metadata: {
-              ...currentMeta,
-              whop_verified: newStatus === "SUBSCRIBED",
-              whop_membership_id: membershipId || currentMeta["whop_membership_id"],
-              whop_status: newStatus,
-              whop_verified_at: new Date().toISOString(),
-            },
+          const { data: allUsers } = await admin.auth.admin.listUsers({ perPage: 1000 });
+          const matchedUser = allUsers?.users?.find((u) => {
+            if (u.email?.toLowerCase() === email) return true;
+            const meta = u.user_metadata || {};
+            if (
+              typeof meta["linked_whop_email"] === "string" &&
+              meta["linked_whop_email"].toLowerCase() === email
+            )
+              return true;
+            if (
+              typeof meta["whop_email"] === "string" &&
+              meta["whop_email"].toLowerCase() === email
+            )
+              return true;
+            return false;
           });
-        } catch (metaErr) {
-          console.warn("Could not stamp whop verification metadata:", metaErr);
+          if (matchedUser?.id) profileId = matchedUser.id;
         }
 
-        return Response.json({ ok: true, matched: true, trial_status: newStatus });
+        // Match Strategy D: Recent checkout session correlation (user initiated checkout within last 30 mins)
+        if (!profileId && email) {
+          const { data: allUsers } = await admin.auth.admin.listUsers({ perPage: 1000 });
+          const nowMs = Date.now();
+          const candidate = allUsers?.users?.find((u) => {
+            const meta = u.user_metadata || {};
+            const startedAt = meta["last_checkout_started_at"] as string | undefined;
+            if (!startedAt) return false;
+            const diffMs = nowMs - new Date(startedAt).getTime();
+            // Started checkout in last 30 minutes and no other membership was attached
+            return diffMs > 0 && diffMs < 30 * 60 * 1000 && !meta["whop_verified"];
+          });
+          if (candidate?.id) profileId = candidate.id;
+        }
+
+        // Persist membership record in whop_memberships table
+        try {
+          if (membershipId) {
+            await admin.from("whop_memberships").upsert(
+              {
+                membership_id: membershipId,
+                user_id: profileId,
+                customer_email: email || "unknown@whop.customer",
+                plan_type: planType,
+                status: newStatus === "SUBSCRIBED" ? "active" : newStatus.toLowerCase(),
+                raw_payload: event,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "membership_id" },
+            );
+          }
+        } catch (dbErr) {
+          console.warn("Could not upsert whop_memberships tracking record:", dbErr);
+        }
+
+        // If matched to a Detailr profile, update profile status & auth metadata
+        if (profileId) {
+          const { error } = await admin
+            .from("profiles")
+            .update({
+              trial_status: newStatus,
+              ...(membershipId ? { whop_membership_id: membershipId } : {}),
+            })
+            .eq("id", profileId);
+
+          if (error) {
+            console.error("whop-webhook profile update error:", error.message);
+          }
+
+          try {
+            const { data: authUser } = await admin.auth.admin.getUserById(profileId);
+            const currentMeta = authUser?.user?.user_metadata || {};
+            await admin.auth.admin.updateUserById(profileId, {
+              user_metadata: {
+                ...currentMeta,
+                whop_verified: newStatus === "SUBSCRIBED",
+                whop_membership_id: membershipId || currentMeta["whop_membership_id"],
+                whop_email: email || currentMeta["whop_email"],
+                whop_status: newStatus,
+                whop_plan_type: planType,
+                whop_verified_at: new Date().toISOString(),
+              },
+            });
+          } catch (metaErr) {
+            console.warn("Could not stamp whop verification metadata:", metaErr);
+          }
+
+          return Response.json({
+            ok: true,
+            matched: true,
+            profileId,
+            trial_status: newStatus,
+          });
+        }
+
+        // Log unmatched event for easy 1-click claim if email differed
+        console.info(
+          `[whop-webhook] Recorded active membership ${membershipId} for checkout email: ${email} (pending user match).`,
+        );
+
+        return Response.json({
+          ok: true,
+          matched: false,
+          membershipId,
+          checkoutEmail: email,
+          status: newStatus,
+        });
       },
     },
   },

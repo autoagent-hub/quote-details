@@ -15,7 +15,7 @@ function ChangelogPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
       <SeoHead
         title="Product Changelog — Detailr"
-        description="See what founder Nerochaze is building. Follow the newest version launches, offline persistence, and Google One-Tap onboarding."
+        description="See the latest features and updates in Detailr. Follow the newest version launches, offline persistence, and Google One-Tap onboarding."
       />
 
       {/* Header */}
@@ -42,7 +42,7 @@ function ChangelogPage() {
                 Product Changelog
               </h1>
               <p className="text-xs text-muted-foreground mt-1">
-                Live updates showing active development by Nerochaze
+                Live updates showing active development of the Detailr platform
               </p>
             </div>
           </div>
