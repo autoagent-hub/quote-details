@@ -108,7 +108,9 @@ export const getTrialState = createServerFn({ method: "GET" })
 
     const { data: profile } = await client
       .from("profiles")
-      .select("trial_status, trial_expiry, whop_membership_id, created_at")
+      .select(
+        "trial_status, trial_expiry, whop_membership_id, created_at, next_billing_date, subscription_started_at",
+      )
       .eq("id", context.userId)
       .maybeSingle();
 
@@ -124,6 +126,10 @@ export const getTrialState = createServerFn({ method: "GET" })
         hasActiveAccess: true,
         whopMembershipId: null,
         whopCustomerEmail: null,
+        nextBillingDate: null as string | null,
+        nextBillingDateFormatted: null as string | null,
+        subscriptionStartedAt: null as string | null,
+        renewalDaysLeft: 0,
         whopPortalUrl: "https://whop.com/hub/memberships/",
       };
     }
@@ -264,6 +270,49 @@ export const getTrialState = createServerFn({ method: "GET" })
         ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - now) / (1000 * 60 * 60 * 24)))
         : 0;
 
+    // 4. Calculate & persist next billing date for subscribed accounts
+    let nextBillingIso = (profile as Record<string, unknown>)["next_billing_date"] as string | null;
+    let subscriptionStartedAt = (profile as Record<string, unknown>)["subscription_started_at"] as
+      string | null;
+
+    if (isSubscribed) {
+      if (!subscriptionStartedAt) {
+        subscriptionStartedAt = profile.created_at || new Date().toISOString();
+      }
+
+      if (!nextBillingIso) {
+        // Calculate 30 days from now or start
+        const nextDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        nextBillingIso = nextDate;
+        if (admin) {
+          try {
+            await admin
+              .from("profiles")
+              .update({
+                next_billing_date: nextDate,
+                subscription_started_at: subscriptionStartedAt,
+                trial_expiry: nextDate,
+              })
+              .eq("id", context.userId);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    }
+
+    const nextBillingDateFormatted = nextBillingIso
+      ? new Date(nextBillingIso).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : null;
+
+    const renewalDaysLeft = nextBillingIso
+      ? Math.max(0, Math.ceil((new Date(nextBillingIso).getTime() - now) / (1000 * 60 * 60 * 24)))
+      : 0;
+
     // Normalised status for UI banners & indicators
     const status = isSubscribed
       ? ("ACTIVE" as const)
@@ -278,13 +327,17 @@ export const getTrialState = createServerFn({ method: "GET" })
       rawStatus, // "SUBSCRIBED" | "TRIAL" | "TRIAL_PENDING" | "CANCELLED" | "PAST_DUE" | "SUSPENDED"
       expiresAt,
       expired,
-      daysLeft,
+      daysLeft: isSubscribed ? renewalDaysLeft : daysLeft,
       isSubscribed,
       isCancelled,
       isPendingFirstVisit: false,
       hasActiveAccess: isSubscribed || isCancelled || !expired,
       whopMembershipId: profile.whop_membership_id || null,
       whopCustomerEmail,
+      nextBillingDate: nextBillingIso,
+      nextBillingDateFormatted,
+      subscriptionStartedAt,
+      renewalDaysLeft,
       linkViews,
       firstVisitAt,
       whopPortalUrl: "https://whop.com/hub/memberships/",
@@ -372,11 +425,16 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
         /* ignore */
       }
 
+      const nextBillingDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
       await admin
         .from("profiles")
         .update({
           trial_status: "SUBSCRIBED",
           whop_membership_id: matchedMembership.membership_id,
+          next_billing_date: nextBillingDate,
+          subscription_started_at: new Date().toISOString(),
+          trial_expiry: nextBillingDate,
         })
         .eq("id", context.userId);
 
@@ -387,12 +445,16 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
     }
 
     // If not found in database yet, but input looks like a valid Whop ID or checkout email:
+    const nextBillingDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     if (rawInput.startsWith("mem_") || rawInput.startsWith("pay_")) {
       await admin
         .from("profiles")
         .update({
           trial_status: "SUBSCRIBED",
           whop_membership_id: rawInput,
+          next_billing_date: nextBillingDate,
+          subscription_started_at: new Date().toISOString(),
+          trial_expiry: nextBillingDate,
         })
         .eq("id", context.userId);
 
@@ -402,8 +464,16 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
       };
     }
 
-    // If an email was linked, also check if any recent payments can be claimed
-    await admin.from("profiles").update({ trial_status: "SUBSCRIBED" }).eq("id", context.userId);
+    // If an email was linked, also update dates
+    await admin
+      .from("profiles")
+      .update({
+        trial_status: "SUBSCRIBED",
+        next_billing_date: nextBillingDate,
+        subscription_started_at: new Date().toISOString(),
+        trial_expiry: nextBillingDate,
+      })
+      .eq("id", context.userId);
 
     return {
       success: true,

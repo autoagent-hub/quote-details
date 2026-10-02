@@ -115,6 +115,11 @@ export function AppNavigation({
                 <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> Shop Online
               </span>
             )}
+            {isSubscribed && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400">
+                <Sparkles className="size-3 text-emerald-600" /> PRO MEMBER
+              </span>
+            )}
           </div>
 
           {/* Center Navigation Links (Desktop) */}

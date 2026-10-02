@@ -2,8 +2,17 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CreditCard, Sparkles, X } from "lucide-react";
+import {
+  CreditCard,
+  Sparkles,
+  X,
+  CheckCircle2,
+  Calendar,
+  AlertTriangle,
+  ArrowRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { getTrialState } from "@/lib/billing.functions";
 
 export function TrialBanner() {
@@ -22,8 +31,19 @@ export function TrialBanner() {
   });
 
   if (isLoading || !trial) return null;
-  const { status, daysLeft, firstVisitAt, isSuspended, suspensionReason } = trial;
+  const {
+    status,
+    daysLeft,
+    firstVisitAt,
+    isSuspended,
+    suspensionReason,
+    isSubscribed,
+    isCancelled,
+    nextBillingDateFormatted,
+    renewalDaysLeft,
+  } = trial;
 
+  // 1. Account Suspended
   if (isSuspended) {
     return (
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-rose-500/30 bg-rose-500/5 backdrop-blur-sm px-5 py-3 text-xs text-rose-950 dark:text-rose-200 shadow-sm">
@@ -45,8 +65,93 @@ export function TrialBanner() {
     );
   }
 
-  if (status === "ACTIVE") return null;
+  // 2. SUBSCRIBED: Show PRO BADGE and Next Billing Date on Dashboard
+  if (status === "ACTIVE" || isSubscribed) {
+    return (
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-teal-500/10 p-4 sm:p-5 text-xs shadow-md backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="size-10 flex items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
+              <Sparkles className="size-5" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="bg-emerald-600 text-white dark:bg-emerald-500 dark:text-black font-extrabold uppercase tracking-widest text-[10px] px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                  <CheckCircle2 className="size-3" />
+                  PRO MEMBER
+                </Badge>
+                {nextBillingDateFormatted && (
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
+                    <Calendar className="size-3 opacity-80" />
+                    Next billing date: <strong>{nextBillingDateFormatted}</strong>
+                  </span>
+                )}
+                {renewalDaysLeft !== undefined && renewalDaysLeft > 0 && (
+                  <span className="text-[11px] text-muted-foreground font-medium">
+                    ({renewalDaysLeft} {renewalDaysLeft === 1 ? "day" : "days"} remaining in cycle)
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground font-medium">
+                Your Detailr Pro membership is active. You have unlimited customer quotes, custom
+                rates, and real-time Telegram alerts.
+              </p>
+            </div>
+          </div>
 
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-xl font-bold text-xs border-emerald-500/30 bg-background/80 text-emerald-600 hover:bg-emerald-500/10 shadow-sm"
+            >
+              <Link to="/upgrade">Manage Plan & Billing</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Subscription Cancelled
+  if (isCancelled || status === "CANCELLED") {
+    return (
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 backdrop-blur-sm px-5 py-3.5 text-xs text-amber-950 dark:text-amber-200 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="size-8 flex items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
+            <AlertTriangle className="size-4 shrink-0" />
+          </div>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="font-bold uppercase tracking-widest text-[10px] text-amber-600 opacity-90 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                Subscription Cancelled
+              </span>
+              {nextBillingDateFormatted && (
+                <span className="text-[11px] font-semibold">
+                  Access active until: <strong>{nextBillingDateFormatted}</strong>
+                </span>
+              )}
+            </div>
+            <p className="font-medium text-muted-foreground">
+              Your subscription will not renew. You retain full access through the end of your
+              prepaid period.
+            </p>
+          </div>
+        </div>
+        <Button
+          asChild
+          variant="hero"
+          size="sm"
+          className="h-8 text-[11px] font-bold px-4 rounded-xl shadow-sm shrink-0"
+        >
+          <Link to="/upgrade">Re-subscribe to Pro</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  // 4. Trial Pending First Customer Visit
   if (status === "TRIAL_PENDING") {
     if (isDismissed) return null;
 
@@ -100,6 +205,7 @@ export function TrialBanner() {
     );
   }
 
+  // 5. Active Trial Countdown
   if (status === "TRIALING") {
     return (
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 backdrop-blur-sm px-5 py-3 text-xs text-amber-950 dark:text-amber-200 shadow-sm">
@@ -135,6 +241,7 @@ export function TrialBanner() {
     );
   }
 
+  // 6. Trial Expired
   return (
     <div className="flex items-center justify-between gap-4 rounded-2xl border border-rose-500/30 bg-rose-500/5 backdrop-blur-sm px-5 py-3 text-xs text-rose-950 dark:text-rose-200 shadow-sm">
       <div className="flex items-center gap-3">

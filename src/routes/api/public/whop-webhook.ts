@@ -239,13 +239,24 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
 
         // If matched to a Detailr profile, update profile status & auth metadata
         if (profileId) {
-          const { error } = await admin
-            .from("profiles")
-            .update({
-              trial_status: newStatus,
-              ...(membershipId ? { whop_membership_id: membershipId } : {}),
-            })
-            .eq("id", profileId);
+          const renewalDays = planType === "yearly" ? 365 : 30;
+          const nextBillingDate = new Date(
+            Date.now() + renewalDays * 24 * 60 * 60 * 1000,
+          ).toISOString();
+
+          const profileUpdates: Record<string, unknown> = {
+            trial_status: newStatus,
+            ...(membershipId ? { whop_membership_id: membershipId } : {}),
+            ...(newStatus === "SUBSCRIBED"
+              ? {
+                  next_billing_date: nextBillingDate,
+                  subscription_started_at: new Date().toISOString(),
+                  trial_expiry: nextBillingDate,
+                }
+              : {}),
+          };
+
+          const { error } = await admin.from("profiles").update(profileUpdates).eq("id", profileId);
 
           if (error) {
             console.error("whop-webhook profile update error:", error.message);

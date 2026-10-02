@@ -359,6 +359,22 @@ function Upgrade() {
                 </div>
               )}
 
+              {trial?.nextBillingDateFormatted && (
+                <div className="p-4 rounded-xl bg-surface border border-emerald-500/30 space-y-1">
+                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
+                    <Calendar className="size-3.5" /> Next Billing Date:
+                  </span>
+                  <p className="font-bold text-foreground text-sm">
+                    {trial.nextBillingDateFormatted}
+                    {trial.renewalDaysLeft !== undefined && trial.renewalDaysLeft > 0 && (
+                      <span className="text-xs font-normal text-muted-foreground ml-1.5">
+                        ({trial.renewalDaysLeft} days remaining)
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+
               {trial?.whopMembershipId && (
                 <div className="p-4 rounded-xl bg-surface border border-border/60 space-y-1">
                   <span className="text-muted-foreground font-semibold">
