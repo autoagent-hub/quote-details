@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHmac, timingSafeEqual } from "crypto";
+import { checkAndRecordWebhookNonce } from "@/lib/webhook-replay-defense";
 
 // Whop signs webhooks using the Standard Webhooks spec:
 // signature = base64( HMAC-SHA256( secret, `${webhook-id}.${webhook-timestamp}.${rawBody}` ) )
@@ -23,9 +24,10 @@ function verifyWhopSignature(
   keys.push(Buffer.from(secret, "utf8"));
   if (keys.length === 0) return false;
 
-  // Reject events older than 5 minutes to prevent replay attacks.
+  // Reject events older than 3 minutes (180s) or more than 60s in future to prevent replay attacks.
   const ts = Number(timestamp);
-  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false;
+  const nowSec = Date.now() / 1000;
+  if (!Number.isFinite(ts) || nowSec - ts > 180 || ts - nowSec > 60) return false;
 
   const signed = `${id}.${timestamp}.${body}`;
   const expectedList = keys.map((key) => createHmac("sha256", key).update(signed).digest("base64"));
@@ -77,6 +79,30 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
           !verifyWhopSignature(secret, id, timestamp, signature, body)
         ) {
           return new Response("Invalid signature", { status: 401 });
+        }
+
+        // Strict Anti-Replay Defense: Check single-use nonce & deduplication
+        const replayCheck = checkAndRecordWebhookNonce({
+          id,
+          timestamp,
+          rawBody: body,
+          maxAgeSeconds: 180, // 3 minutes maximum age
+          maxFutureSeconds: 60,
+        });
+
+        if (!replayCheck.allowed) {
+          if (replayCheck.reason === "duplicate_id") {
+            console.warn(
+              `[SECURITY] Webhook replay attack detected and blocked. Duplicate ID: ${id}`,
+            );
+            return Response.json(
+              { ok: true, duplicate: true, ignored: "replay_detected" },
+              { status: 200 },
+            );
+          }
+          return new Response(`Replay defense rejected request: ${replayCheck.reason}`, {
+            status: 400,
+          });
         }
 
         let event: WhopEvent;

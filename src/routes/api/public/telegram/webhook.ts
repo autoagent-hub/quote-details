@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createHash, timingSafeEqual } from "crypto";
 import { getAdminClient } from "@/lib/admin.server";
 import { ADMIN_EMAILS } from "@/lib/admin-auth";
+import { checkAndRecordWebhookNonce } from "@/lib/webhook-replay-defense";
 
 function deriveSecret(token: string): string {
   return createHash("sha256").update(`telegram-webhook:${token}`).digest("base64url");
@@ -34,8 +35,21 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         }
 
         const update = (await request.json()) as {
-          message?: { chat?: { id?: number }; text?: string };
+          update_id?: number;
+          message?: { chat?: { id?: number }; text?: string; date?: number };
         };
+
+        if (update.update_id) {
+          const replayCheck = checkAndRecordWebhookNonce({
+            id: `tg_update_${update.update_id}`,
+            timestamp: update.message?.date || Math.floor(Date.now() / 1000),
+            maxAgeSeconds: 300,
+          });
+          if (!replayCheck.allowed && replayCheck.reason === "duplicate_id") {
+            return Response.json({ ok: true, duplicate: true, ignored: "replay_detected" });
+          }
+        }
+
         const chatId = update.message?.chat?.id;
         const text = (update.message?.text ?? "").trim();
         if (!chatId) return Response.json({ ok: true, ignored: true });
