@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Copy,
   Check,
-  ArrowUpRight,
   ChevronRight,
   Zap,
 } from "lucide-react";
@@ -349,19 +348,7 @@ export function SubscriptionBillingCard({
 
           {/* Action Links */}
           {showActions && (
-            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-border/60">
-              <div className="flex items-center gap-2">
-                <a
-                  href={trial?.whopPortalUrl || "https://whop.com/hub/memberships/"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline py-1"
-                >
-                  <span>Open Whop Customer Portal</span>
-                  <ArrowUpRight className="size-3.5" />
-                </a>
-              </div>
-
+            <div className="pt-2 flex flex-wrap items-center justify-end gap-3 border-t border-border/60">
               <div className="flex items-center gap-2">
                 {isSubscribed && (
                   <Button

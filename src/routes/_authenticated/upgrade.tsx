@@ -326,49 +326,6 @@ function Upgrade() {
           </div>
         )}
 
-        {/* EMAIL RECONCILIATION / CLAIM SUBSCRIPTION TOOL */}
-        <Card className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="size-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-              <LinkIcon className="size-4" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold text-foreground">
-                Paid with a different email on Whop or Apple Pay?
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                If your registered Detailr email (
-                <strong>{userData?.email || "this account"}</strong>) differs from the email you
-                entered at checkout (or if you used Apple Pay/PayPal), enter your checkout email
-                below to instantly link your Pro membership:
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleLinkWhopEmail} className="flex flex-col sm:flex-row gap-3 pt-1">
-            <Input
-              type="text"
-              placeholder="e.g. checkout-email@example.com or mem_..."
-              value={whopEmailInput}
-              onChange={(e) => setWhopEmailInput(e.target.value)}
-              className="h-10 text-xs rounded-xl bg-background border-border flex-1"
-            />
-            <Button
-              type="submit"
-              disabled={isLinking || !whopEmailInput.trim()}
-              className="h-10 font-bold text-xs rounded-xl px-5"
-            >
-              {isLinking ? (
-                <>
-                  <Loader2 className="size-3.5 mr-2 animate-spin" /> Linking...
-                </>
-              ) : (
-                "Link & Activate Pro"
-              )}
-            </Button>
-          </form>
-        </Card>
-
         {/* PRICING CARDS (Always visible if not subscribed, or shown below as plan choices) */}
         {!subscribed && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch pt-2">
