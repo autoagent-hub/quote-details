@@ -172,7 +172,8 @@ function Upgrade() {
     }
   }, [doReconcile, queryClient]);
 
-  const subscribed = !!trial?.isSubscribed;
+  const subscribed =
+    userData?.status === "SUBSCRIBED" || userData?.status === "ADMIN" || !!trial?.isSubscribed;
   const isCancelled = !!trial?.isCancelled;
   const statusKey = subscribed
     ? "ACTIVE"

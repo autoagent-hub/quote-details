@@ -84,11 +84,12 @@ export async function verifyServerSubscriptionAccess(
 
   // 2. Check suspension or ban in auth metadata or profile
   let isSuspended = rawStatus === "SUSPENDED" || rawStatus === "BANNED";
+  let userMeta: Record<string, unknown> = {};
   if (admin) {
     try {
       const { data: authUser } = await admin.auth.admin.getUserById(userId);
-      const meta = authUser?.user?.user_metadata || {};
-      if (meta["is_suspended"] === true) {
+      userMeta = authUser?.user?.user_metadata || {};
+      if (userMeta["is_suspended"] === true) {
         isSuspended = true;
       }
     } catch {
@@ -141,6 +142,9 @@ export async function verifyServerSubscriptionAccess(
   const isSubscribed =
     rawStatus === "SUBSCRIBED" ||
     rawStatus === "ADMIN" ||
+    userMeta["whop_status"] === "SUBSCRIBED" ||
+    userMeta["whop_verified"] === true ||
+    userMeta["trial_status"] === "SUBSCRIBED" ||
     hasActiveWhopRecord ||
     hasAuthenticMembershipId;
 

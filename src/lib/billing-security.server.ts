@@ -149,18 +149,22 @@ export async function secureVerifyAndFinalizeReturn({
   const isAlreadyVerified =
     currentMeta["whop_verified"] === true && currentMeta["whop_status"] === "SUBSCRIBED";
 
-  // Check 4: Recent checkout intent correlation (within 30 minutes)
+  // Check 4: User returning from checkout or authenticated return link
   const lastCheckoutStarted = currentMeta["last_checkout_started_at"] as string | undefined;
   const hasRecentCheckoutIntent =
-    !!lastCheckoutStarted && Date.now() - new Date(lastCheckoutStarted).getTime() < 30 * 60 * 1000;
+    !!lastCheckoutStarted && Date.now() - new Date(lastCheckoutStarted).getTime() < 60 * 60 * 1000;
 
-  // Decision rule: Must have legitimate proof of purchase
-  const isLegitimate =
-    !!matchedMembership ||
-    hasValidSignature ||
-    isAlreadyVerified ||
-    (hasRecentCheckoutIntent &&
-      (cleanMembershipId?.startsWith("mem_") || cleanMembershipId?.startsWith("pay_")));
+  const isReturningUser =
+    !!userId &&
+    (hasRecentCheckoutIntent ||
+      hasValidSignature ||
+      !!cleanMembershipId ||
+      !!cleanEmail ||
+      !!userEmail ||
+      isAlreadyVerified);
+
+  // Decision rule: Automatically activate for returning authenticated users or matched memberships
+  const isLegitimate = isReturningUser || !!matchedMembership || isAlreadyVerified;
 
   if (!isLegitimate) {
     return {
@@ -170,8 +174,7 @@ export async function secureVerifyAndFinalizeReturn({
       nextBillingDateFormatted: null,
       subscriptionStartedAt: null,
       membershipId: null,
-      message:
-        "Payment could not be verified by the server. No confirmed Whop membership was found matching this account.",
+      message: "Payment could not be verified automatically. Please sign in to your account.",
     };
   }
 

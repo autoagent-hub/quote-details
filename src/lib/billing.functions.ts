@@ -224,7 +224,29 @@ export const getTrialState = createServerFn({ method: "GET" })
       linkedWhopActive ||
       rawStatus === "SUBSCRIBED" ||
       profile.trial_status === "SUBSCRIBED" ||
+      userMetadata["whop_status"] === "SUBSCRIBED" ||
+      userMetadata["whop_verified"] === true ||
+      userMetadata["trial_status"] === "SUBSCRIBED" ||
       hasMembershipRecord;
+
+    // Auto-heal profile record if user metadata shows subscribed but profile table lags behind
+    if (
+      !isMasterAdmin &&
+      admin &&
+      isSubscribed &&
+      profile.trial_status !== "SUBSCRIBED" &&
+      profile.trial_status !== "ADMIN"
+    ) {
+      try {
+        await admin
+          .from("profiles")
+          .update({ trial_status: "SUBSCRIBED" })
+          .eq("id", context.userId);
+        rawStatus = "SUBSCRIBED";
+      } catch {
+        /* ignore */
+      }
+    }
 
     const isCancelled =
       !isSubscribed && (rawStatus === "CANCELLED" || profile.trial_status === "CANCELLED");
@@ -288,15 +310,35 @@ export const getTrialState = createServerFn({ method: "GET" })
         profile.created_at ||
         new Date().toISOString();
 
-      if (userMetadata["next_billing_date"]) {
-        nextBillingIso = userMetadata["next_billing_date"] as string;
-      } else if (
+      const whopPlanType = (userMetadata["whop_plan_type"] as string)?.toLowerCase() || "monthly";
+      const isYearlyPlan =
+        whopPlanType === "yearly" ||
+        whopPlanType === "annual" ||
+        whopPlanType === "year" ||
+        whopPlanType === "1year";
+      const cycleDays = isYearlyPlan ? 365 : 30;
+
+      let storedNextBilling = userMetadata["next_billing_date"] as string | undefined;
+      if (
+        !storedNextBilling &&
         profile.trial_expiry &&
         new Date(profile.trial_expiry).getTime() > now + 7 * 24 * 60 * 60 * 1000
       ) {
-        nextBillingIso = profile.trial_expiry;
+        storedNextBilling = profile.trial_expiry;
+      }
+
+      if (storedNextBilling) {
+        const remainingMs = new Date(storedNextBilling).getTime() - now;
+        // If yearly plan, remaining duration should be > 60 days. If less, recalculate to 365 days from now!
+        if (isYearlyPlan && remainingMs < 60 * 24 * 60 * 60 * 1000) {
+          nextBillingIso = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+        } else if (!isYearlyPlan && remainingMs > 40 * 24 * 60 * 60 * 1000) {
+          nextBillingIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        } else {
+          nextBillingIso = storedNextBilling;
+        }
       } else {
-        nextBillingIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        nextBillingIso = new Date(Date.now() + cycleDays * 24 * 60 * 60 * 1000).toISOString();
       }
 
       if (admin) {
@@ -307,12 +349,16 @@ export const getTrialState = createServerFn({ method: "GET" })
               .update({ trial_expiry: nextBillingIso })
               .eq("id", context.userId);
           }
-          if (userMetadata["next_billing_date"] !== nextBillingIso) {
+          if (
+            userMetadata["next_billing_date"] !== nextBillingIso ||
+            userMetadata["whop_plan_type"] !== (isYearlyPlan ? "yearly" : "monthly")
+          ) {
             await admin.auth.admin.updateUserById(context.userId, {
               user_metadata: {
                 ...userMetadata,
                 next_billing_date: nextBillingIso,
                 subscription_started_at: subscriptionStartedAt,
+                whop_plan_type: isYearlyPlan ? "yearly" : "monthly",
                 whop_status: "SUBSCRIBED",
                 whop_verified: true,
               },
@@ -576,41 +622,13 @@ export const cancelUserSubscription = createServerFn({ method: "POST" })
 export const reconcileCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const admin = getAdminClient();
-    if (!admin) return { isSubscribed: false };
-
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("trial_status, whop_membership_id")
-      .eq("id", context.userId)
-      .maybeSingle();
-
-    if (profile?.trial_status === "SUBSCRIBED" || profile?.whop_membership_id) {
-      return { isSubscribed: true, status: profile.trial_status };
-    }
-
-    // Check if whop_memberships received an active membership for this user ID
-    try {
-      const { data: dbMem } = await admin
-        .from("whop_memberships")
-        .select("membership_id, customer_email, status")
-        .eq("user_id", context.userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (dbMem && (dbMem.status === "active" || dbMem.status === "subscribed")) {
-        await admin
-          .from("profiles")
-          .update({ trial_status: "SUBSCRIBED", whop_membership_id: dbMem.membership_id })
-          .eq("id", context.userId);
-        return { isSubscribed: true, status: "SUBSCRIBED" };
-      }
-    } catch {
-      /* ignore */
-    }
-
-    return { isSubscribed: false, status: profile?.trial_status ?? "TRIAL" };
+    const { data: userData } = await context.supabase.auth.getUser();
+    const result = await secureVerifyAndFinalizeReturn({
+      userId: context.userId,
+      userEmail: userData.user?.email,
+      plan: "monthly",
+    });
+    return { isSubscribed: result.verified, status: result.verified ? "SUBSCRIBED" : "TRIAL" };
   });
 
 /**

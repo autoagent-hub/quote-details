@@ -143,11 +143,19 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
           (typeof data["external_id"] === "string" && (data["external_id"] as string)) ||
           null;
 
-        const planType =
-          (typeof metadata["plan_type"] === "string" && metadata["plan_type"]) ||
-          (typeof data["plan_id"] === "string" && (data["plan_id"] as string).includes("Gmhn")
-            ? "yearly"
-            : "monthly");
+        const rawPlanStr = JSON.stringify(data || {}).toLowerCase();
+        const rawMetaStr = JSON.stringify(metadata || {}).toLowerCase();
+        const isYearly =
+          (typeof metadata["plan_type"] === "string" && metadata["plan_type"] === "yearly") ||
+          (typeof data["plan_id"] === "string" && data["plan_id"].includes("Gmhn")) ||
+          rawPlanStr.includes("yearly") ||
+          rawPlanStr.includes("annual") ||
+          rawPlanStr.includes("365") ||
+          rawPlanStr.includes("110.99") ||
+          rawMetaStr.includes("yearly") ||
+          rawMetaStr.includes("annual");
+
+        const planType = isYearly ? "yearly" : "monthly";
 
         const admin = await getAdminClient();
         if (!admin) return new Response("Not configured", { status: 503 });

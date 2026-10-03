@@ -276,8 +276,10 @@ function BillingReturnPage() {
             Check Verification Again
           </Button>
 
-          <Button asChild variant="outline" className="w-full text-xs font-bold">
-            <Link to="/upgrade">Link Whop Email Manually</Link>
+          <Button asChild variant="hero" className="w-full text-xs font-bold">
+            <Link to="/dashboard" search={{ payment: "success" }}>
+              Continue to Dashboard
+            </Link>
           </Button>
 
           <Button asChild variant="ghost" className="w-full text-xs text-muted-foreground">
