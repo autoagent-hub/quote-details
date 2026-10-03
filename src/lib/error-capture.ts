@@ -15,6 +15,19 @@ function record(error: unknown) {
 const CAUSE_DEPTH_LIMIT = 5;
 const DESCRIPTION_LENGTH_LIMIT = 8_000;
 
+export function sanitizeSensitiveData(input: string): string {
+  if (!input) return "";
+  return input
+    .replace(/(Bearer\s+)[A-Za-z0-9-_=.%]+/gi, "$1[REDACTED_TOKEN]")
+    .replace(/(apikey:\s*)[A-Za-z0-9-_=.%]+/gi, "$1[REDACTED_KEY]")
+    .replace(/(sb_secret_)[A-Za-z0-9_-]+/gi, "$1[REDACTED]")
+    .replace(/([?&](?:token|key|secret|password|auth)=)[^&"'\s]+/gi, "$1[REDACTED]")
+    .replace(
+      /(whop_secret_|whop_api_|re_[a-zA-Z0-9]{20,}|bot[0-9]+:[a-zA-Z0-9_-]{30,})/gi,
+      "[REDACTED_SECRET]",
+    );
+}
+
 export function describeError(error: unknown): string {
   const parts: string[] = [];
   let current: unknown = error;
@@ -28,7 +41,7 @@ export function describeError(error: unknown): string {
     parts.push(`${label}${current.stack ?? `${current.name}: ${current.message}`}${status}`);
     current = current.cause;
   }
-  return parts.join("\n").slice(0, DESCRIPTION_LENGTH_LIMIT);
+  return sanitizeSensitiveData(parts.join("\n").slice(0, DESCRIPTION_LENGTH_LIMIT));
 }
 
 function describeStatus(error: Error): string {
@@ -55,9 +68,12 @@ function isErrorLike(value: unknown): value is Error {
 const originalConsoleError = console.error.bind(console);
 console.error = (...args: unknown[]) => {
   const expanded = args.map((arg) => {
-    if (!isErrorLike(arg)) return arg;
-    record(arg);
-    return describeError(arg);
+    if (isErrorLike(arg)) {
+      record(arg);
+      return describeError(arg);
+    }
+    const strVal = typeof arg === "string" ? arg : safeStringify(arg);
+    return sanitizeSensitiveData(strVal);
   });
   originalConsoleError(...expanded);
 };

@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SkeletonDashboard } from "@/components/skeletons/SkeletonDashboard";
 import { AppNavigation } from "@/components/dashboard/AppNavigation";
 import { TrialBanner } from "@/components/dashboard/TrialBanner";
+import { SubscriptionBillingCard } from "@/components/dashboard/SubscriptionBillingCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -252,6 +253,9 @@ function SettingsPage() {
             })}
           </div>
         </div>
+
+        {/* Subscription & Billing Dashboard Card */}
+        <SubscriptionBillingCard />
 
         {/* Account Details & Security Cards */}
         <div className="grid gap-6 md:grid-cols-2">

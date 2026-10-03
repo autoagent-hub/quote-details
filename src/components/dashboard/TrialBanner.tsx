@@ -76,7 +76,7 @@ export function TrialBanner({
         )
       : undefined);
 
-  if (isLoading && !profile) return null;
+  if (isLoading) return null;
 
   const daysLeft = trial?.daysLeft ?? 7;
   const firstVisitAt = trial?.firstVisitAt ?? null;

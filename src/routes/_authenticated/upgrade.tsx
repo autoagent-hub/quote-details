@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { SubscriptionBillingCard } from "@/components/dashboard/SubscriptionBillingCard";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -308,103 +309,7 @@ function Upgrade() {
         </div>
 
         {/* SUBSCRIBED ACTIVE STATE CARD */}
-        {subscribed && (
-          <Card className="rounded-2xl border-2 border-emerald-500/40 bg-card p-6 sm:p-8 shadow-xl space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/60 pb-6">
-              <div className="flex items-center gap-3">
-                <div className="size-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                  <CheckCircle2 className="size-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                    Detailr Pro Active
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 uppercase">
-                      Subscribed
-                    </span>
-                  </h3>
-                  <p className="text-xs text-muted-foreground">Connected to Whop Billing System</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button
-                  asChild
-                  variant="hero"
-                  className="w-full sm:w-auto font-bold text-xs shadow-sm"
-                >
-                  <Link to="/dashboard">Go to Dashboard</Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto font-bold text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 border-rose-500/30"
-                  onClick={() => setCancelModalOpen(true)}
-                >
-                  Cancel Plan
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="p-4 rounded-xl bg-surface border border-border/60 space-y-1">
-                <span className="text-muted-foreground font-semibold">Account Login Email:</span>
-                <p className="font-mono font-bold text-foreground">
-                  {userData?.email || "Unknown"}
-                </p>
-              </div>
-
-              {trial?.whopCustomerEmail && (
-                <div className="p-4 rounded-xl bg-surface border border-border/60 space-y-1">
-                  <span className="text-muted-foreground font-semibold">Whop Checkout Email:</span>
-                  <p className="font-mono font-bold text-foreground">{trial.whopCustomerEmail}</p>
-                </div>
-              )}
-
-              {trial?.nextBillingDateFormatted && (
-                <div className="p-4 rounded-xl bg-surface border border-emerald-500/30 space-y-1">
-                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
-                    <Calendar className="size-3.5" /> Next Billing Date:
-                  </span>
-                  <p className="font-bold text-foreground text-sm">
-                    {trial.nextBillingDateFormatted}
-                    {trial.renewalDaysLeft !== undefined && trial.renewalDaysLeft > 0 && (
-                      <span className="text-xs font-normal text-muted-foreground ml-1.5">
-                        ({trial.renewalDaysLeft} days remaining)
-                      </span>
-                    )}
-                  </p>
-                </div>
-              )}
-
-              {trial?.whopMembershipId && (
-                <div className="p-4 rounded-xl bg-surface border border-border/60 space-y-1">
-                  <span className="text-muted-foreground font-semibold">
-                    Membership Reference ID:
-                  </span>
-                  <p className="font-mono font-bold text-foreground truncate">
-                    {trial.whopMembershipId}
-                  </p>
-                </div>
-              )}
-
-              <div className="p-4 rounded-xl bg-surface border border-border/60 space-y-1">
-                <span className="text-muted-foreground font-semibold">
-                  Self-Service Customer Portal:
-                </span>
-                <p>
-                  <a
-                    href={trial?.whopPortalUrl || "https://whop.com/hub/memberships/"}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-bold text-primary hover:underline"
-                  >
-                    Open Whop Member Hub <ExternalLink className="size-3" />
-                  </a>
-                </p>
-              </div>
-            </div>
-          </Card>
-        )}
+        {subscribed && <SubscriptionBillingCard showActions={true} />}
 
         {/* CANCELLED ACTIVE NOTICE */}
         {isCancelled && (

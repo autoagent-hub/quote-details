@@ -42,8 +42,8 @@ function AuthCallbackPage() {
               await supabase.auth.signInWithIdToken({ provider: "google", token: data.id_token });
             }
           }
-        } catch (err) {
-          console.warn("OAuth code exchange:", err);
+        } catch {
+          /* ignore */
         }
       }
 

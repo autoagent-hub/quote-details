@@ -59,8 +59,8 @@ function AuthV1CallbackPage() {
               navigate({ to: "/dashboard" });
               return;
             }
-          } catch (pkceErr) {
-            console.warn("[auth] Supabase code exchange skipped or failed:", pkceErr);
+          } catch {
+            /* continue to next fallback */
           }
         }
 
@@ -103,8 +103,8 @@ function AuthV1CallbackPage() {
             if (res.ok && data.id_token) {
               idToken = data.id_token;
             }
-          } catch (googleCodeErr) {
-            console.warn("[auth] Direct Google code exchange failed:", googleCodeErr);
+          } catch {
+            /* continue to fallback */
           }
         }
 
@@ -146,7 +146,6 @@ function AuthV1CallbackPage() {
         }, 1200);
       } catch (err: unknown) {
         const e = err as Error;
-        console.error("Direct Google OAuth callback error:", e);
         if (!unmounted) {
           setErrorMsg(e.message || "Failed to complete Google authentication");
           toast.error(e.message || "Failed to sign in with Google");

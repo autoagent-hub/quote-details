@@ -165,8 +165,10 @@ export const getTrialState = createServerFn({ method: "GET" })
           isSuspended = true;
         }
 
+        const userEmail = authUser?.user?.email?.toLowerCase().trim();
+
         // Check if there is an active membership record in whop_memberships table
-        const { data: dbMem } = await admin
+        let { data: dbMem } = await admin
           .from("whop_memberships")
           .select("membership_id, customer_email, status")
           .eq("user_id", context.userId)
@@ -174,10 +176,37 @@ export const getTrialState = createServerFn({ method: "GET" })
           .limit(1)
           .maybeSingle();
 
+        // Fallback: search by customer email if user_id was not linked yet
+        if (!dbMem && (userEmail || whopCustomerEmail)) {
+          const searchEmail = whopCustomerEmail || userEmail;
+          if (searchEmail) {
+            const { data: emailMem } = await admin
+              .from("whop_memberships")
+              .select("membership_id, customer_email, status")
+              .ilike("customer_email", searchEmail)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (emailMem) {
+              dbMem = emailMem;
+              // Link user_id to this membership record
+              try {
+                await admin
+                  .from("whop_memberships")
+                  .update({ user_id: context.userId })
+                  .eq("membership_id", emailMem.membership_id);
+              } catch {
+                /* ignore */
+              }
+            }
+          }
+        }
+
         if (dbMem && (dbMem.status === "active" || dbMem.status === "subscribed")) {
           linkedWhopActive = true;
           if (dbMem.customer_email) whopCustomerEmail = dbMem.customer_email;
-          if (!profile.whop_membership_id) {
+          if (!profile.whop_membership_id || profile.trial_status !== "SUBSCRIBED") {
             await admin
               .from("profiles")
               .update({ trial_status: "SUBSCRIBED", whop_membership_id: dbMem.membership_id })
