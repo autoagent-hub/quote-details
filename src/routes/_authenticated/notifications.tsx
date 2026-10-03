@@ -101,7 +101,7 @@ function NotificationsPage() {
           </div>
         </div>
 
-        <TrialBanner />
+        <TrialBanner profile={profile ?? null} />
 
         {profile ? (
           <div className="space-y-6">

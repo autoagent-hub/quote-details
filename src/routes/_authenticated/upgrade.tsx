@@ -133,13 +133,18 @@ function Upgrade() {
       if (!user) return null;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("trial_status, business_name")
+        .select("trial_status, business_name, whop_membership_id")
         .eq("id", user.id)
         .maybeSingle();
+      const hasMem =
+        typeof profile?.whop_membership_id === "string" &&
+        (profile.whop_membership_id.startsWith("mem_") ||
+          profile.whop_membership_id.startsWith("pay_"));
       return {
         userId: user.id,
         email: user.email ?? "",
-        status: (profile?.trial_status as string | undefined) ?? "TRIAL",
+        status: hasMem ? "SUBSCRIBED" : ((profile?.trial_status as string | undefined) ?? "TRIAL"),
+        hasMembership: hasMem,
       };
     },
   });

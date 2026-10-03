@@ -1,24 +1,25 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ReceiptText, Sliders, Bell, Store, ExternalLink, ChevronRight } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { ReceiptText, Sliders, Bell, Store } from "lucide-react";
 
 import { SkeletonDashboard } from "@/components/skeletons/SkeletonDashboard";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { parseServices, parseVehicleCategories } from "@/lib/pricing";
+import { getTrialState } from "@/lib/billing.functions";
 
 import type { Profile, Quote } from "@/components/dashboard/types";
 import { AppNavigation } from "@/components/dashboard/AppNavigation";
-import { TopMetricsGrid } from "@/components/dashboard/TopMetricsGrid";
+import { OPayDashboardHeader } from "@/components/dashboard/OPayDashboardHeader";
 import { QuoteHistoryCard } from "@/components/dashboard/QuoteHistoryCard";
 import { PricingCard } from "@/components/dashboard/PricingCard";
 import { BusinessProfileCard } from "@/components/dashboard/BusinessProfileCard";
 import { NotificationSettingsCard } from "@/components/dashboard/NotificationSettingsCard";
 import { TrialBanner } from "@/components/dashboard/TrialBanner";
 import { Onboarding } from "@/components/dashboard/Onboarding";
-import { DashboardWelcomeHero } from "@/components/dashboard/DashboardWelcomeHero";
 import {
   DashboardOnboardingTour,
   useDashboardTour,
@@ -81,6 +82,20 @@ function DashboardPage() {
     },
   });
 
+  const fetchTrial = useServerFn(getTrialState);
+  const { data: trial } = useQuery({
+    queryKey: ["trial-state"],
+    queryFn: () => fetchTrial(),
+  });
+
+  const isSubscribed =
+    profile?.trial_status === "SUBSCRIBED" ||
+    profile?.trial_status === "ADMIN" ||
+    (typeof profile?.whop_membership_id === "string" &&
+      (profile.whop_membership_id.startsWith("mem_") ||
+        profile.whop_membership_id.startsWith("pay_"))) ||
+    !!trial?.isSubscribed;
+
   if (isLoading) {
     return <SkeletonDashboard />;
   }
@@ -97,18 +112,21 @@ function DashboardPage() {
       />
 
       {/* Main Workspace Layout */}
-      <main className="mx-auto max-w-7xl space-y-8 px-4 sm:px-8 py-8">
+      <main className="mx-auto max-w-7xl space-y-6 px-4 sm:px-8 py-8">
         {profile ? (
           <>
-            <TrialBanner profile={profile} />
+            {/* Minimal Trial Alert (hidden completely for subscribed users) */}
+            <TrialBanner profile={profile} hideIfSubscribed={true} />
 
-            {/* Welcome Guide */}
+            {/* OPay-Style Account & Quick Action Center */}
             <div data-tour="welcome-hero">
-              <DashboardWelcomeHero profile={profile} onSelectTab={setActiveTab} />
+              <OPayDashboardHeader
+                profile={profile}
+                quotes={quotes ?? []}
+                onSelectTab={setActiveTab}
+                isSubscribed={isSubscribed}
+              />
             </div>
-
-            {/* Top Metrics Grid */}
-            <TopMetricsGrid profile={profile} quotes={quotes ?? []} onSelectTab={setActiveTab} />
 
             {/* Clear Intuitive Tabs Workspace */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

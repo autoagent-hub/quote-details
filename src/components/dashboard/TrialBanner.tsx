@@ -14,11 +14,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getTrialState } from "@/lib/billing.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export function TrialBanner({
-  profile,
+  profile: propProfile,
+  hideIfSubscribed = true,
 }: {
-  profile?: { trial_status?: string | null; trial_expiry?: string | null };
+  profile?: {
+    trial_status?: string | null;
+    trial_expiry?: string | null;
+    whop_membership_id?: string | null;
+  };
+  hideIfSubscribed?: boolean;
 } = {}) {
   const [isDismissed, setIsDismissed] = useState(() => {
     try {
@@ -29,14 +36,36 @@ export function TrialBanner({
   });
 
   const fetchTrial = useServerFn(getTrialState);
-  const { data: trial, isLoading } = useQuery({
+  const { data: trial, isLoading: isTrialLoading } = useQuery({
     queryKey: ["trial-state"],
     queryFn: async () => fetchTrial(),
   });
 
+  // Query profile from cache or database if not passed
+  const { data: cachedProfile, isLoading: isProfileLoading } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, trial_status, trial_expiry, whop_membership_id")
+        .eq("id", uid)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 60_000,
+  });
+
+  const profile = propProfile || cachedProfile;
+
   const isSubscribed =
     profile?.trial_status === "SUBSCRIBED" ||
     profile?.trial_status === "ADMIN" ||
+    (typeof profile?.whop_membership_id === "string" &&
+      (profile.whop_membership_id.startsWith("mem_") ||
+        profile.whop_membership_id.startsWith("pay_"))) ||
     !!trial?.isSubscribed;
 
   const isCancelled = profile?.trial_status === "CANCELLED" || !!trial?.isCancelled;
@@ -45,6 +74,16 @@ export function TrialBanner({
     profile?.trial_status === "SUSPENDED" ||
     profile?.trial_status === "BANNED" ||
     !!trial?.isSuspended;
+
+  // If the user is subscribed, hide trial banner completely from tabs
+  if (isSubscribed) {
+    if (hideIfSubscribed) {
+      return null;
+    }
+  }
+
+  // Prevent flicker during initial load
+  if (isTrialLoading && !profile) return null;
 
   const effectiveStatus = isSuspended
     ? "SUSPENDED"
@@ -76,7 +115,7 @@ export function TrialBanner({
         )
       : undefined);
 
-  if (isLoading) return null;
+  if (isTrialLoading && !isSubscribed) return null;
 
   const daysLeft = trial?.daysLeft ?? 7;
   const firstVisitAt = trial?.firstVisitAt ?? null;

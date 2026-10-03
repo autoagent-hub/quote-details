@@ -163,7 +163,7 @@ function SettingsPage() {
       <AppNavigation profile={profile ?? null} activeTab="settings" userEmail={user?.email} />
 
       <main className="mx-auto max-w-5xl space-y-8 px-4 sm:px-8 py-8">
-        <TrialBanner />
+        <TrialBanner profile={profile ?? null} />
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-6">

@@ -77,6 +77,9 @@ export function AppNavigation({
   const isSubscribed =
     profile?.trial_status === "SUBSCRIBED" ||
     profile?.trial_status === "ADMIN" ||
+    (typeof profile?.whop_membership_id === "string" &&
+      (profile.whop_membership_id.startsWith("mem_") ||
+        profile.whop_membership_id.startsWith("pay_"))) ||
     !!trial?.isSubscribed;
   const isCancelled = profile?.trial_status === "CANCELLED" || !!trial?.isCancelled;
 

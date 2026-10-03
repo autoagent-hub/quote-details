@@ -108,7 +108,7 @@ function PricingPage() {
           )}
         </div>
 
-        <TrialBanner />
+        <TrialBanner profile={profile ?? null} />
 
         {profile ? (
           <div className="space-y-6">

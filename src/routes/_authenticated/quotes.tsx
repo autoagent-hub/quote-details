@@ -82,7 +82,7 @@ function QuotesPage() {
       <AppNavigation profile={profile ?? null} activeTab="quotes" userEmail={user?.email} />
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 sm:px-8 py-8">
-        <TrialBanner />
+        <TrialBanner profile={profile ?? null} />
 
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-6">
