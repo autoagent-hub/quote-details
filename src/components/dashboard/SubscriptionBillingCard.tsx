@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { getTrialState, cancelUserSubscription } from "@/lib/billing.functions";
+import { ChangePlanDialog } from "./ChangePlanDialog";
 
 interface SubscriptionBillingCardProps {
   className?: string;
@@ -49,6 +50,7 @@ export function SubscriptionBillingCard({
   const [copiedId, setCopiedId] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [changePlanOpen, setChangePlanOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
   const {
@@ -278,19 +280,37 @@ export function SubscriptionBillingCard({
               </p>
             </div>
 
-            {(!isSubscribed || cancelAtPeriodEnd) && showActions && (
-              <Button
-                asChild
-                variant="hero"
-                size="sm"
-                className="font-bold text-xs shrink-0 shadow-md"
-              >
-                <Link to="/upgrade">
-                  <span>{cancelAtPeriodEnd ? "Re-enable Auto-Renew" : "Upgrade to Pro"}</span>
-                  <ChevronRight className="size-3.5 ml-1" />
-                </Link>
-              </Button>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {isSubscribed && !cancelAtPeriodEnd && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setChangePlanOpen(true)}
+                  className="font-bold text-xs shrink-0 rounded-xl border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 gap-1.5 shadow-sm"
+                >
+                  <Sparkles className="size-3.5 text-amber-500" />
+                  <span>
+                    {trial?.planType === "yearly"
+                      ? "Switch to Monthly"
+                      : "Switch to Annual (Save ~$11)"}
+                  </span>
+                </Button>
+              )}
+
+              {(!isSubscribed || cancelAtPeriodEnd) && showActions && (
+                <Button
+                  asChild
+                  variant="hero"
+                  size="sm"
+                  className="font-bold text-xs shrink-0 shadow-md"
+                >
+                  <Link to="/upgrade">
+                    <span>{cancelAtPeriodEnd ? "Re-enable Auto-Renew" : "Upgrade to Pro"}</span>
+                    <ChevronRight className="size-3.5 ml-1" />
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Details Grid */}
@@ -378,6 +398,18 @@ export function SubscriptionBillingCard({
               </a>
 
               <div className="flex items-center gap-2">
+                {isSubscribed && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs font-bold gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                    onClick={() => setChangePlanOpen(true)}
+                  >
+                    <Zap className="size-3 text-primary" />
+                    Change Plan
+                  </Button>
+                )}
+
                 {isSubscribed && !cancelAtPeriodEnd && (
                   <Button
                     variant="outline"
@@ -406,6 +438,9 @@ export function SubscriptionBillingCard({
           )}
         </CardContent>
       </Card>
+
+      {/* Change Plan & Dynamic Proration Dialog */}
+      <ChangePlanDialog open={changePlanOpen} onOpenChange={setChangePlanOpen} trial={trial} />
 
       {/* Cancellation Confirmation Dialog */}
       <Dialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
