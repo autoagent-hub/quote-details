@@ -22,6 +22,8 @@ import {
   BookOpen,
   ReceiptText,
   Settings,
+  Bell,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -691,6 +693,77 @@ export function AppNavigation({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* OPay-Inspired Fixed Mobile Bottom Navigation Dock */}
+      <nav
+        aria-label="Quick Mobile Navigation"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/70 px-2 py-1.5 flex items-center justify-around shadow-xl"
+      >
+        <Link
+          to="/dashboard"
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-colors ${
+            activeTab === "quotes" || activeTab === "dashboard"
+              ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <LayoutDashboard className="size-5 shrink-0" />
+          <span>Home</span>
+        </Link>
+
+        <Link
+          to="/quotes"
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-colors ${
+            activeTab === "all-quotes"
+              ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <ReceiptText className="size-5 shrink-0" />
+          <span>Quotes</span>
+        </Link>
+
+        <Link
+          to="/pricing"
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-colors ${
+            activeTab === "pricing"
+              ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Tag className="size-5 shrink-0" />
+          <span>Pricing</span>
+        </Link>
+
+        <Link
+          to="/notifications"
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-colors relative ${
+            activeTab === "notifications"
+              ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Bell className="size-5 shrink-0" />
+          <span>Alerts</span>
+          {profile?.telegram_chat_id ? (
+            <span className="absolute top-1 right-2.5 size-1.5 rounded-full bg-emerald-500" />
+          ) : (
+            <span className="absolute top-1 right-2.5 size-1.5 rounded-full bg-amber-500" />
+          )}
+        </Link>
+
+        <Link
+          to="/settings"
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-colors ${
+            activeTab === "settings" || activeTab === "profile"
+              ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Settings className="size-5 shrink-0" />
+          <span>Settings</span>
+        </Link>
+      </nav>
     </>
   );
 }

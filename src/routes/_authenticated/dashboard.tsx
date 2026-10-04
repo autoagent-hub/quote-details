@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ReceiptText, Sliders, Bell, Store } from "lucide-react";
+import { ReceiptText, Tag, Bell, Store } from "lucide-react";
 
 import { SkeletonDashboard } from "@/components/skeletons/SkeletonDashboard";
 import { Badge } from "@/components/ui/badge";
@@ -112,7 +112,7 @@ function DashboardPage() {
       />
 
       {/* Main Workspace Layout */}
-      <main className="mx-auto max-w-7xl space-y-6 px-4 sm:px-8 py-8">
+      <main className="mx-auto max-w-7xl space-y-6 px-4 sm:px-8 py-8 pb-24 lg:pb-12">
         {profile ? (
           <>
             {/* Minimal Trial Alert (hidden completely for subscribed users) */}
@@ -131,19 +131,19 @@ function DashboardPage() {
             {/* Clear Intuitive Tabs Workspace */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <div className="border-b border-border/40 pb-2">
-                <TabsList className="bg-muted/40 p-1.5 h-auto rounded-2xl border border-border/40 backdrop-blur-sm grid grid-cols-2 md:grid-cols-4 gap-1.5">
+                <TabsList className="bg-slate-100 dark:bg-slate-800/80 p-1.5 h-auto rounded-2xl border border-slate-200/90 dark:border-slate-700/80 backdrop-blur-sm grid grid-cols-2 md:grid-cols-4 gap-1.5 shadow-xs">
                   <TabsTrigger
                     value="quotes"
                     data-tour="quotes-tab"
-                    className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all flex flex-col items-start text-left sm:flex-row sm:items-center"
+                    className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex flex-col items-start text-left sm:flex-row sm:items-center text-muted-foreground hover:text-foreground"
                   >
                     <div className="flex items-center gap-2">
-                      <ReceiptText className="size-4 opacity-80 text-primary" />
+                      <ReceiptText className="size-4 opacity-90 text-emerald-600" />
                       <span>Leads & Quotes</span>
                     </div>
                     <Badge
                       variant="secondary"
-                      className="px-1.5 py-0 h-4 min-w-[18px] text-[9px] font-mono border-none bg-primary/10 text-primary font-bold"
+                      className="px-1.5 py-0 h-4 min-w-[18px] text-[9px] font-mono border-none bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold"
                     >
                       {quotes?.length ?? 0}
                     </Badge>
@@ -152,10 +152,10 @@ function DashboardPage() {
                   <TabsTrigger
                     value="pricing"
                     data-tour="pricing-tab"
-                    className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all flex flex-col items-start text-left sm:flex-row sm:items-center"
+                    className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex flex-col items-start text-left sm:flex-row sm:items-center text-muted-foreground hover:text-foreground"
                   >
                     <div className="flex items-center gap-2">
-                      <Sliders className="size-4 opacity-80 text-amber-500" />
+                      <Tag className="size-4 opacity-90 text-primary" />
                       <span>Services & Prices</span>
                     </div>
                   </TabsTrigger>
@@ -163,10 +163,10 @@ function DashboardPage() {
                   <TabsTrigger
                     value="notifications"
                     data-tour="notifications-tab"
-                    className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all flex flex-col items-start text-left sm:flex-row sm:items-center"
+                    className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex flex-col items-start text-left sm:flex-row sm:items-center text-muted-foreground hover:text-foreground"
                   >
                     <div className="flex items-center gap-2">
-                      <Bell className="size-4 opacity-80 text-blue-500" />
+                      <Bell className="size-4 opacity-90 text-sky-500" />
                       <span>Telegram Alerts</span>
                     </div>
                     <span
@@ -177,10 +177,10 @@ function DashboardPage() {
                   <TabsTrigger
                     value="settings"
                     data-tour="settings-tab"
-                    className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all flex flex-col items-start text-left sm:flex-row sm:items-center"
+                    className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex flex-col items-start text-left sm:flex-row sm:items-center text-muted-foreground hover:text-foreground"
                   >
                     <div className="flex items-center gap-2">
-                      <Store className="size-4 opacity-80 text-purple-500" />
+                      <Store className="size-4 opacity-90 text-purple-500" />
                       <span>Shop Profile</span>
                     </div>
                   </TabsTrigger>
