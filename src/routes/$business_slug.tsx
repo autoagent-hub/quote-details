@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -10,7 +10,6 @@ import {
   FlaskConical,
   Loader2,
   X,
-  AlertOctagon,
   AlertCircle,
   ChevronLeft,
   ChevronRight,
@@ -19,6 +18,12 @@ import {
   Phone,
   MessageSquare,
   RotateCcw,
+  ShieldCheck,
+  Clock,
+  MapPin,
+  Truck,
+  Layers,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,7 +31,6 @@ import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
 import { SkeletonQuoteForm } from "@/components/skeletons/SkeletonQuoteForm";
 import { SeoHead } from "@/components/seo/SeoHead";
-import { QuoteForm as NewQuoteForm } from "@/components/QuoteForm";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -164,7 +168,7 @@ export const Route = createFileRoute("/$business_slug")({
           content: `${businessName}, mobile auto detailing quote, car detailing estimate, ceramic coating, paint correction, interior detail`,
         },
         { name: "robots", content: "index, follow" },
-        { property: "og:site_name", content: "Detailr" },
+        { property: "og:site_name", content: businessName },
         { property: "og:title", content: `${businessName} — Instant Auto Detailing Quote` },
         { property: "og:description", content: description },
         { property: "og:url", content: canonicalUrl },
@@ -182,14 +186,12 @@ export const Route = createFileRoute("/$business_slug")({
           property: "og:image:alt",
           content: isCustomLogo
             ? `${businessName} Logo`
-            : `${businessName} — Instant Auto Detailing Quote on Detailr`,
+            : `${businessName} — Instant Auto Detailing Quote`,
         },
         { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:site", content: "@detailronline" },
         { name: "twitter:title", content: `${businessName} — Instant Auto Detailing Quote` },
         { name: "twitter:description", content: description },
         { name: "twitter:image", content: shareImage },
-        { name: "twitter:image:src", content: shareImage },
         {
           name: "twitter:image:alt",
           content: isCustomLogo ? `${businessName} Logo` : `${businessName} Auto Detailing Quote`,
@@ -213,6 +215,8 @@ function QuoteForm() {
   const { business_slug } = Route.useParams();
   const { test: isTest } = Route.useSearch();
   const initialProfile = Route.useLoaderData();
+  const formTopRef = useRef<HTMLDivElement | null>(null);
+
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const [vehicleDesc, setVehicleDesc] = useState("");
   const [packageKey, setPackageKey] = useState<string | null>(null);
@@ -235,9 +239,18 @@ function QuoteForm() {
   const isNameValid = name.trim().length >= 2;
   const isPhoneValid = digitsOnly.length >= 7;
 
-  const nameError = nameTouched && !isNameValid ? "Full name must be at least 2 characters." : null;
+  const nameError =
+    nameTouched && !isNameValid ? "Please enter your full name (at least 2 letters)." : null;
   const phoneError =
-    phoneTouched && !isPhoneValid ? "Phone number must contain at least 7 digits." : null;
+    phoneTouched && !isPhoneValid ? "Please enter a valid phone number (at least 7 digits)." : null;
+
+  // Auto-scroll up slightly when step changes for frictionless mobile navigation
+  const goToStep = (step: number) => {
+    setActiveStep(step);
+    if (formTopRef.current) {
+      formTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   // Record link visit and activate 7-day trial on first customer visit
   useEffect(() => {
@@ -283,6 +296,10 @@ function QuoteForm() {
   });
 
   const currency = profile?.currency || "USD";
+  const businessName =
+    profile?.business_name?.trim() ||
+    business_slug.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
   const selectedCountry = useMemo(() => {
     const found = COUNTRIES.find((c) => c.code === countryChoice);
     return found ?? defaultCountryForCurrency(currency);
@@ -301,6 +318,19 @@ function QuoteForm() {
     () => parseServices(profile?.services).filter((s) => s.enabled),
     [profile],
   );
+
+  // Auto-default category and package on first load so user gets instant estimate immediately
+  useEffect(() => {
+    if (!categoryKey && categories.length > 0) {
+      setCategoryKey(categories[0].key);
+    }
+  }, [categories, categoryKey]);
+
+  useEffect(() => {
+    if (!packageKey && packages.length > 0) {
+      setPackageKey(packages[0].key);
+    }
+  }, [packages, packageKey]);
 
   const quote = useMemo(
     () =>
@@ -389,11 +419,20 @@ function QuoteForm() {
     return () => window.removeEventListener("online", syncOfflineQuotes);
   }, []);
 
-  const ready = !!categoryKey && !!packageKey && !!name.trim() && !!phone.trim();
+  const ready = !!categoryKey && !!packageKey && isNameValid && isPhoneValid;
 
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!profile || !ready || !chosenPackage) return;
+    if (!profile || !chosenPackage) return;
+
+    if (!isNameValid || !isPhoneValid) {
+      setNameTouched(true);
+      setPhoneTouched(true);
+      goToStep(4);
+      toast.error("Please provide your name and phone number to receive your quote.");
+      return;
+    }
+
     setSubmitting(true);
 
     // Offline mode save fallback
@@ -477,8 +516,8 @@ function QuoteForm() {
 
       toast.success(
         isTest
-          ? "Test request sent — check your alert notifications."
-          : "Request sent! They'll reach out shortly.",
+          ? "Test request sent — check your Telegram alerts."
+          : `Quote request sent to ${businessName}!`,
       );
       setDone(true);
     } catch (error) {
@@ -488,22 +527,19 @@ function QuoteForm() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !initialProfile) {
     return <SkeletonQuoteForm />;
   }
 
   if (isSuspended) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-5 bg-surface px-6 text-center py-12">
-        <div className="flex size-16 items-center justify-center rounded-3xl bg-amber-500/10 text-amber-500 shadow-md ring-1 ring-amber-500/20">
-          <AlertOctagon className="size-8" />
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface px-6 text-center">
+        <div className="size-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+          <AlertCircle className="size-8" />
         </div>
         <div className="max-w-md space-y-2">
-          <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-            Form Inactive
-          </span>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Quote Link Temporarily Inactive
+            {businessName} — Quote Link Inactive
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {suspensionReason ||
@@ -540,6 +576,7 @@ function QuoteForm() {
     );
   }
 
+  // Confirmation / Success Screen
   if (done) {
     return (
       <div className="min-h-screen bg-surface/50 flex flex-col items-center justify-center p-4 sm:p-6 text-foreground font-sans">
@@ -556,12 +593,12 @@ function QuoteForm() {
               {profile.logo_url ? (
                 <img
                   src={profile.logo_url}
-                  alt={profile.business_name}
+                  alt={businessName}
                   className="relative size-20 rounded-2xl object-cover border-2 border-emerald-500 shadow-xl shadow-emerald-500/10 bg-background"
                 />
               ) : (
-                <div className="relative size-20 rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-white font-bold text-2xl flex items-center justify-center border-2 border-emerald-500 shadow-xl shadow-emerald-500/20">
-                  {profile.business_name?.[0] || "D"}
+                <div className="relative size-20 rounded-2xl bg-gradient-to-br from-primary via-indigo-600 to-sky-500 text-white font-black text-2xl flex items-center justify-center border-2 border-emerald-500 shadow-xl shadow-emerald-500/20">
+                  {businessName?.[0] || "D"}
                 </div>
               )}
               <span className="absolute -bottom-1 -right-1 size-7 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-background shadow-md">
@@ -570,17 +607,17 @@ function QuoteForm() {
             </div>
 
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs font-bold mb-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold mb-2">
                 <span className="size-1.5 rounded-full bg-emerald-500 animate-ping" />
                 <span>Quote Request Received</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-display">
-                Request Sent to {profile.business_name}!
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-display">
+                Request Sent to {businessName}!
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto mt-1.5 leading-relaxed">
-                We've alerted{" "}
-                <span className="font-semibold text-foreground">{profile.business_name}</span>. A
-                detailer will review your vehicle specs and reach out to{" "}
+                We've notified the team at{" "}
+                <span className="font-semibold text-foreground">{businessName}</span>. A detailer
+                will review your vehicle specs and reach out to{" "}
                 <span className="font-semibold text-foreground">{fullPhone}</span> shortly.
               </p>
             </div>
@@ -593,11 +630,11 @@ function QuoteForm() {
                 <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest">
                   Estimated Total
                 </p>
-                <p className="text-3xl font-extrabold text-foreground font-display mt-0.5">
+                <p className="text-3xl font-black text-foreground font-display mt-0.5">
                   {money(quote.total, currency)}
                 </p>
               </div>
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl">
+              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl">
                 ✓ Quote Saved
               </span>
             </div>
@@ -641,8 +678,8 @@ function QuoteForm() {
             </div>
 
             <p className="text-[11px] text-muted-foreground/80 text-center pt-2 italic">
-              * Estimate calculated based on standard package rates. Final price confirmed upon shop
-              inspection.
+              * Estimate calculated based on {businessName}&apos;s standard rates. Final price
+              confirmed upon vehicle inspection.
             </p>
           </div>
 
@@ -658,7 +695,7 @@ function QuoteForm() {
                 >
                   <a href={`tel:${profile.phone}`}>
                     <Phone className="size-4" />
-                    <span>Call {profile.business_name}</span>
+                    <span>Call {businessName}</span>
                   </a>
                 </Button>
 
@@ -670,7 +707,7 @@ function QuoteForm() {
                 >
                   <a href={`sms:${profile.phone}`}>
                     <MessageSquare className="size-4 text-emerald-600" />
-                    <span>Text {profile.business_name}</span>
+                    <span>Text {businessName}</span>
                   </a>
                 </Button>
               </div>
@@ -681,7 +718,7 @@ function QuoteForm() {
               size="default"
               onClick={() => {
                 setDone(false);
-                setActiveStep(1);
+                goToStep(1);
               }}
               className="w-full rounded-2xl h-10 font-bold text-xs gap-2 text-muted-foreground hover:text-foreground"
             >
@@ -690,9 +727,9 @@ function QuoteForm() {
             </Button>
           </div>
 
-          {/* Subtle Shop Footer Notice (No SaaS redirects) */}
-          <div className="text-center pt-4 border-t border-border/30 text-[11px] text-muted-foreground/60">
-            <span>{profile.business_name} · Instant Online Estimates</span>
+          {/* Subtle Shop Footer Notice */}
+          <div className="text-center pt-4 border-t border-border/30 text-[11px] text-muted-foreground/70">
+            <span>{businessName} · Powered by Detailr Online · 100% Direct to Shop</span>
           </div>
         </motion.div>
       </div>
@@ -700,17 +737,17 @@ function QuoteForm() {
   }
 
   return (
-    <div className="min-h-screen bg-surface pb-32">
+    <div className="min-h-screen bg-surface pb-36">
       <SeoHead
-        title={`${profile.business_name} — Instant Auto Detailing Quote`}
+        title={`${businessName} — Instant Auto Detailing Quote`}
         description={
           profile.tagline?.trim()
             ? `${profile.tagline}. Instant car detailing price estimate builder.`
-            : `Get an instant auto detailing estimate from ${profile.business_name}. Choose packages, add vehicle photos, and book online in seconds.`
+            : `Get an instant auto detailing estimate from ${businessName}. Choose packages, add vehicle photos, and book online in seconds.`
         }
         canonicalUrl={`https://detailr.online/${profile.slug}`}
         keywords={[
-          profile.business_name,
+          businessName,
           "mobile auto detailing quote",
           "car detailing price calculator",
           "ceramic coating estimate",
@@ -718,7 +755,7 @@ function QuoteForm() {
         ]}
         ogImage={profile.logo_url || "https://detailr.online/og-image.jpg"}
         businessDetails={{
-          name: profile.business_name,
+          name: businessName,
           description: profile.tagline || undefined,
           url: `https://detailr.online/${profile.slug}`,
           phone: profile.phone || undefined,
@@ -727,17 +764,18 @@ function QuoteForm() {
           servicesOffered: packages.map((p) => p.label),
         }}
       />
+
       {isTest && (
         <div className="bg-slate-900 text-white px-4 py-2.5 shadow-xs border-b border-amber-500/40 sticky top-0 z-40">
-          <div className="mx-auto flex max-w-md items-center justify-between gap-3 text-xs">
+          <div className="mx-auto flex max-w-lg items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 min-w-0">
               <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-300 font-bold text-[11px]">
                 <FlaskConical className="size-3" />
               </span>
               <div className="min-w-0">
-                <span className="font-bold text-amber-300">Sandbox Test Mode</span>
+                <span className="font-bold text-amber-300">Sandbox Preview Mode</span>
                 <p className="text-[10px] text-slate-300 truncate">
-                  Quotes sent here generate a sample lead alert marked [TEST].
+                  Quotes sent here generate a sample lead marked [TEST].
                 </p>
               </div>
             </div>
@@ -767,37 +805,34 @@ function QuoteForm() {
           </div>
         </div>
       )}
-      <header className="border-b border-border/80 bg-background/90 px-5 py-4 backdrop-blur-md sticky top-0 z-30 shadow-xs">
-        <div className="mx-auto flex max-w-md items-center justify-between gap-3">
+
+      {/* Sticky Header with Shop Name and Contact */}
+      <header className="border-b border-border/80 bg-background/95 px-4 sm:px-6 py-3.5 backdrop-blur-md sticky top-0 z-30 shadow-xs">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             {profile.logo_url ? (
               <img
                 src={profile.logo_url}
-                alt={`${profile.business_name} logo`}
+                alt={`${businessName} logo`}
                 referrerPolicy="no-referrer"
                 loading="lazy"
                 decoding="async"
-                className="size-11 shrink-0 rounded-xl border border-border object-contain bg-background shadow-xs"
+                className="size-10 sm:size-11 shrink-0 rounded-xl border border-border object-contain bg-background shadow-xs"
               />
             ) : (
-              <img
-                src="/favicon.png"
-                alt="Detailr"
-                referrerPolicy="no-referrer"
-                loading="lazy"
-                decoding="async"
-                className="size-11 shrink-0 rounded-xl border border-border bg-background p-1.5 object-contain shadow-xs"
-              />
+              <div className="size-10 sm:size-11 shrink-0 rounded-xl bg-gradient-to-br from-primary to-indigo-600 text-white font-black text-base flex items-center justify-center shadow-xs">
+                {businessName?.[0] || "D"}
+              </div>
             )}
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h1 className="truncate text-base font-bold text-foreground">
-                  {profile.business_name}
-                </h1>
+                <span className="truncate text-base font-extrabold text-foreground">
+                  {businessName}
+                </span>
                 <CheckCircle2 className="size-3.5 text-primary shrink-0" />
               </div>
               <p className="truncate text-xs text-muted-foreground">
-                {profile.tagline || "Instant mobile detailing estimate"}
+                {profile.tagline || "Professional Auto Detailing"}
               </p>
             </div>
           </div>
@@ -807,21 +842,73 @@ function QuoteForm() {
               asChild
               variant="outline"
               size="sm"
-              className="h-8 shrink-0 gap-1 text-xs font-semibold"
+              className="h-8 shrink-0 gap-1.5 text-xs font-bold rounded-xl border-border/80"
             >
-              <a href={`tel:${profile.phone}`}>Call</a>
+              <a href={`tel:${profile.phone}`}>
+                <Phone className="size-3 text-primary" />
+                <span>Call Shop</span>
+              </a>
             </Button>
           )}
         </div>
       </header>
 
-      <form onSubmit={submit} className="mx-auto max-w-md px-5 py-6 space-y-6">
+      {/* Prominent Brand Hero Banner */}
+      <div className="bg-gradient-to-b from-primary/5 via-background to-surface border-b border-border/60 py-6 px-5 sm:px-6">
+        <div className="mx-auto max-w-lg space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-extrabold uppercase tracking-wider">
+              <ShieldCheck className="size-3 text-primary" />
+              Verified Detailing Shop
+            </span>
+            <span className="text-[11px] text-muted-foreground">· Fast Response</span>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+            Get an Instant Quote from {businessName}
+          </h1>
+
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            {profile.tagline ||
+              `Customized auto detailing pricing built for your specific vehicle. Transparent pricing, no hidden fees, and zero obligation.`}
+          </p>
+
+          {/* Trust Guarantees */}
+          <div className="grid grid-cols-3 gap-2 pt-1 text-[11px] font-semibold text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Check className="size-3.5 text-emerald-500 shrink-0" />
+              <span>Instant Total</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Check className="size-3.5 text-emerald-500 shrink-0" />
+              <span>100% Free</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Check className="size-3.5 text-emerald-500 shrink-0" />
+              <span>No Obligation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div ref={formTopRef} />
+
+      <form onSubmit={submit} className="mx-auto max-w-lg px-4 sm:px-6 py-6 space-y-6">
         {/* Visual Progress Stepper Header */}
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
+        <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground mb-2">
-            <span>Step {activeStep} of 4</span>
+            <span className="font-bold text-foreground">
+              Step {activeStep} of 4:{" "}
+              {activeStep === 1
+                ? "Select Vehicle"
+                : activeStep === 2
+                  ? "Select Services"
+                  : activeStep === 3
+                    ? "Photos & Notes"
+                    : "Review & Contact"}
+            </span>
             <span className="font-mono text-primary font-bold">
-              {Math.round((activeStep / 4) * 100)}% Completed
+              {Math.round((activeStep / 4) * 100)}% Complete
             </span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
@@ -847,12 +934,12 @@ function QuoteForm() {
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => setActiveStep(s.id)}
+                  onClick={() => goToStep(s.id)}
                   className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 transition-all cursor-pointer ${
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
+                      ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/30"
                       : s.isDone
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
                         : "bg-secondary/60 text-muted-foreground hover:bg-secondary"
                   }`}
                 >
@@ -863,7 +950,7 @@ function QuoteForm() {
                       <IconComp className="size-3.5" />
                     )}
                   </div>
-                  <span className="truncate max-w-full">{s.label}</span>
+                  <span className="truncate max-w-full text-[10px]">{s.label}</span>
                 </button>
               );
             })}
@@ -872,6 +959,7 @@ function QuoteForm() {
 
         {/* Animated Page Transitions for Steps */}
         <AnimatePresence mode="wait">
+          {/* STEP 1: VEHICLE SELECTION */}
           {activeStep === 1 && (
             <motion.div
               key="step-1"
@@ -881,9 +969,14 @@ function QuoteForm() {
               transition={{ duration: 0.22, ease: "easeInOut" }}
               className="space-y-5"
             >
-              <section>
-                <StepLabel step={1} title="Select Your Vehicle" />
-                <div className="mt-3 space-y-2.5">
+              <section className="space-y-3">
+                <StepLabel step={1} title={`Select Your Vehicle Type for ${businessName}`} />
+                <p className="text-xs text-muted-foreground">
+                  Choose the size that best matches your vehicle so {businessName} can calculate
+                  exact labor and material rates.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                   {categories.map((c) => {
                     const active = categoryKey === c.key;
                     return (
@@ -894,39 +987,61 @@ function QuoteForm() {
                           setCategoryKey(c.key);
                         }}
                         aria-pressed={active}
-                        className={`flex w-full cursor-pointer items-center justify-between rounded-xl border p-4 text-left transition-all ${
+                        className={`flex flex-col justify-between rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
                           active
-                            ? "border-primary bg-accent shadow-card"
-                            : "border-border bg-card hover:border-input"
+                            ? "border-primary bg-primary/5 shadow-md ring-1 ring-primary/20"
+                            : "border-border/80 bg-card hover:border-border hover:bg-muted/20"
                         }`}
                       >
-                        <span>
-                          <span className="block text-sm font-semibold">{c.label}</span>
-                          <span className="mt-0.5 block text-xs text-muted-foreground">
-                            {c.sub}
-                          </span>
-                        </span>
-                        <span className="flex items-center gap-2">
-                          {c.uplift !== 0 && (
-                            <span className="font-display text-sm font-bold text-muted-foreground">
-                              {c.uplift > 0 ? "+" : "−"}
-                              {money(Math.abs(c.uplift), currency)}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-bold text-foreground flex items-center gap-2">
+                              <Car
+                                className={`size-4 ${active ? "text-primary" : "text-muted-foreground"}`}
+                              />
+                              {c.label}
                             </span>
-                          )}
-                          {active && <Check className="size-4 text-primary" />}
-                        </span>
+                            {active && (
+                              <span className="size-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                                <Check className="size-2.5 stroke-[3]" />
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground block leading-snug">
+                            {c.sub || "Standard detailing category"}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 pt-2 border-t border-border/40 flex items-center justify-between text-xs">
+                          <span className="text-[11px] text-muted-foreground font-medium">
+                            Rate adjustment:
+                          </span>
+                          <span className="font-mono font-bold text-foreground">
+                            {c.uplift !== 0
+                              ? `${c.uplift > 0 ? "+" : "−"}${money(Math.abs(c.uplift), currency)}`
+                              : "Standard Base"}
+                          </span>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
-                <div className="mt-4 space-y-1.5">
-                  <Label htmlFor="vehicle_desc">Year, make & model (optional)</Label>
+
+                <div className="mt-4 rounded-2xl border border-border/80 bg-card p-4 space-y-2">
+                  <Label htmlFor="vehicle_desc" className="text-xs font-bold text-foreground">
+                    Vehicle Year, Make & Model (Optional)
+                  </Label>
                   <Input
                     id="vehicle_desc"
                     value={vehicleDesc}
                     onChange={(e) => setVehicleDesc(e.target.value)}
-                    placeholder="e.g. 2024 Tesla Model Y"
+                    placeholder="e.g. 2024 Tesla Model Y, 2022 Ford F-150"
+                    className="h-11 rounded-xl text-sm"
                   />
+                  <p className="text-[11px] text-muted-foreground">
+                    Helps {businessName} prepare the right tools and specialty products for your
+                    paint and trim.
+                  </p>
                 </div>
               </section>
 
@@ -937,17 +1052,18 @@ function QuoteForm() {
                     if (!categoryKey && categories[0]) {
                       setCategoryKey(categories[0].key);
                     }
-                    setActiveStep(2);
+                    goToStep(2);
                   }}
-                  className="w-full justify-between font-bold h-12 text-sm shadow-sm cursor-pointer"
+                  className="w-full justify-between font-bold h-12 text-sm shadow-md rounded-2xl cursor-pointer"
                 >
-                  <span>Continue to Packages</span>
+                  <span>Continue to {businessName}&apos;s Packages</span>
                   <ChevronRight className="size-4" />
                 </Button>
               </div>
             </motion.div>
           )}
 
+          {/* STEP 2: PACKAGES & ADD-ONS */}
           {activeStep === 2 && (
             <motion.div
               key="step-2"
@@ -957,15 +1073,14 @@ function QuoteForm() {
               transition={{ duration: 0.22, ease: "easeInOut" }}
               className="space-y-6"
             >
-              <section>
-                <StepLabel step={2} title="Select Service Package" />
-                {!packageKey && (
-                  <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5">
-                    <AlertCircle className="size-3.5 shrink-0" />
-                    Please select a package to calculate your instant estimate.
-                  </p>
-                )}
-                <div className="mt-3 space-y-2.5">
+              <section className="space-y-3">
+                <StepLabel step={2} title={`${businessName}'s Detailing Packages`} />
+                <p className="text-xs text-muted-foreground">
+                  Select the level of care your vehicle needs. All packages are performed by{" "}
+                  {businessName}.
+                </p>
+
+                <div className="space-y-3 mt-2">
                   {packages.map((p) => {
                     const active = packageKey === p.key;
                     return (
@@ -974,66 +1089,96 @@ function QuoteForm() {
                         type="button"
                         onClick={() => setPackageKey(p.key)}
                         aria-pressed={active}
-                        className={`flex w-full cursor-pointer items-center justify-between rounded-xl border p-4 text-left transition-all ${
+                        className={`flex w-full cursor-pointer items-start justify-between rounded-2xl border-2 p-4 text-left transition-all ${
                           active
-                            ? "border-primary bg-accent shadow-card"
-                            : "border-border bg-card hover:border-input"
+                            ? "border-primary bg-primary/5 shadow-md ring-1 ring-primary/20"
+                            : "border-border/80 bg-card hover:border-border hover:bg-muted/20"
                         }`}
                       >
-                        <span>
-                          <span className="block text-sm font-semibold">{p.label}</span>
-                          <span className="mt-0.5 block text-xs text-muted-foreground">
-                            {p.sub}
-                          </span>
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <span className="font-display text-base font-bold">
+                        <div className="space-y-1.5 flex-1 pr-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm sm:text-base font-extrabold text-foreground">
+                              {p.label}
+                            </span>
+                            {active && (
+                              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+                                Selected
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {p.sub || "Complete detailing treatment"}
+                          </p>
+                        </div>
+
+                        <div className="text-right shrink-0 flex flex-col items-end justify-between self-stretch">
+                          <span className="font-mono text-base sm:text-lg font-black text-foreground">
                             {money(p.price, currency)}
                           </span>
-                          {active && <Check className="size-4 text-primary" />}
-                        </span>
+                          {active ? (
+                            <span className="size-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center mt-2">
+                              <Check className="size-3 stroke-[3]" />
+                            </span>
+                          ) : (
+                            <span className="size-5 rounded-full border border-border/80 mt-2" />
+                          )}
+                        </div>
                       </button>
                     );
                   })}
                 </div>
               </section>
 
-              <section>
-                <StepLabel step={3} title="Optional Service Add-ons" />
-                <div className="mt-3 space-y-2.5">
-                  {services.map((a) => {
-                    const active = addons.includes(a.key);
-                    return (
-                      <label
-                        key={a.key}
-                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${
-                          active
-                            ? "border-primary bg-accent shadow-card"
-                            : "border-border bg-card hover:border-input"
-                        }`}
-                      >
-                        <Checkbox checked={active} onCheckedChange={() => toggleAddon(a.key)} />
-                        <span className="flex-1">
-                          <span className="block text-sm font-semibold">{a.label}</span>
-                          <span className="mt-0.5 block text-xs text-muted-foreground">
-                            {a.sub}
+              {/* Optional Service Add-ons */}
+              {services.length > 0 && (
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                      <Sparkles className="size-3.5 text-amber-500" />
+                      Optional Add-ons & Upgrades
+                    </h3>
+                    <span className="text-[10px] text-muted-foreground">Select any that apply</span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {services.map((a) => {
+                      const active = addons.includes(a.key);
+                      return (
+                        <label
+                          key={a.key}
+                          className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-3.5 transition-all ${
+                            active
+                              ? "border-primary bg-primary/5 shadow-xs"
+                              : "border-border/80 bg-card hover:border-border"
+                          }`}
+                        >
+                          <Checkbox checked={active} onCheckedChange={() => toggleAddon(a.key)} />
+                          <div className="flex-1 min-w-0">
+                            <span className="block text-xs font-bold text-foreground">
+                              {a.label}
+                            </span>
+                            {a.sub && (
+                              <span className="block text-[11px] text-muted-foreground truncate">
+                                {a.sub}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-mono text-xs font-bold text-primary shrink-0">
+                            +{money(a.price, currency)}
                           </span>
-                        </span>
-                        <span className="font-display text-sm font-bold text-primary">
-                          +{money(a.price, currency)}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </section>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
 
               <div className="flex gap-2.5 pt-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setActiveStep(1)}
-                  className="gap-1 font-semibold h-12 cursor-pointer"
+                  onClick={() => goToStep(1)}
+                  className="gap-1 font-bold h-12 rounded-2xl cursor-pointer"
                 >
                   <ChevronLeft className="size-4" /> Back
                 </Button>
@@ -1043,17 +1188,18 @@ function QuoteForm() {
                     if (!packageKey && packages[0]) {
                       setPackageKey(packages[0].key);
                     }
-                    setActiveStep(3);
+                    goToStep(3);
                   }}
-                  className="flex-1 justify-between font-bold h-12 text-sm shadow-sm cursor-pointer"
+                  className="flex-1 justify-between font-bold h-12 text-sm shadow-md rounded-2xl cursor-pointer"
                 >
-                  <span>Continue to Photos</span>
+                  <span>Continue to Photos & Notes</span>
                   <ChevronRight className="size-4" />
                 </Button>
               </div>
             </motion.div>
           )}
 
+          {/* STEP 3: PHOTOS & NOTES */}
           {activeStep === 3 && (
             <motion.div
               key="step-3"
@@ -1064,17 +1210,19 @@ function QuoteForm() {
               className="space-y-6"
             >
               {profile.allow_photos !== false ? (
-                <section>
-                  <StepLabel step={4} title="Vehicle Photos (Optional)" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Snap the messiest spots so the detailer gives you an accurate service quote. Up
-                    to {MAX_PHOTOS}.
+                <section className="space-y-3">
+                  <StepLabel step={3} title={`Vehicle Photos for ${businessName} (Optional)`} />
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Snap or upload photos of your vehicle (especially scratches, pet hair, or tough
+                    spots). This helps {businessName} review condition and confirm your exact price
+                    faster.
                   </p>
+
                   <div className="mt-3 grid grid-cols-3 gap-2.5">
                     {photos.map((file, i) => (
                       <div
                         key={`${file.name}-${i}`}
-                        className="relative aspect-square overflow-hidden rounded-xl border border-border bg-card"
+                        className="relative aspect-square overflow-hidden rounded-2xl border border-border bg-card shadow-xs"
                       >
                         <img
                           src={URL.createObjectURL(file)}
@@ -1085,16 +1233,17 @@ function QuoteForm() {
                           type="button"
                           aria-label="Remove photo"
                           onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
-                          className="absolute top-1.5 right-1.5 flex size-6 cursor-pointer items-center justify-center rounded-full bg-foreground/80 text-background"
+                          className="absolute top-1.5 right-1.5 flex size-6 cursor-pointer items-center justify-center rounded-full bg-foreground/80 text-background hover:bg-foreground transition-colors shadow-sm"
                         >
                           <X className="size-3.5" />
                         </button>
                       </div>
                     ))}
                     {photos.length < MAX_PHOTOS && (
-                      <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-input bg-card text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+                      <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-border/80 bg-muted/20 text-muted-foreground hover:border-primary hover:text-primary transition-colors p-2 text-center">
                         <Camera className="size-5" />
-                        <span className="text-[11px] font-medium">Add photo</span>
+                        <span className="text-[11px] font-bold">Add Photo</span>
+                        <span className="text-[9px] opacity-70">Up to {MAX_PHOTOS}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -1107,36 +1256,52 @@ function QuoteForm() {
                   </div>
                 </section>
               ) : (
-                <div className="rounded-xl border border-border bg-card p-6 text-center space-y-2">
+                <div className="rounded-2xl border border-border/80 bg-card p-6 text-center space-y-2">
                   <Camera className="size-8 mx-auto text-muted-foreground/60" />
-                  <h3 className="text-sm font-bold text-foreground">Photo Upload Skipped</h3>
+                  <h3 className="text-sm font-bold text-foreground">Photos Not Required</h3>
                   <p className="text-xs text-muted-foreground">
-                    This detailing shop doesn't require photo uploads for estimates.
+                    {businessName} provides instant quotes without mandatory photo uploads.
                   </p>
                 </div>
               )}
+
+              {/* Special Instructions / Notes */}
+              <div className="rounded-2xl border border-border/80 bg-card p-4 space-y-2">
+                <Label htmlFor="notes" className="text-xs font-bold text-foreground">
+                  Notes or Special Requests for {businessName} (Optional)
+                </Label>
+                <Textarea
+                  id="notes"
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g., Heavy pet hair in back seat, water spot removal, parking in driveway..."
+                  className="rounded-xl text-xs resize-none"
+                />
+              </div>
 
               <div className="flex gap-2.5 pt-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setActiveStep(2)}
-                  className="gap-1 font-semibold h-12 cursor-pointer"
+                  onClick={() => goToStep(2)}
+                  className="gap-1 font-bold h-12 rounded-2xl cursor-pointer"
                 >
                   <ChevronLeft className="size-4" /> Back
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => setActiveStep(4)}
-                  className="flex-1 justify-between font-bold h-12 text-sm shadow-sm cursor-pointer"
+                  onClick={() => goToStep(4)}
+                  className="flex-1 justify-between font-bold h-12 text-sm shadow-md rounded-2xl cursor-pointer"
                 >
-                  <span>Continue to Contact Info</span>
+                  <span>Continue to Review & Contact</span>
                   <ChevronRight className="size-4" />
                 </Button>
               </div>
             </motion.div>
           )}
 
+          {/* STEP 4: CONTACT & REVIEW */}
           {activeStep === 4 && (
             <motion.div
               key="step-4"
@@ -1146,55 +1311,79 @@ function QuoteForm() {
               transition={{ duration: 0.22, ease: "easeInOut" }}
               className="space-y-6"
             >
-              {/* Estimate Summary Box */}
-              <section>
-                <StepLabel step={5} title="Your Calculated Estimate" />
-                <div className="gradient-ink mt-3 rounded-xl p-5 text-primary-foreground shadow-card">
-                  <p className="text-xs tracking-widest uppercase opacity-70">Estimated total</p>
-                  <p className="mt-1 font-display text-4xl font-bold">
-                    {money(quote.total, currency)}
-                  </p>
-                  <div className="mt-3 space-y-1 text-xs opacity-80">
-                    {chosenPackage ? (
-                      <p>
-                        {chosenPackage.label} ({chosenCategory?.label}) —{" "}
-                        {money(quote.servicePrice, currency)}
-                      </p>
-                    ) : (
-                      <p>Pick a vehicle and service to see your price.</p>
+              {/* Itemized Estimate Review Card */}
+              <section className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    Calculated Estimate Summary
+                  </span>
+                  <span className="text-[11px] font-mono text-muted-foreground">
+                    {businessName} Pricing
+                  </span>
+                </div>
+
+                <div className="rounded-2xl border-2 border-primary/20 bg-primary/5 p-5 space-y-3">
+                  <div className="flex items-baseline justify-between border-b border-primary/10 pb-3">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Estimated Total
+                    </span>
+                    <span className="font-mono text-3xl font-black text-primary">
+                      {money(quote.total, currency)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>Vehicle:</span>
+                      <span className="font-bold text-foreground">
+                        {vehicleDesc.trim() || chosenCategory?.label || "Vehicle"} (
+                        {chosenCategory?.label})
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>Package:</span>
+                      <span className="font-bold text-foreground">
+                        {chosenPackage?.label} ({money(quote.servicePrice, currency)})
+                      </span>
+                    </div>
+
+                    {addons.length > 0 && (
+                      <div className="flex justify-between">
+                        <span>Add-ons ({addons.length}):</span>
+                        <span className="font-bold text-foreground text-right max-w-[220px]">
+                          {addons
+                            .map((key) => services.find((a) => a.key === key)?.label || key)
+                            .join(", ")}
+                        </span>
+                      </div>
                     )}
-                    {addons.map((key) => {
-                      const a = services.find((item) => item.key === key);
-                      return (
-                        <p key={key}>
-                          {a?.label ?? key} — {money(Number(a?.price) || 0, currency)}
-                        </p>
-                      );
-                    })}
                   </div>
                 </div>
               </section>
 
               {/* Contact Details Form with Real-Time Validation */}
-              <section>
-                <StepLabel step={6} title="Where Should We Send Your Quote?" />
-                <div className="mt-3 space-y-4 rounded-xl border border-border bg-card p-5 shadow-2xs">
+              <section className="space-y-3">
+                <StepLabel step={4} title={`Where Should ${businessName} Send Your Quote?`} />
+                <div className="space-y-4 rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
                   {/* Name Input with Real-time Validation */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="name" className="font-semibold">
+                      <Label htmlFor="name" className="text-xs font-bold text-foreground">
                         Full Name *
                       </Label>
                       {nameTouched && (
                         <span
-                          className={`text-[11px] font-bold flex items-center gap-1 ${isNameValid ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}
+                          className={`text-[11px] font-bold flex items-center gap-1 ${
+                            isNameValid ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"
+                          }`}
                         >
                           {isNameValid ? (
                             <CheckCircle2 className="size-3" />
                           ) : (
                             <AlertCircle className="size-3" />
                           )}
-                          {isNameValid ? "Valid name" : "Required"}
+                          {isNameValid ? "Valid" : "Required"}
                         </span>
                       )}
                     </div>
@@ -1207,9 +1396,9 @@ function QuoteForm() {
                         if (!nameTouched) setNameTouched(true);
                       }}
                       onBlur={() => setNameTouched(true)}
-                      placeholder="e.g. Sarah Williams"
+                      placeholder="e.g. Alex Morgan"
                       autoComplete="name"
-                      className={`transition-colors ${
+                      className={`h-11 rounded-xl text-sm transition-colors ${
                         nameTouched
                           ? isNameValid
                             ? "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/10"
@@ -1228,26 +1417,28 @@ function QuoteForm() {
                   {/* Phone Input with Real-time Validation */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="phone" className="font-semibold">
-                        Phone Number *
+                      <Label htmlFor="phone" className="text-xs font-bold text-foreground">
+                        Mobile Phone Number *
                       </Label>
                       {phoneTouched && (
                         <span
-                          className={`text-[11px] font-bold flex items-center gap-1 ${isPhoneValid ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}
+                          className={`text-[11px] font-bold flex items-center gap-1 ${
+                            isPhoneValid ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"
+                          }`}
                         >
                           {isPhoneValid ? (
                             <CheckCircle2 className="size-3" />
                           ) : (
                             <AlertCircle className="size-3" />
                           )}
-                          {isPhoneValid ? "Valid phone" : "Required"}
+                          {isPhoneValid ? "Valid number" : "Required"}
                         </span>
                       )}
                     </div>
                     <div className="flex w-full flex-wrap sm:flex-nowrap gap-2">
                       <Select value={selectedCountry.code} onValueChange={setCountryChoice}>
                         <SelectTrigger
-                          className="w-full sm:w-[110px] shrink-0"
+                          className="w-full sm:w-[110px] h-11 rounded-xl shrink-0"
                           aria-label="Country code"
                         >
                           <SelectValue />
@@ -1267,7 +1458,7 @@ function QuoteForm() {
                         required
                         type="tel"
                         inputMode="tel"
-                        className={`min-w-0 flex-1 transition-colors ${
+                        className={`h-11 rounded-xl text-sm min-w-0 flex-1 transition-colors ${
                           phoneTouched
                             ? isPhoneValid
                               ? "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/10"
@@ -1291,22 +1482,19 @@ function QuoteForm() {
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        {profile.business_name} will send details to {selectedCountry.dial}{" "}
+                        {businessName} will send your estimate details to {selectedCountry.dial}{" "}
                         {phone.trim() || "…"}
                       </p>
                     )}
                   </div>
+                </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="notes">Notes or Special Requests (optional)</Label>
-                    <Textarea
-                      id="notes"
-                      rows={3}
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Dog hair in back seat, spilled coffee on passenger side..."
-                    />
-                  </div>
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground px-1">
+                  <ShieldCheck className="size-4 text-emerald-500 shrink-0" />
+                  <span>
+                    <strong>Privacy Assurance:</strong> Your contact info is sent directly to{" "}
+                    {businessName} for this estimate only. No spam, ever.
+                  </span>
                 </div>
               </section>
 
@@ -1314,70 +1502,130 @@ function QuoteForm() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setActiveStep(3)}
-                  className="gap-1 font-semibold h-12 cursor-pointer"
+                  onClick={() => goToStep(3)}
+                  className="gap-1 font-bold h-12 rounded-2xl cursor-pointer"
                 >
                   <ChevronLeft className="size-4" /> Back
                 </Button>
                 <Button
                   type="submit"
                   variant="hero"
-                  disabled={!ready || submitting}
-                  className="flex-1 font-bold h-12 text-sm shadow-lift cursor-pointer"
+                  disabled={submitting}
+                  className="flex-1 font-extrabold h-12 text-sm shadow-lg shadow-primary/20 rounded-2xl cursor-pointer"
                 >
                   {submitting && <Loader2 className="size-4 animate-spin" />}
-                  Request Instant Quote
+                  Request Quote from {businessName}
                 </Button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="pt-4 pb-6 flex flex-col items-center justify-center gap-1">
-          <QuoteFlowLogo
-            size="xs"
-            linkToHome={false}
-            className="text-muted-foreground opacity-80"
-          />
-          <span className="text-[10px] text-muted-foreground/80">Powered by Detailr Online</span>
+        {/* Footer Brand Seal */}
+        <div className="pt-6 pb-8 flex flex-col items-center justify-center gap-1.5 text-center">
+          <p className="text-xs font-bold text-foreground">
+            Official Instant Quote Form for {businessName}
+          </p>
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <span>Powered by Detailr Online</span>
+            <span aria-hidden="true">·</span>
+            <span>Direct to Shop</span>
+          </div>
         </div>
       </form>
 
+      {/* Full-Screen Loading Feedback on Quote Submission */}
       <GlobalLoadingOverlay
         isLoading={submitting}
-        title="Processing Your Quote"
-        subtitle={`Sending your request directly to ${profile.business_name}...`}
+        title="Sending Your Request"
+        subtitle={`Connecting directly with ${businessName}...`}
         iconUrl={profile.logo_url || "/favicon.png"}
         steps={[
-          "Calculating vehicle modifiers...",
-          "Applying selected service packages...",
-          "Notifying shop team instantly...",
+          "Calculating vehicle package estimate...",
+          "Attaching customer notes and specifications...",
+          `Alerting ${businessName} detailing team...`,
         ]}
       />
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-border/80 bg-background/95 px-5 py-3.5 backdrop-blur-md shadow-2xl z-40">
-        <div className="mx-auto max-w-md">
-          <div className="mb-2 flex items-baseline justify-between">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+      {/* Floating Bottom Action Bar (Context-Aware for Each Step) */}
+      <div className="fixed inset-x-0 bottom-0 border-t border-border/80 bg-background/95 px-4 sm:px-6 py-3.5 backdrop-blur-md shadow-2xl z-40">
+        <div className="mx-auto max-w-lg flex items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
               Estimated Total
             </span>
-            <span className="font-display text-2xl font-bold text-foreground">
+            <span className="font-mono text-2xl font-black text-foreground">
               {money(quote.total, currency)}
             </span>
           </div>
-          <Button
-            variant="hero"
-            size="xl"
-            disabled={!ready || submitting}
-            onClick={() => submit()}
-            className="w-full shadow-lift font-bold"
-          >
-            {submitting && <Loader2 className="size-4 animate-spin" />}
-            Request Instant Quote
-          </Button>
-          <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
-            ✓ Free instant estimate · No payment required now
-          </p>
+
+          <div className="flex-1 max-w-[260px] sm:max-w-[280px]">
+            {activeStep === 1 && (
+              <Button
+                type="button"
+                variant="hero"
+                size="lg"
+                onClick={() => {
+                  if (!categoryKey && categories[0]) {
+                    setCategoryKey(categories[0].key);
+                  }
+                  goToStep(2);
+                }}
+                className="w-full h-11 rounded-xl font-bold text-xs gap-1.5 shadow-md"
+              >
+                <span>Choose Packages</span>
+                <ArrowRight className="size-3.5" />
+              </Button>
+            )}
+
+            {activeStep === 2 && (
+              <Button
+                type="button"
+                variant="hero"
+                size="lg"
+                onClick={() => {
+                  if (!packageKey && packages[0]) {
+                    setPackageKey(packages[0].key);
+                  }
+                  goToStep(3);
+                }}
+                className="w-full h-11 rounded-xl font-bold text-xs gap-1.5 shadow-md"
+              >
+                <span>Photos & Notes</span>
+                <ArrowRight className="size-3.5" />
+              </Button>
+            )}
+
+            {activeStep === 3 && (
+              <Button
+                type="button"
+                variant="hero"
+                size="lg"
+                onClick={() => goToStep(4)}
+                className="w-full h-11 rounded-xl font-bold text-xs gap-1.5 shadow-md"
+              >
+                <span>Review & Contact</span>
+                <ArrowRight className="size-3.5" />
+              </Button>
+            )}
+
+            {activeStep === 4 && (
+              <Button
+                type="button"
+                variant="hero"
+                size="lg"
+                disabled={submitting}
+                onClick={() => submit()}
+                className="w-full h-11 rounded-xl font-extrabold text-xs shadow-md"
+              >
+                {submitting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <span>Send to {businessName}</span>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
