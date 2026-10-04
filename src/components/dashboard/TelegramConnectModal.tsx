@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, ExternalLink, Loader2, Send, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Loader2,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Lock,
+  Trash2,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +21,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { prepareTelegramLink, sendQuoteAlert } from "@/lib/telegram.functions";
+import {
+  prepareTelegramLink,
+  sendQuoteAlert,
+  disconnectTelegramBot,
+} from "@/lib/telegram.functions";
 import type { Profile } from "./types";
 
 export function TelegramConnectModal({
@@ -25,6 +40,7 @@ export function TelegramConnectModal({
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const prepare = useMutation({
     mutationFn: () => prepareTelegramLink(),
@@ -64,7 +80,7 @@ export function TelegramConnectModal({
           service: { label: "Full Detail", price: 190 },
           addons: [{ label: "Pet Hair Removal", price: 40 }],
           estimate: 230,
-          notes: "Testing Telegram connection!",
+          notes: "Testing 1:1 Telegram lead connection!",
           isTest: true,
         },
       });
@@ -81,34 +97,116 @@ export function TelegramConnectModal({
     }
   };
 
+  const handleDisconnect = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to unlink this Telegram bot? You will stop receiving phone alerts for new leads until you reconnect.",
+      )
+    ) {
+      return;
+    }
+
+    setDisconnecting(true);
+    try {
+      await disconnectTelegramBot();
+      toast.success("Telegram bot unlinked successfully.");
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      prepare.mutate();
+    } catch (err: unknown) {
+      const e = err as Error;
+      toast.error(e.message || "Failed to disconnect Telegram bot.");
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md rounded-3xl border-border/80 bg-background/95 backdrop-blur-xl p-6 shadow-2xl">
         <DialogHeader className="space-y-2 text-left">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-600 w-fit">
-            <Send className="size-3.5" />
-            <span>Instant Phone Alerts</span>
+            <Lock className="size-3.5" />
+            <span>Anti-Hijacking 1:1 Protection</span>
           </div>
 
           <DialogTitle className="text-xl font-bold tracking-tight font-display text-foreground">
-            Connect Telegram Bot
+            {isConnected ? "Telegram Bot Active" : "Connect Telegram Bot"}
           </DialogTitle>
 
           <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-            Telegram is a free messaging app (iPhone & Android) that sends you instant phone alerts
-            with customer contact info whenever someone asks for a quote.
+            Instant phone alerts for every incoming customer quote with phone number, car specs, and
+            1-tap call shortcuts.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Active 1:1 Connection Banner (when linked) */}
+        {isConnected && (
+          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-blue-500 animate-pulse" />
+                <span className="text-xs font-bold text-foreground">
+                  1:1 Exclusive Account Lock
+                </span>
+              </div>
+              <span className="text-[10px] font-mono font-bold bg-blue-500/10 text-primary px-2 py-0.5 rounded-full border border-blue-500/20">
+                ACTIVE
+              </span>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Linked Chat ID:{" "}
+              <code className="font-mono font-bold text-foreground bg-muted/60 px-1.5 py-0.5 rounded">
+                {profile.telegram_chat_id}
+              </code>
+              . This chat is bound exclusively to{" "}
+              <strong>{profile.business_name || "your shop"}</strong>. No other shop or user can
+              intercept or hijack your customer leads.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-xl px-3 text-xs font-bold gap-1.5"
+                disabled={testing}
+                onClick={testAlert}
+              >
+                {testing ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <ShieldCheck className="size-3.5 text-blue-500" />
+                )}
+                <span>Send Test Alert</span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-xl px-2.5 text-xs font-bold text-destructive hover:bg-destructive/10 gap-1.5 ml-auto"
+                disabled={disconnecting}
+                onClick={handleDisconnect}
+              >
+                {disconnecting ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="size-3.5" />
+                )}
+                <span>Unlink Bot</span>
+              </Button>
+            </div>
+          </div>
+        )}
 
         {prepare.isPending ? (
           <div className="py-12 text-center space-y-3">
             <Loader2 className="size-8 animate-spin mx-auto text-blue-500" />
             <p className="text-xs font-semibold text-muted-foreground">
-              Generating secure bot connection link...
+              Generating secure single-use bot link...
             </p>
           </div>
         ) : linkData ? (
-          <div className="space-y-5 pt-2">
+          <div className="space-y-4 pt-1">
             {/* Direct Open Button (Unblockable HTML <a> tag) */}
             <div className="space-y-2">
               <Button
@@ -119,7 +217,9 @@ export function TelegramConnectModal({
               >
                 <a href={linkData.href} target="_blank" rel="noopener noreferrer">
                   <Send className="size-4" />
-                  <span>Open Telegram Bot App</span>
+                  <span>
+                    {isConnected ? "Reconnect / Change Telegram App" : "Open Telegram Bot App"}
+                  </span>
                   <ExternalLink className="size-4 ml-auto opacity-70" />
                 </a>
               </Button>
@@ -131,32 +231,35 @@ export function TelegramConnectModal({
                 onClick={copyLink}
               >
                 {copied ? (
-                  <Check className="size-3.5 text-emerald-600" />
+                  <Check className="size-3.5 text-primary" />
                 ) : (
                   <Copy className="size-3.5" />
                 )}
-                <span>{copied ? "Link Copied!" : "Copy Connection Link"}</span>
+                <span>{copied ? "Link Copied!" : "Copy Single-Use Link"}</span>
               </Button>
             </div>
 
-            {/* Step by step guide */}
-            <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 space-y-3">
+            {/* Anti-hijacking assurance box */}
+            <div className="rounded-2xl border border-border/60 bg-muted/40 p-3.5 space-y-2">
               <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <Sparkles className="size-3.5 text-amber-500" />
-                How to connect:
+                Anti-Lead-Hijacking Architecture:
               </h4>
 
-              <ol className="text-xs text-muted-foreground space-y-2 list-decimal list-inside font-medium leading-relaxed">
+              <ul className="text-[11px] text-muted-foreground space-y-1.5 list-disc list-inside font-medium leading-relaxed">
                 <li>
-                  Tap <strong>Open Telegram Bot App</strong> above.
+                  <strong>Single-Use Tokens:</strong> Each connection link is cryptographically
+                  generated and expires immediately after use.
                 </li>
                 <li>
-                  Tap <strong>START</strong> at the bottom of the Telegram chat.
+                  <strong>1:1 Exclusive Account Lock:</strong> A Telegram account can only belong to
+                  one shop. No duplicate or overlapping chats.
                 </li>
                 <li>
-                  You will get a message: <em>"Shop Connected!"</em>
+                  <strong>Auto-Healing Connection:</strong> Telegram webhook auto-syncs with
+                  failover retry so you never drop incoming customer leads.
                 </li>
-              </ol>
+              </ul>
             </div>
 
             {/* Manual fallback code */}
@@ -170,32 +273,27 @@ export function TelegramConnectModal({
               </code>
             </div>
 
-            {/* Connection Test & Status Footer */}
-            <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-3">
+            {/* Footer */}
+            <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2">
                 <span
                   className={`size-2.5 rounded-full ${
-                    isConnected ? "bg-emerald-500 ring-4 ring-emerald-500/20" : "bg-amber-500"
+                    isConnected ? "bg-primary ring-4 ring-primary/20" : "bg-amber-500"
                   }`}
                 />
-                <span className="text-xs font-bold">
-                  {isConnected ? "Bot Active" : "Waiting for Start..."}
+                <span className="font-bold">
+                  {isConnected ? "Connected & Protected" : "Waiting for Start..."}
                 </span>
               </div>
 
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="h-8 rounded-xl px-3 text-xs font-bold border-border/60"
-                disabled={testing}
-                onClick={testAlert}
+                className="h-8 rounded-xl px-2.5 text-xs font-bold gap-1 text-muted-foreground hover:text-foreground"
+                onClick={() => prepare.mutate()}
               >
-                {testing ? (
-                  <Loader2 className="size-3 animate-spin mr-1.5" />
-                ) : (
-                  <ShieldCheck className="size-3.5 mr-1.5 text-blue-500" />
-                )}
-                <span>Test Connection</span>
+                <RefreshCw className="size-3" />
+                <span>New Token</span>
               </Button>
             </div>
           </div>

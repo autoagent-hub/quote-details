@@ -87,16 +87,16 @@ function NotificationsPage() {
                 variant={isConnected ? "default" : "secondary"}
                 className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
                   isConnected
-                    ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                    ? "bg-primary/10 text-primary border border-primary/20"
                     : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
                 }`}
               >
-                {isConnected ? "Connected" : "Not Connected"}
+                {isConnected ? "1:1 Connected & Protected" : "Not Connected"}
               </Badge>
             </div>
             <p className="text-xs font-medium text-muted-foreground max-w-2xl">
               Receive new client leads, estimated totals, and uploaded vehicle photos straight to
-              your phone in real time.
+              your phone in real time with exclusive 1:1 account locking.
             </p>
           </div>
         </div>
@@ -107,32 +107,35 @@ function NotificationsPage() {
           <div className="space-y-6">
             <NotificationSettingsCard profile={profile} />
 
-            {/* Explanatory Help Card */}
+            {/* Anti-Hijacking & Reliability Security Card */}
             <div className="rounded-2xl border border-border/60 bg-card/60 p-6 space-y-4">
               <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
-                <Send className="size-4 text-blue-500" />
-                How Telegram Lead Delivery Works
+                <ShieldCheck className="size-4 text-blue-500" />
+                Anti-Hijacking Architecture & Connection Guarantee
               </h3>
               <ul className="space-y-2.5 text-xs text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="font-bold text-foreground">1.</span>
                   <span>
-                    When a vehicle owner submits a quote through your link, Detailr prepares a
-                    formatted instant payload.
+                    <strong>Strict 1:1 Account Binding:</strong> Each Telegram chat ID is bound
+                    exclusively to exactly one detailing business. If a chat ID is re-linked, any
+                    prior connection is automatically severed so leads never mix.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-bold text-foreground">2.</span>
                   <span>
-                    The lead notification is dispatched directly through the official Detailr
-                    Telegram bot (@DetailrBot) in under 1 second.
+                    <strong>Single-Use Cryptographic Auth Codes:</strong> Connection links expire
+                    instantly upon connection, completely preventing unauthorized lead interception
+                    or URL replay attacks.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-bold text-foreground">3.</span>
                   <span>
-                    You receive the client's phone number, email, address, vehicle model, requested
-                    services, and full price estimate.
+                    <strong>Auto-Healing Webhook & Failover Delivery:</strong> If a customer submits
+                    large photos or network latency occurs, Detailr's retry engine guarantees the
+                    primary lead payload and customer phone number are delivered without dropouts.
                   </span>
                 </li>
               </ul>

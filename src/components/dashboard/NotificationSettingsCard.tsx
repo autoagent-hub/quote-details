@@ -55,9 +55,9 @@ export function NotificationSettingsCard({ profile }: { profile: Profile }) {
               </CardTitle>
               <Badge
                 variant={profile.telegram_chat_id ? "default" : "secondary"}
-                className={`text-[9px] font-bold px-2 h-5 rounded-full ${profile.telegram_chat_id ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : ""}`}
+                className={`text-[9px] font-bold px-2 h-5 rounded-full ${profile.telegram_chat_id ? "bg-primary/10 text-primary border-primary/20" : ""}`}
               >
-                {profile.telegram_chat_id ? "BOT ACTIVE" : "UNLINKED"}
+                {profile.telegram_chat_id ? "BOT ACTIVE · 1:1 LOCKED" : "UNLINKED"}
               </Badge>
             </div>
             <CardDescription className="text-xs font-medium text-muted-foreground/70">
@@ -69,12 +69,12 @@ export function NotificationSettingsCard({ profile }: { profile: Profile }) {
               <div className="space-y-0.5">
                 <span className="font-bold text-xs flex items-center gap-1.5">
                   <ShieldCheck className="size-3.5 text-blue-500" />
-                  Telegram Connection
+                  Telegram 1:1 Connection
                 </span>
-                <span className="text-muted-foreground text-[10px] font-medium leading-tight block max-w-[180px]">
+                <span className="text-muted-foreground text-[10px] font-medium leading-tight block max-w-[220px]">
                   {profile.telegram_chat_id
-                    ? "Your phone is currently receiving instant quote alerts."
-                    : "Tap to link your shop to our automated Telegram bot."}
+                    ? `Active on Chat ID ${profile.telegram_chat_id}. Protected against lead hijacking.`
+                    : "Tap to link your shop exclusively to our Telegram bot."}
                 </span>
               </div>
               <Button
@@ -84,7 +84,7 @@ export function NotificationSettingsCard({ profile }: { profile: Profile }) {
                 onClick={() => setConnectModalOpen(true)}
               >
                 <Send className="size-3 mr-2 text-blue-500" />
-                {profile.telegram_chat_id ? "Reconnect" : "Link Bot"}
+                {profile.telegram_chat_id ? "Manage & Test" : "Link Bot"}
               </Button>
             </div>
 

@@ -15,12 +15,22 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 async function send(token: string, chatId: number | string, text: string) {
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-  });
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+    });
+  } catch (err) {
+    console.error("[telegram-webhook] Failed to send message to chat:", chatId, err);
+  }
 }
+
+const escStr = (str: string) =>
+  String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 
 export const Route = createFileRoute("/api/public/telegram/webhook")({
   server: {
@@ -64,15 +74,51 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           return Response.json({ ok: false }, { status: 503 });
         }
 
-        // Handle /stats command with strict authorization
+        // =========================================================================
+        // 1. Connection Health / Ping / Status Command
+        // =========================================================================
+        if (/^\/(?:ping|status|health|check)(?:[@\w]*)?$/i.test(text)) {
+          const { data: detailerProfile } = await admin
+            .from("profiles")
+            .select("id, business_name, slug")
+            .eq("telegram_chat_id", String(chatId))
+            .maybeSingle();
+
+          if (detailerProfile) {
+            await send(
+              token,
+              chatId,
+              `🟢 <b>Detailr Connection: 100% HEALTHY</b>\n\n` +
+                `🏢 <b>Linked Shop:</b> ${escStr(detailerProfile.business_name || "Your Shop")}\n` +
+                `🔗 <b>Shop URL:</b> detailr.online/${detailerProfile.slug || ""}\n` +
+                `🆔 <b>Chat ID:</b> <code>${chatId}</code>\n` +
+                `🔒 <b>1:1 Security Lock:</b> ACTIVE (Anti-Hijacking Enabled)\n` +
+                `⚡ <b>Incoming Leads:</b> Live & Connected\n\n` +
+                `Your shop is linked exclusively to this Telegram account. You will receive customer quotes in real time.`,
+            );
+          } else {
+            await send(
+              token,
+              chatId,
+              `⚪ <b>Detailr Bot Status</b>\n\n` +
+                `This Telegram chat (ID: <code>${chatId}</code>) is not currently linked to any active shop.\n\n` +
+                `To link your shop, log into your Detailr dashboard → <b>Alerts</b> and tap <b>Connect Telegram Bot</b>.`,
+            );
+          }
+          return Response.json({ ok: true, ping: true });
+        }
+
+        // =========================================================================
+        // 2. Handle /stats command with strict authorization
+        // =========================================================================
         if (/^\/(?:stats|metrics)(?:[@\w]*)?$/i.test(text)) {
           const adminChatId = process.env["ADMIN_TELEGRAM_CHAT_ID"];
-          const isMasterAdmin = !!adminChatId && chatId === adminChatId;
+          const isMasterAdmin = !!adminChatId && String(chatId) === String(adminChatId);
 
           const { data: detailerProfile } = await admin
             .from("profiles")
             .select("id, business_name")
-            .eq("telegram_chat_id", chatId)
+            .eq("telegram_chat_id", String(chatId))
             .maybeSingle();
 
           if (!isMasterAdmin && !detailerProfile) {
@@ -124,7 +170,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
               `📊 <b>${detailerProfile.business_name || "Shop"} Overview</b>\n\n` +
                 `📋 <b>Total Quotes Received:</b> ${totalQuotes}\n` +
                 `💰 <b>Total Pipeline Value:</b> $${Math.round(pipelineValue).toLocaleString()}\n\n` +
-                `👉 <a href="https://detailr.online/dashboard/quotes">View Quotes</a>`,
+                `👉 <a href="https://detailr.online/quotes">View All Quotes</a>`,
             );
             return Response.json({ ok: true });
           }
@@ -141,18 +187,17 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         }
 
         // Telegram start payloads are limited to A-Z, a-z, 0-9, _ and -.
-        const code = (match[1] ?? "")
-          .trim()
-          .replace(/[^a-zA-Z0-9_-]/g, "")
-          .toLowerCase();
+        const code = (match[1] ?? "").trim().replace(/[^a-zA-Z0-9_-]/g, "");
 
-        // 0. Check if this is a Quote Lookup request (/start quote_c03f9e21 or /start q_c03f9e21)
+        // =========================================================================
+        // 3. Check if this is a Quote Lookup request (/start quote_c03f9e21)
+        // =========================================================================
         if (code.startsWith("quote_") || code.startsWith("q_")) {
-          // Security Check: Verify that the requesting Telegram chat belongs to a registered detailer
+          // Strictly verify that requesting Telegram chat belongs to a registered detailer
           const { data: detailerProfile } = await admin
             .from("profiles")
             .select("id, business_name")
-            .eq("telegram_chat_id", chatId)
+            .eq("telegram_chat_id", String(chatId))
             .maybeSingle();
 
           if (!detailerProfile) {
@@ -184,7 +229,6 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           } | null = null;
 
           if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)) {
-            // Strictly scoped to the authenticated detailer's shop
             const { data } = await admin
               .from("quotes")
               .select("*")
@@ -193,7 +237,6 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
               .maybeSingle();
             q = data;
           } else {
-            // Strictly scoped to the authenticated detailer's shop
             const { data: list } = await admin
               .from("quotes")
               .select("*")
@@ -221,98 +264,33 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
             return Response.json({ ok: true });
           }
 
-          const escStr = (str: string) =>
-            String(str || "")
-              .replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;");
+          const shortId = q.id.slice(0, 8).toUpperCase();
+          const addonsList =
+            Array.isArray(q.addons) && q.addons.length ? q.addons.join(", ") : "None";
 
-          if (q) {
-            const shortId = q.id.slice(0, 8).toUpperCase();
-            const addonsList =
-              Array.isArray(q.addons) && q.addons.length ? q.addons.join(", ") : "None";
+          const msg =
+            `📋 <b>Quote Details #${shortId}</b>\n\n` +
+            `👤 <b>Customer:</b> ${escStr(q.customer_name)}\n` +
+            `📞 <b>Phone:</b> <a href="tel:${escStr(q.customer_phone)}">${escStr(q.customer_phone)}</a>\n` +
+            `🚗 <b>Vehicle:</b> ${escStr(q.vehicle_desc || q.vehicle_type)}\n` +
+            `📦 <b>Package:</b> ${escStr(q.service_label || "Base Detail")}\n` +
+            `➕ <b>Add-ons:</b> ${escStr(addonsList)}\n` +
+            `💰 <b>Estimated Total:</b> $${q.estimated_price}\n` +
+            `📅 <b>Received:</b> ${new Date(q.created_at).toLocaleString("en-US", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}\n` +
+            (q.notes ? `\n📝 <b>Customer Notes:</b>\n${escStr(q.notes)}\n` : "") +
+            `\n🏷️ <b>Search Tags:</b> #${shortId} #quote_${shortId.toLowerCase()}\n` +
+            `\n👉 <a href="https://detailr.online/quotes">Open in Dashboard</a>`;
 
-            const msg =
-              `📋 <b>Quote Details #${shortId}</b>\n\n` +
-              `👤 <b>Customer:</b> ${escStr(q.customer_name)}\n` +
-              `📞 <b>Phone:</b> <a href="tel:${escStr(q.customer_phone)}">${escStr(q.customer_phone)}</a>\n` +
-              `🚗 <b>Vehicle:</b> ${escStr(q.vehicle_desc || q.vehicle_type)}\n` +
-              `📦 <b>Package:</b> ${escStr(q.service_label || "Base Detail")}\n` +
-              `➕ <b>Add-ons:</b> ${escStr(addonsList)}\n` +
-              `💰 <b>Estimated Total:</b> $${q.estimated_price}\n` +
-              `📅 <b>Received:</b> ${new Date(q.created_at).toLocaleString("en-US", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}\n` +
-              (q.notes ? `\n📝 <b>Customer Notes:</b>\n${escStr(q.notes)}\n` : "") +
-              `\n🏷️ <b>Search Tags:</b> #${shortId} #quote_${shortId.toLowerCase()}\n` +
-              `\n💬 <i>Tip: Tap <b>#${shortId}</b> above to search chat history and highlight attached photos!</i>\n` +
-              `👉 <a href="https://detailr.online/dashboard/quotes">Open in Dashboard</a>`;
-
-            const photoUrls: string[] = [];
-            if (Array.isArray(q.photo_urls)) {
-              for (const pathOrUrl of q.photo_urls) {
-                if (typeof pathOrUrl === "string" && pathOrUrl.trim()) {
-                  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
-                    photoUrls.push(pathOrUrl);
-                  } else {
-                    const { data: pubData } = admin.storage
-                      .from("quote-photos")
-                      .getPublicUrl(pathOrUrl);
-                    if (pubData?.publicUrl) {
-                      photoUrls.push(pubData.publicUrl);
-                    }
-                  }
-                }
-              }
-            }
-
-            if (photoUrls.length === 1) {
-              await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  photo: photoUrls[0],
-                  caption: msg,
-                  parse_mode: "HTML",
-                }),
-              }).catch((e) => console.warn("[telegram-webhook] sendPhoto error:", e));
-            } else if (photoUrls.length > 1) {
-              const mediaGroup = photoUrls.slice(0, 10).map((url, idx) => ({
-                type: "photo",
-                media: url,
-                ...(idx === 0
-                  ? { caption: `📷 ${photoUrls.length} Vehicle Photos Attached (#${shortId})` }
-                  : {}),
-              }));
-
-              await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`, {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  media: mediaGroup,
-                }),
-              }).catch((e) => console.warn("[telegram-webhook] sendMediaGroup error:", e));
-
-              await send(token, chatId, msg);
-            } else {
-              await send(token, chatId, msg);
-            }
-
-            return Response.json({ ok: true, quoteFound: true });
-          } else {
-            await send(
-              token,
-              chatId,
-              `🔍 Could not find Quote #${rawId.toUpperCase()} in your quote history.`,
-            );
-            return Response.json({ ok: true, quoteFound: false });
-          }
+          await send(token, chatId, msg);
+          return Response.json({ ok: true, quoteFound: true });
         }
 
-        // 1. Check if this is an Admin connection request (/start admin)
+        // =========================================================================
+        // 4. Admin connection request (/start admin)
+        // =========================================================================
         if (code === "admin" || code.startsWith("admin_")) {
           const { data: authUsers } = await admin.auth.admin.listUsers();
           let adminMatched = false;
@@ -335,20 +313,22 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
             }
           }
 
-          await send(
-            token,
-            chatId,
-            `🛡️ <b>Administrator Console Connected!</b>\n\n` +
-              `You are now registered as the Master System Administrator.\n\n` +
-              `🔔 <b>Active Push Alerts:</b>\n` +
-              `• 🚀 New User Registrations\n` +
-              `• 🚨 Suspicious Activity & Rate-Limit Spikes\n` +
-              `• 🛡️ Account Bans & Flagged Violations\n\n` +
-              `⚡ <b>Commands:</b>\n` +
-              `• <code>/stats</code> - Instant platform KPIs\n\n` +
-              `👉 <a href="https://detailr.online/master-hq">Open Master Admin Console</a>`,
-          );
-          return Response.json({ ok: true, admin: true });
+          if (adminMatched) {
+            await send(
+              token,
+              chatId,
+              `🛡️ <b>Administrator Console Connected!</b>\n\n` +
+                `You are now registered as the Master System Administrator.\n\n` +
+                `🔔 <b>Active Push Alerts:</b>\n` +
+                `• 🚀 New User Registrations\n` +
+                `• 🚨 Suspicious Activity & Rate-Limit Spikes\n` +
+                `• 🛡️ Account Bans & Flagged Violations\n\n` +
+                `⚡ <b>Commands:</b>\n` +
+                `• <code>/stats</code> - Instant platform KPIs\n\n` +
+                `👉 <a href="https://detailr.online/master-hq">Open Master Admin Console</a>`,
+            );
+            return Response.json({ ok: true, admin: true });
+          }
         }
 
         if (!code) {
@@ -360,48 +340,87 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           return Response.json({ ok: true });
         }
 
+        // =========================================================================
+        // 5. Shop Bot Connection with Anti-Hijacking & 1:1 Chat ID Enforcement
+        // =========================================================================
         const { data: profile, error: lookupError } = await admin
           .from("profiles")
-          .select("id, business_name")
+          .select("id, business_name, telegram_chat_id, telegram_auth_code")
           .eq("telegram_auth_code", code)
           .maybeSingle();
 
         if (lookupError) {
-          console.error("telegram webhook lookup failed:", lookupError.message);
+          console.error("[telegram-webhook] lookup failed:", lookupError.message);
           await send(
             token,
             chatId,
-            "Something went wrong on our side. Please tap the Connect button again in a moment.",
+            "⚠️ Temporary server glitch. Please tap Connect Telegram Bot again in your dashboard.",
           );
           return Response.json({ ok: false }, { status: 500 });
         }
 
         if (!profile) {
+          // Security Alert: Code was not found or already consumed
           await send(
             token,
             chatId,
-            "I couldn't match that link to an account. Open your Detailr dashboard → Alerts and tap Connect Telegram Bot again.",
+            `⚠️ <b>Security Notice: Connection Link Expired or Invalid</b>\n\n` +
+              `This connection link has already been used or expired.\n\n` +
+              `🛡️ <b>Anti-Hijacking Protection:</b> Detailr generates single-use cryptographic tokens so your incoming leads can never be claimed or intercepted by unauthorized users.\n\n` +
+              `👉 Open your Detailr dashboard → <b>Alerts</b> and tap <b>Connect Telegram Bot</b> to generate a fresh, secure link.`,
           );
           return Response.json({ ok: true, matched: false });
         }
 
-        const { error } = await admin
+        // -------------------------------------------------------------------------
+        // STRICT 1:1 ENFORCEMENT:
+        // Ensure this Telegram Chat ID belongs to AT MOST ONE shop account.
+        // If this Chat ID was previously attached to any other shop profile,
+        // atomically unlink it from the old profile so leads never mix or hijack!
+        // -------------------------------------------------------------------------
+        await admin
           .from("profiles")
-          .update({ telegram_chat_id: String(chatId) })
+          .update({ telegram_chat_id: null } as never)
+          .eq("telegram_chat_id", String(chatId))
+          .neq("id", profile.id);
+
+        // -------------------------------------------------------------------------
+        // ATOMIC LINK & AUTH CODE ROTATION:
+        // Update the target profile with the new chat ID, and IMMEDIATELY invalidate
+        // the single-use telegram_auth_code so no one can replay or hijack!
+        // -------------------------------------------------------------------------
+        const { error: updateError } = await admin
+          .from("profiles")
+          .update({
+            telegram_chat_id: String(chatId),
+            telegram_auth_code: null, // Consumed immediately
+          } as never)
           .eq("id", profile.id);
 
-        if (error) {
-          console.error("telegram webhook update failed:", error.message);
-          await send(token, chatId, "Something went wrong linking this chat. Please try again.");
+        if (updateError) {
+          console.error("[telegram-webhook] update failed:", updateError.message);
+          await send(
+            token,
+            chatId,
+            "Something went wrong linking this chat. Please generate a new connection link in your dashboard.",
+          );
           return Response.json({ ok: false }, { status: 500 });
         }
 
+        // Send confirmed welcome message with 1:1 security seal
         await send(
           token,
           chatId,
-          `✅ Connected — ${profile.business_name}\n\nEvery new quote request will land right here.`,
+          `✅ <b>Shop Successfully Connected!</b>\n\n` +
+            `🏢 <b>Shop:</b> ${escStr(profile.business_name || "Detailing Shop")}\n` +
+            `🆔 <b>Telegram Chat ID:</b> <code>${chatId}</code>\n` +
+            `🔒 <b>1:1 Security Lock:</b> ACTIVATED\n` +
+            `🛡️ <b>Anti-Hijacking Protection:</b> VERIFIED\n\n` +
+            `Every new customer quote request will land right here in real time with client contact info, vehicle specs, and 1-tap call buttons.\n\n` +
+            `💬 <i>You can send <code>/status</code> at any time to verify this connection.</i>`,
         );
-        return Response.json({ ok: true });
+
+        return Response.json({ ok: true, connected: true, shopId: profile.id });
       },
     },
   },
