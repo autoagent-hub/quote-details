@@ -127,8 +127,8 @@ export function SubscriptionBillingCard({
 
   const planName = isSubscribed
     ? isYearly
-      ? "Detailr Pro Annual Pass ($110.99/yr)"
-      : "Detailr Pro Monthly ($9.99/mo)"
+      ? "Detailr Pro Annual Pass ($145/yr)"
+      : "Detailr Pro Monthly ($12.99/mo)"
     : isCancelled
       ? "Detailr Pro (Cancelled)"
       : isPendingFirstVisit

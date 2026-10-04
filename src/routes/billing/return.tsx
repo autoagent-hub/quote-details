@@ -212,7 +212,7 @@ function BillingReturnPage() {
             <div className="flex justify-between items-center text-xs">
               <span className="text-muted-foreground font-medium">Activated Plan:</span>
               <span className="font-bold text-foreground">
-                {isYearly ? "Annual Pass ($110.99 / 1 Year)" : "Monthly Pro ($9.99 / 30 Days)"}
+                {isYearly ? "Annual Pass ($145 / 1 Year)" : "Monthly Pro ($12.99 / 30 Days)"}
               </span>
             </div>
             {result.nextBillingDateFormatted && (

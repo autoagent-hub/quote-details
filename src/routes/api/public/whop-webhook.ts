@@ -177,6 +177,7 @@ export const Route = createFileRoute("/api/public/whop-webhook")({
           rawPlanStr.includes("yearly") ||
           rawPlanStr.includes("annual") ||
           rawPlanStr.includes("365") ||
+          rawPlanStr.includes("145") ||
           rawPlanStr.includes("110.99") ||
           rawMetaStr.includes("yearly") ||
           rawMetaStr.includes("annual");

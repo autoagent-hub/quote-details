@@ -55,7 +55,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Instant web quotes, real-time Telegram alerts, zero app installs. $9.99/month with a 7-day free trial on detailr.online.",
+          "Instant web quotes, real-time Telegram alerts, zero app installs. $12.99/month with a 7-day free trial on detailr.online.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://detailr.online/" },
@@ -144,7 +144,7 @@ const features = [
   },
   {
     icon: ShieldCheck,
-    title: "Flat $9.99/mo · 0% Commissions",
+    title: "Flat $12.99/mo · 0% Commissions",
     body: "We never take a cut of your detailing jobs. Keep 100% of your earnings with unlimited quotes and leads.",
     badge: "Fair Pricing",
   },
@@ -189,7 +189,7 @@ const homepageFaqs = [
   {
     question: "Does Detailr charge commission fees on my detailing jobs?",
     answer:
-      "No! Detailr is a flat $9.99/month with zero commission fees and unlimited leads. You keep 100% of your earnings from all detailing jobs.",
+      "No! Detailr is a flat $12.99/month with zero commission fees and unlimited leads. You keep 100% of your earnings from all detailing jobs.",
   },
   {
     question: "How do I share my quote calculator with customers?",
@@ -886,7 +886,7 @@ function Landing() {
                   <div className="space-y-1">
                     <div className="flex items-baseline gap-1 font-mono">
                       <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
-                        $9.99
+                        $12.99
                       </span>
                       <span className="text-xs font-sans font-medium text-muted-foreground">
                         / month
@@ -927,7 +927,7 @@ function Landing() {
                     size="xl"
                     className="w-full h-12 rounded-xl font-bold text-sm shadow-sm transition-all"
                   >
-                    <Link to="/signup">Start 7-Day Trial — Monthly ($9.99/mo)</Link>
+                    <Link to="/signup">Start 7-Day Trial — Monthly ($12.99/mo)</Link>
                   </Button>
                 </div>
               </Card>
@@ -960,13 +960,13 @@ function Landing() {
                   <div className="space-y-1">
                     <div className="flex items-baseline gap-2 font-mono">
                       <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
-                        $110.99
+                        $145
                       </span>
                       <span className="text-xs font-sans font-medium text-muted-foreground">
                         / year
                       </span>
                       <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary dark:text-blue-400 font-sans text-[11px] font-bold ml-auto">
-                        ~$9/mo equivalent
+                        ~$12/mo equivalent
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground pt-1">
@@ -1011,7 +1011,7 @@ function Landing() {
                     size="xl"
                     className="w-full h-12 rounded-xl font-bold text-sm shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all"
                   >
-                    <Link to="/signup">Start 7-Day Trial — Yearly ($110.99/yr)</Link>
+                    <Link to="/signup">Start 7-Day Trial — Yearly ($145/yr)</Link>
                   </Button>
                 </div>
               </Card>

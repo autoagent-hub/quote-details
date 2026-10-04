@@ -74,8 +74,8 @@ function TermsPage() {
               3. Pricing, Billings & Payments
             </h2>
             <p>
-              Detailr operates as a flat subscription service billed monthly ($9.99) or annually
-              ($110.99). All transactions are processed securely via our payment gateways.{" "}
+              Detailr operates as a flat subscription service billed monthly ($12.99) or annually
+              ($145). All transactions are processed securely via our payment gateways.{" "}
               <strong className="text-foreground">We charge 0% commission fees</strong> on any
               bookings, quotes, or jobs you secure through our system. You keep 100% of your
               earnings.
