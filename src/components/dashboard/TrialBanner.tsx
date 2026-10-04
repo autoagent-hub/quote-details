@@ -44,18 +44,15 @@ export function TrialBanner({
   // Query profile from cache or database if not passed
   const { data: cachedProfile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["profile"],
+    enabled: !propProfile,
     queryFn: async () => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) return null;
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, trial_status, trial_expiry, whop_membership_id")
-        .eq("id", uid)
-        .maybeSingle();
+      const { data } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle();
       return data;
     },
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 
   const profile = propProfile || cachedProfile;

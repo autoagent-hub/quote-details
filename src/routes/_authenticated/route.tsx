@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -74,6 +75,7 @@ function AuthenticatedErrorComponent({ error, reset }: { error: Error | null; re
 }
 
 function AuthenticatedLayout() {
+  const queryClient = useQueryClient();
   const routerState = useRouterState();
   const isUpgradePage = routerState.location.pathname.includes("/upgrade");
 
@@ -89,14 +91,54 @@ function AuthenticatedLayout() {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) return null;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
-        .select("id, slug, business_name, trial_status, trial_expiry")
+        .select("*")
         .eq("id", uid)
         .maybeSingle();
+      if (error) throw error;
       return data;
     },
+    staleTime: 5000,
   });
+
+  // Supabase Realtime: instantly sync database changes (like telegram_chat_id link) without manual page refresh
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const channel = supabase
+      .channel(`profile-live-sync-${profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${profile.id}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["profile"] });
+          void queryClient.invalidateQueries({ queryKey: ["telegram-status"] });
+          void queryClient.invalidateQueries({ queryKey: ["trial-state"] });
+        },
+      )
+      .subscribe();
+
+    // Auto-refetch when user switches back to Detailr from Telegram app or browser tab
+    const handleFocus = () => {
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      void queryClient.invalidateQueries({ queryKey: ["telegram-status"] });
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
+    return () => {
+      void supabase.removeChannel(channel);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+    };
+  }, [profile?.id, queryClient]);
 
   // Lock dashboard access when trial or prepaid subscription access has expired
   if (!isUpgradePage && trial && !trial.hasActiveAccess) {

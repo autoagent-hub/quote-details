@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Check,
   Copy,
@@ -25,6 +26,7 @@ import {
   prepareTelegramLink,
   sendQuoteAlert,
   disconnectTelegramBot,
+  getTelegramConnectionStatus,
 } from "@/lib/telegram.functions";
 import type { Profile } from "./types";
 
@@ -38,9 +40,42 @@ export function TelegramConnectModal({
   profile: Profile;
 }) {
   const queryClient = useQueryClient();
+  const fetchConnectionStatus = useServerFn(getTelegramConnectionStatus);
+
   const [copied, setCopied] = useState(false);
   const [testing, setTesting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+
+  // Live polling of Telegram connection status while modal is open
+  const {
+    data: liveStatus,
+    refetch: refetchLiveStatus,
+    isFetching: isCheckingStatus,
+  } = useQuery({
+    queryKey: ["telegram-connection-status", profile.id],
+    queryFn: () => fetchConnectionStatus(),
+    enabled: open,
+    refetchInterval: (query) => {
+      // If connected, slow polling to 10s; if awaiting user to tap /start in Telegram, poll every 1.5s
+      const connected = !!query.state.data?.connected || !!profile.telegram_chat_id;
+      return connected ? 10000 : 1500;
+    },
+    staleTime: 1000,
+  });
+
+  const effectiveChatId = liveStatus?.chatId || profile.telegram_chat_id;
+  const isConnected = !!effectiveChatId;
+  const effectiveBusinessName =
+    liveStatus?.businessName || profile.business_name || "your detailing shop";
+
+  // Automatically detect when bot is connected and update global profile cache without manual reload
+  useEffect(() => {
+    if (liveStatus?.connected && !profile.telegram_chat_id) {
+      toast.success("🎉 Telegram bot connected and locked exclusively to your shop!");
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      void queryClient.invalidateQueries({ queryKey: ["telegram-status"] });
+    }
+  }, [liveStatus?.connected, profile.telegram_chat_id, queryClient]);
 
   const prepare = useMutation({
     mutationFn: () => prepareTelegramLink(),
@@ -52,13 +87,15 @@ export function TelegramConnectModal({
   // Automatically fetch link when modal opens
   const handleOpenChange = (newOpen: boolean) => {
     onOpenChange(newOpen);
-    if (newOpen && !prepare.data && !prepare.isPending) {
-      prepare.mutate();
+    if (newOpen) {
+      void refetchLiveStatus();
+      if (!prepare.data && !prepare.isPending) {
+        prepare.mutate();
+      }
     }
   };
 
   const linkData = prepare.data;
-  const isConnected = !!profile.telegram_chat_id;
 
   const copyLink = () => {
     if (!linkData?.href) return;
@@ -87,6 +124,7 @@ export function TelegramConnectModal({
       if (res?.sent) {
         toast.success("🎉 Success! Test alert received in Telegram.");
         void queryClient.invalidateQueries({ queryKey: ["profile"] });
+        void refetchLiveStatus();
       } else {
         toast.error("Not connected yet. Please tap 'Start' in Telegram first!");
       }
@@ -110,7 +148,10 @@ export function TelegramConnectModal({
     try {
       await disconnectTelegramBot();
       toast.success("Telegram bot unlinked successfully.");
-      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["telegram-connection-status"] }),
+      ]);
       prepare.mutate();
     } catch (err: unknown) {
       const e = err as Error;
@@ -123,15 +164,15 @@ export function TelegramConnectModal({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md rounded-3xl border-border/80 bg-background/95 backdrop-blur-xl p-6 shadow-2xl">
-        <DialogHeader className="space-y-2 text-left">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-600 w-fit">
-            <Lock className="size-3.5" />
-            <span>Anti-Hijacking 1:1 Protection</span>
+        <DialogHeader className="space-y-1.5 text-left">
+          <div className="flex items-center gap-2">
+            <div className="size-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+              <Send className="size-4" />
+            </div>
+            <DialogTitle className="text-lg font-black tracking-tight text-foreground">
+              {isConnected ? "Telegram Bot Active" : "Connect Telegram Bot"}
+            </DialogTitle>
           </div>
-
-          <DialogTitle className="text-xl font-bold tracking-tight font-display text-foreground">
-            {isConnected ? "Telegram Bot Active" : "Connect Telegram Bot"}
-          </DialogTitle>
 
           <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
             Instant phone alerts for every incoming customer quote with phone number, car specs, and
@@ -157,18 +198,17 @@ export function TelegramConnectModal({
             <p className="text-xs text-muted-foreground leading-relaxed">
               Linked Chat ID:{" "}
               <code className="font-mono font-bold text-foreground bg-muted/60 px-1.5 py-0.5 rounded">
-                {profile.telegram_chat_id}
+                {effectiveChatId}
               </code>
-              . This chat is bound exclusively to{" "}
-              <strong>{profile.business_name || "your shop"}</strong>. No other shop or user can
-              intercept or hijack your customer leads.
+              . This chat is bound exclusively to <strong>{effectiveBusinessName}</strong>. No other
+              shop or user can intercept or hijack your customer leads.
             </p>
 
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 rounded-xl px-3 text-xs font-bold gap-1.5"
+                className="h-8 rounded-xl px-3 text-xs font-bold gap-1.5 border-blue-500/30 bg-blue-500/10 text-primary hover:bg-blue-500/20"
                 disabled={testing}
                 onClick={testAlert}
               >
@@ -278,7 +318,7 @@ export function TelegramConnectModal({
               <div className="flex items-center gap-2">
                 <span
                   className={`size-2.5 rounded-full ${
-                    isConnected ? "bg-primary ring-4 ring-primary/20" : "bg-amber-500"
+                    isConnected ? "bg-primary ring-4 ring-primary/20" : "bg-amber-500 animate-pulse"
                   }`}
                 />
                 <span className="font-bold">
@@ -287,6 +327,24 @@ export function TelegramConnectModal({
               </div>
 
               <div className="flex items-center gap-2">
+                {!isConnected && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-xl px-2.5 text-xs font-bold gap-1 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      void refetchLiveStatus();
+                      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+                    }}
+                    disabled={isCheckingStatus}
+                  >
+                    <RefreshCw
+                      className={`size-3 ${isCheckingStatus ? "animate-spin text-primary" : ""}`}
+                    />
+                    <span>{isCheckingStatus ? "Checking..." : "Verify Status"}</span>
+                  </Button>
+                )}
+
                 {isConnected && (
                   <Button
                     variant="outline"
@@ -317,12 +375,16 @@ export function TelegramConnectModal({
             </div>
           </div>
         ) : (
-          <div className="py-6 text-center space-y-3">
-            <p className="text-xs text-destructive font-semibold">
-              Could not load connection link.
-            </p>
-            <Button variant="outline" size="sm" onClick={() => prepare.mutate()}>
-              Retry
+          <div className="py-8 text-center space-y-3">
+            <Lock className="size-8 mx-auto text-muted-foreground opacity-50" />
+            <p className="text-xs text-muted-foreground">Click below to generate a secure link.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl font-bold text-xs"
+              onClick={() => prepare.mutate()}
+            >
+              Generate Link
             </Button>
           </div>
         )}

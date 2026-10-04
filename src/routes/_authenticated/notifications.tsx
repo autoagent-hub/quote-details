@@ -56,6 +56,8 @@ function NotificationsPage() {
       if (error) throw error;
       return data as Profile | null;
     },
+    staleTime: 5000,
+    refetchOnWindowFocus: true,
   });
 
   const testAlert = async () => {

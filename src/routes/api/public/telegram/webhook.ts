@@ -386,13 +386,14 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
 
         // -------------------------------------------------------------------------
         // ATOMIC LINK & AUTH CODE ROTATION:
-        // Update the target profile with the new chat ID, and IMMEDIATELY invalidate
-        // the single-use telegram_auth_code so no one can replay or hijack!
+        // Update the target profile with the new chat ID, enable notifications,
+        // and IMMEDIATELY invalidate the single-use telegram_auth_code so no one can replay or hijack!
         // -------------------------------------------------------------------------
         const { error: updateError } = await admin
           .from("profiles")
           .update({
             telegram_chat_id: String(chatId),
+            notify_telegram: true,
             telegram_auth_code: null, // Consumed immediately
           } as never)
           .eq("id", profile.id);
@@ -405,6 +406,22 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
             "Something went wrong linking this chat. Please generate a new connection link in your dashboard.",
           );
           return Response.json({ ok: false }, { status: 500 });
+        }
+
+        // Mirror connection state to auth metadata for dual-redundant session stability
+        try {
+          const { data: authUser } = await admin.auth.admin.getUserById(profile.id);
+          const currentMeta = authUser?.user?.user_metadata || {};
+          await admin.auth.admin.updateUserById(profile.id, {
+            user_metadata: {
+              ...currentMeta,
+              telegram_chat_id: String(chatId),
+              telegram_connected: true,
+              telegram_connected_at: new Date().toISOString(),
+            },
+          });
+        } catch (mErr) {
+          console.warn("[telegram-webhook] auth metadata sync warning:", mErr);
         }
 
         // Send confirmed welcome message with 1:1 security seal

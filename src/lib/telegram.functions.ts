@@ -5,6 +5,8 @@ import {
   requireActiveSubscription,
   verifyServerSubscriptionAccess,
 } from "@/lib/subscription-guard.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getAdminClient } from "@/lib/admin.server";
 
 type AlertInput = {
   quoteId?: string;
@@ -171,13 +173,40 @@ export const prepareTelegramLink = createServerFn({ method: "POST" })
   });
 
 /**
+ * Authoritative, non-cached check of the user's live Telegram connection status.
+ * Directly queries PostgreSQL using admin privileges to bypass any RLS latency or cache drift.
+ */
+export const getTelegramConnectionStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const admin = getAdminClient();
+    const db = admin ?? context.supabase;
+
+    const { data: profile } = await db
+      .from("profiles")
+      .select("telegram_chat_id, notify_telegram, business_name")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    return {
+      connected: !!profile?.telegram_chat_id,
+      chatId: profile?.telegram_chat_id || null,
+      notifyTelegram: profile?.notify_telegram ?? true,
+      businessName: profile?.business_name || null,
+    };
+  });
+
+/**
  * Safely unlinks the Telegram bot from the account.
  * Clears chat ID and any lingering auth codes to ensure complete privacy.
  */
 export const disconnectTelegramBot = createServerFn({ method: "POST" })
   .middleware([requireActiveSubscription])
   .handler(async ({ context }) => {
-    const { error } = await context.supabase
+    const admin = getAdminClient();
+    const db = admin ?? context.supabase;
+
+    const { error } = await db
       .from("profiles")
       .update({
         telegram_chat_id: null,
@@ -186,6 +215,23 @@ export const disconnectTelegramBot = createServerFn({ method: "POST" })
       .eq("id", context.userId);
 
     if (error) throw new Error(error.message);
+
+    if (admin) {
+      try {
+        const { data: authUser } = await admin.auth.admin.getUserById(context.userId);
+        const currentMeta = authUser?.user?.user_metadata || {};
+        await admin.auth.admin.updateUserById(context.userId, {
+          user_metadata: {
+            ...currentMeta,
+            telegram_chat_id: null,
+            telegram_connected: false,
+          },
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+
     return { disconnected: true };
   });
 
