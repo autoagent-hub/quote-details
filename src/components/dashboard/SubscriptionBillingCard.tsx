@@ -15,6 +15,8 @@ import {
   Check,
   ChevronRight,
   Zap,
+  ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -121,19 +123,11 @@ export function SubscriptionBillingCard({
 
   const isSubscribed = !!trial?.isSubscribed;
   const isCancelled = !!trial?.isCancelled;
+  const cancelAtPeriodEnd = !!trial?.cancelAtPeriodEnd;
+  const inGracePeriod = !!trial?.inGracePeriod;
   const isPendingFirstVisit = !!trial?.isPendingFirstVisit;
 
-  const isYearly = trial?.renewalDaysLeft !== undefined && trial.renewalDaysLeft > 60;
-
-  const planName = isSubscribed
-    ? isYearly
-      ? "Detailr Pro Annual Pass ($145/yr)"
-      : "Detailr Pro Monthly ($12.99/mo)"
-    : isCancelled
-      ? "Detailr Pro (Cancelled)"
-      : isPendingFirstVisit
-        ? "7-Day Free Trial (Pending First Visit)"
-        : "7-Day Free Trial";
+  const planName = trial?.planName || "Detailr Pro Monthly ($12.99/mo)";
 
   const nextBillingFormatted =
     trial?.nextBillingDateFormatted ||
@@ -145,7 +139,7 @@ export function SubscriptionBillingCard({
         })
       : null);
 
-  const daysRemaining = isSubscribed ? trial?.renewalDaysLeft : trial?.daysLeft;
+  const daysRemaining = trial?.renewalDaysLeft ?? trial?.daysLeft;
 
   const startDateFormatted = trial?.subscriptionStartedAt
     ? new Date(trial.subscriptionStartedAt).toLocaleDateString("en-US", {
@@ -159,21 +153,25 @@ export function SubscriptionBillingCard({
     <>
       <Card
         className={`rounded-2xl border-2 transition-all shadow-xl bg-card overflow-hidden ${
-          isSubscribed
-            ? "border-emerald-500/40 dark:border-emerald-500/30 shadow-emerald-500/5"
-            : isCancelled
-              ? "border-amber-500/40 dark:border-amber-500/30 shadow-amber-500/5"
-              : "border-primary/40 shadow-primary/5"
+          cancelAtPeriodEnd || inGracePeriod
+            ? "border-amber-500/40 dark:border-amber-500/30 shadow-amber-500/5"
+            : isSubscribed
+              ? "border-emerald-500/40 dark:border-emerald-500/30 shadow-emerald-500/5"
+              : isCancelled
+                ? "border-amber-500/40 dark:border-amber-500/30 shadow-amber-500/5"
+                : "border-primary/40 shadow-primary/5"
         } ${className}`}
       >
         {/* Top Accent Header Bar */}
         <div
           className={`h-1.5 w-full ${
-            isSubscribed
-              ? "bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600"
-              : isCancelled
-                ? "bg-gradient-to-r from-amber-500 to-rose-500"
-                : "bg-gradient-to-r from-primary via-indigo-500 to-sky-400"
+            cancelAtPeriodEnd || inGracePeriod
+              ? "bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600"
+              : isSubscribed
+                ? "bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600"
+                : isCancelled
+                  ? "bg-gradient-to-r from-amber-500 to-rose-500"
+                  : "bg-gradient-to-r from-primary via-indigo-500 to-sky-400"
           }`}
         />
 
@@ -200,7 +198,17 @@ export function SubscriptionBillingCard({
 
             <div className="flex items-center gap-2 shrink-0">
               {/* Main Status Badge */}
-              {isSubscribed ? (
+              {cancelAtPeriodEnd ? (
+                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
+                  <AlertCircle className="size-3.5" />
+                  Auto-Renew Cancelled
+                </Badge>
+              ) : inGracePeriod ? (
+                <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
+                  <AlertTriangle className="size-3.5" />
+                  Grace Period Active
+                </Badge>
+              ) : isSubscribed ? (
                 <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                   <CheckCircle2 className="size-3.5" />
@@ -209,7 +217,7 @@ export function SubscriptionBillingCard({
               ) : isCancelled ? (
                 <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full">
                   <AlertCircle className="size-3.5" />
-                  Cancelled (Active)
+                  Cancelled
                 </Badge>
               ) : isPendingFirstVisit ? (
                 <Badge className="bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full">
@@ -243,28 +251,34 @@ export function SubscriptionBillingCard({
           {/* Plan Highlight Banner */}
           <div
             className={`rounded-2xl p-4 sm:p-5 border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-              isSubscribed
-                ? "bg-emerald-500/5 border-emerald-500/20"
-                : isCancelled
-                  ? "bg-amber-500/5 border-amber-500/20"
-                  : "bg-primary/5 border-primary/20"
+              cancelAtPeriodEnd || inGracePeriod
+                ? "bg-amber-500/5 border-amber-500/20"
+                : isSubscribed
+                  ? "bg-emerald-500/5 border-emerald-500/20"
+                  : isCancelled
+                    ? "bg-amber-500/5 border-amber-500/20"
+                    : "bg-primary/5 border-primary/20"
             }`}
           >
             <div className="space-y-1">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Zap className="size-3.5 text-amber-500" /> Current Active Plan
+                <Zap className="size-3.5 text-amber-500" /> Current Subscription Status
               </span>
               <h4 className="text-base sm:text-lg font-extrabold text-foreground">{planName}</h4>
               <p className="text-xs text-muted-foreground">
-                {isSubscribed
-                  ? "Unlimited quote requests, real-time Telegram alerts & vehicle pricing engine."
-                  : isCancelled
-                    ? "Your access remains fully functional until the end of your billing cycle."
-                    : "Trial access active. Upgrade anytime to guarantee uninterrupted delivery."}
+                {cancelAtPeriodEnd
+                  ? "Auto-renew has been cancelled. Your quote requests and link remain 100% active until your prepaid period ends."
+                  : inGracePeriod
+                    ? "Payment retry in progress. Your live shop link remains active during this 72-hour grace period."
+                    : isSubscribed
+                      ? "Unlimited quote requests, real-time Telegram alerts & vehicle pricing engine."
+                      : isCancelled
+                        ? "Your subscription has expired. Upgrade to keep receiving customer quote requests."
+                        : "7-day free trial active. Upgrade anytime to lock in uninterrupted lead alerts."}
               </p>
             </div>
 
-            {!isSubscribed && showActions && (
+            {(!isSubscribed || cancelAtPeriodEnd) && showActions && (
               <Button
                 asChild
                 variant="hero"
@@ -272,7 +286,7 @@ export function SubscriptionBillingCard({
                 className="font-bold text-xs shrink-0 shadow-md"
               >
                 <Link to="/upgrade">
-                  <span>{isCancelled ? "Reactivate Pro" : "Upgrade to Pro"}</span>
+                  <span>{cancelAtPeriodEnd ? "Re-enable Auto-Renew" : "Upgrade to Pro"}</span>
                   <ChevronRight className="size-3.5 ml-1" />
                 </Link>
               </Button>
@@ -285,7 +299,11 @@ export function SubscriptionBillingCard({
             <div className="p-3.5 rounded-xl bg-surface border border-border/60 space-y-1">
               <span className="text-muted-foreground font-medium flex items-center gap-1.5">
                 <Calendar className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                {isSubscribed ? "Next Renewal Date:" : "Trial Expiry Date:"}
+                {cancelAtPeriodEnd
+                  ? "Access Active Until:"
+                  : isSubscribed
+                    ? "Next Renewal Date:"
+                    : "Trial Expiry Date:"}
               </span>
               <p className="font-bold text-foreground text-sm flex items-center justify-between gap-1">
                 <span>{nextBillingFormatted || "Active"}</span>
@@ -348,16 +366,26 @@ export function SubscriptionBillingCard({
 
           {/* Action Links */}
           {showActions && (
-            <div className="pt-2 flex flex-wrap items-center justify-end gap-3 border-t border-border/60">
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-border/60">
+              <a
+                href={trial?.whopPortalUrl || "https://whop.com/hub/memberships/"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
+              >
+                <span>Manage Invoices & Cards in Whop Hub</span>
+                <ExternalLink className="size-3 opacity-70" />
+              </a>
+
               <div className="flex items-center gap-2">
-                {isSubscribed && (
+                {isSubscribed && !cancelAtPeriodEnd && (
                   <Button
                     variant="outline"
                     size="sm"
                     className="h-8 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-500/10 border-rose-500/30"
                     onClick={() => setCancelModalOpen(true)}
                   >
-                    Cancel Plan
+                    Cancel Auto-Renew
                   </Button>
                 )}
 
@@ -385,12 +413,12 @@ export function SubscriptionBillingCard({
           <DialogHeader className="space-y-2">
             <DialogTitle className="text-lg font-bold flex items-center gap-2 text-rose-600">
               <AlertCircle className="size-5" />
-              Cancel Detailr Pro Subscription?
+              Cancel Detailr Pro Auto-Renew?
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-              Are you sure you want to cancel your subscription? Your quote requests and public link
-              will remain active until the end of your paid billing cycle (
-              {nextBillingFormatted || "current period"}).
+              Are you sure you want to cancel auto-renewal? <strong>Don&apos;t worry:</strong> your
+              quote requests, Telegram alerts, and public link will remain 100% active until the end
+              of your prepaid billing cycle ({nextBillingFormatted || "current period"}).
             </DialogDescription>
           </DialogHeader>
 
@@ -402,7 +430,7 @@ export function SubscriptionBillingCard({
               disabled={isCancelling}
               className="w-full sm:w-auto font-bold text-xs"
             >
-              Keep My Subscription
+              Keep Auto-Renew
             </Button>
             <Button
               variant="destructive"
@@ -411,7 +439,7 @@ export function SubscriptionBillingCard({
               disabled={isCancelling}
               className="w-full sm:w-auto font-bold text-xs"
             >
-              {isCancelling ? "Cancelling..." : "Confirm Cancellation"}
+              {isCancelling ? "Cancelling..." : "Confirm Cancel Auto-Renew"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -141,9 +141,9 @@ export function LinkTestingBanner({ profile }: { profile: Profile }) {
             </Button>
 
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="h-9 text-xs font-bold gap-2 text-muted-foreground hover:text-foreground rounded-xl px-4"
+              className="h-9 text-xs font-bold gap-2 rounded-xl px-4 border-blue-500/30 bg-blue-500/10 text-primary hover:bg-blue-500/20 transition-all shadow-sm"
               disabled={sendingTest}
               onClick={sendTest}
               title="Send a sample quote alert to your Telegram bot"
@@ -151,9 +151,9 @@ export function LinkTestingBanner({ profile }: { profile: Profile }) {
               {sendingTest ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                <Send className="size-4 text-blue-500 opacity-70" />
+                <Send className="size-4 text-blue-500" />
               )}
-              Send Test Alert
+              <span>{sendingTest ? "Sending Alert..." : "Test Telegram Alert"}</span>
             </Button>
           </div>
         </div>

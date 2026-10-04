@@ -286,15 +286,34 @@ export function TelegramConnectModal({
                 </span>
               </div>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 rounded-xl px-2.5 text-xs font-bold gap-1 text-muted-foreground hover:text-foreground"
-                onClick={() => prepare.mutate()}
-              >
-                <RefreshCw className="size-3" />
-                <span>New Token</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                {isConnected && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 rounded-xl px-3 text-xs font-bold gap-1.5 border-blue-500/30 bg-blue-500/10 text-primary hover:bg-blue-500/20"
+                    disabled={testing}
+                    onClick={testAlert}
+                  >
+                    {testing ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <Send className="size-3 text-blue-500" />
+                    )}
+                    <span>Test Alert</span>
+                  </Button>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 rounded-xl px-2.5 text-xs font-bold gap-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => prepare.mutate()}
+                >
+                  <RefreshCw className="size-3" />
+                  <span>New Token</span>
+                </Button>
+              </div>
             </div>
           </div>
         ) : (

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Bell, ArrowLeft, Send, ShieldCheck, ExternalLink } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, ArrowLeft, Send, ShieldCheck, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonDashboard } from "@/components/skeletons/SkeletonDashboard";
@@ -8,6 +10,8 @@ import { AppNavigation } from "@/components/dashboard/AppNavigation";
 import { NotificationSettingsCard } from "@/components/dashboard/NotificationSettingsCard";
 import { TrialBanner } from "@/components/dashboard/TrialBanner";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { sendQuoteAlert } from "@/lib/telegram.functions";
 import type { Profile } from "@/components/dashboard/types";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
@@ -27,6 +31,9 @@ export const Route = createFileRoute("/_authenticated/notifications")({
 });
 
 function NotificationsPage() {
+  const queryClient = useQueryClient();
+  const [testing, setTesting] = useState(false);
+
   const { data: user } = useQuery({
     queryKey: ["auth-user"],
     queryFn: async () => {
@@ -50,6 +57,36 @@ function NotificationsPage() {
       return data as Profile | null;
     },
   });
+
+  const testAlert = async () => {
+    if (!profile) return;
+    setTesting(true);
+    try {
+      const res = await sendQuoteAlert({
+        data: {
+          detailerId: profile.id,
+          customerName: "Alex Morgan (Test Lead)",
+          customerPhone: profile.phone || "+1 555-019-2834",
+          vehicle: "2024 Tesla Model Y (Midsize SUV)",
+          service: { label: "Full Detail", price: 190 },
+          addons: [{ label: "Pet Hair Removal", price: 40 }],
+          estimate: 230,
+          notes: "Testing 1:1 Telegram lead connection!",
+          isTest: true,
+        },
+      });
+      if (res?.sent) {
+        toast.success("🎉 Success! Test alert received on your Telegram app.");
+        void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      } else {
+        toast.error("Not connected yet. Please link your Telegram bot below!");
+      }
+    } catch {
+      toast.error("Could not test connection. Ensure you pressed Start in Telegram.");
+    } finally {
+      setTesting(false);
+    }
+  };
 
   if (isLoading) {
     return <SkeletonDashboard />;
@@ -99,6 +136,23 @@ function NotificationsPage() {
               your phone in real time with exclusive 1:1 account locking.
             </p>
           </div>
+
+          {isConnected && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-4 rounded-xl border-blue-500/30 bg-blue-500/10 text-primary hover:bg-blue-500/20 font-bold text-xs gap-2 shrink-0 self-start sm:self-center shadow-sm"
+              disabled={testing}
+              onClick={testAlert}
+            >
+              {testing ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Send className="size-3.5 text-blue-500" />
+              )}
+              <span>{testing ? "Sending Test Alert..." : "Send Test Lead to Telegram"}</span>
+            </Button>
+          )}
         </div>
 
         <TrialBanner profile={profile ?? null} />

@@ -98,16 +98,8 @@ function AuthenticatedLayout() {
     },
   });
 
-  // Lock dashboard access when 7-day trial has ended
-  if (
-    !isUpgradePage &&
-    trial &&
-    (trial.expired ||
-      trial.isSuspended ||
-      trial.status === "EXPIRED" ||
-      trial.status === "SUSPENDED") &&
-    !trial.isSubscribed
-  ) {
+  // Lock dashboard access when trial or prepaid subscription access has expired
+  if (!isUpgradePage && trial && !trial.hasActiveAccess) {
     return <TrialExpiredLock profile={profile} trial={trial} />;
   }
 

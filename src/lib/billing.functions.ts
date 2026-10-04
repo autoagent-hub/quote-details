@@ -2,6 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAdminClient } from "@/lib/admin.server";
 import { signCheckoutReturn, secureVerifyAndFinalizeReturn } from "@/lib/billing-security.server";
+import {
+  verifyServerSubscriptionAccess,
+  type SubscriptionStateStatus,
+} from "@/lib/subscription-guard.server";
 
 const DEFAULT_CHECKOUT_URL = "https://whop.com/checkout/plan_IrzVc4vCnCiQ1";
 const DEFAULT_YEARLY_CHECKOUT_URL = "https://whop.com/checkout/plan_Gmhnwjw8YVRyQ";
@@ -9,9 +13,9 @@ const DEFAULT_APP_URL = "https://detailr.online";
 const MASTER_ADMIN_ID = "3c7f1a25-615e-4cfc-9c23-a049bafe9337";
 
 /**
- * Builds Whop checkout URLs with comprehensive tracking parameters.
- * Passes metadata, custom fields, client references, and prefilled email
- * so Whop webhooks reliably identify the subscriber even across different checkout devices.
+ * Builds Whop checkout URLs with deterministic tracking parameters.
+ * Passes metadata[user_id], client_reference_id, and prefilled email
+ * so Whop webhooks reliably identify the subscriber even across different checkout devices or Apple Pay.
  */
 export const getUpgradeCheckout = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -45,22 +49,6 @@ export const getUpgradeCheckout = createServerFn({ method: "GET" })
     const { data: userData } = await context.supabase.auth.getUser();
     const userEmail = userData.user?.email || "";
 
-    // Record checkout intent timestamp in user metadata so recent payments can auto-correlate
-    if (admin && context.userId) {
-      try {
-        const { data: authUser } = await admin.auth.admin.getUserById(context.userId);
-        const currentMeta = authUser?.user?.user_metadata || {};
-        await admin.auth.admin.updateUserById(context.userId, {
-          user_metadata: {
-            ...currentMeta,
-            last_checkout_started_at: new Date().toISOString(),
-          },
-        });
-      } catch (err) {
-        console.warn("Could not save checkout intent timestamp:", err);
-      }
-    }
-
     const buildUrl = (baseUrl: string, planType: string) => {
       let url: URL;
       try {
@@ -71,7 +59,7 @@ export const getUpgradeCheckout = createServerFn({ method: "GET" })
 
       const { sig, ts } = signCheckoutReturn(context.userId, planType);
 
-      // Universal tracking parameters for Whop:
+      // Deterministic tracking parameters for Whop
       url.searchParams.set("metadata[user_id]", context.userId);
       url.searchParams.set("metadata[detailer_id]", context.userId);
       url.searchParams.set("metadata[plan_type]", planType);
@@ -98,14 +86,42 @@ export const getUpgradeCheckout = createServerFn({ method: "GET" })
     };
   });
 
+export interface TrialStateResponse {
+  status: SubscriptionStateStatus;
+  rawStatus: string;
+  hasActiveAccess: boolean;
+  isSubscribed: boolean;
+  isCancelled: boolean;
+  cancelAtPeriodEnd: boolean;
+  inGracePeriod: boolean;
+  expired: boolean;
+  isSuspended: boolean;
+  isPendingFirstVisit: boolean;
+  daysLeft: number;
+  renewalDaysLeft: number;
+  expiresAt: string | null;
+  nextBillingDate: string | null;
+  nextBillingDateFormatted: string | null;
+  subscriptionStartedAt: string | null;
+  whopMembershipId: string | null;
+  whopCustomerEmail: string | null;
+  whopPortalUrl: string;
+  planType: "monthly" | "yearly";
+  planName: string;
+  linkViews: number;
+  firstVisitAt: string | null;
+}
+
 /**
- * Returns the caller's plan and subscription state.
- * Accurately tracks active subscriptions, handles mismatched Whop emails,
- * and reflects cancelled memberships properly.
+ * Reads canonical subscription and trial status for the active user.
+ * Read-only, deterministic, and idempotent (no random database mutations on fetch).
  */
 export const getTrialState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<TrialStateResponse> => {
+    // 1. Delegate authority to the server subscription guard
+    const access = await verifyServerSubscriptionAccess(context.userId);
+
     const admin = getAdminClient();
     const client = admin ?? context.supabase;
 
@@ -115,35 +131,9 @@ export const getTrialState = createServerFn({ method: "GET" })
       .eq("id", context.userId)
       .maybeSingle();
 
-    if (!profile) {
-      return {
-        status: "TRIAL" as const,
-        rawStatus: "TRIAL",
-        expiresAt: null as string | null,
-        expired: false,
-        daysLeft: 7,
-        isSubscribed: false,
-        isCancelled: false,
-        hasActiveAccess: true,
-        whopMembershipId: null,
-        whopCustomerEmail: null,
-        nextBillingDate: null as string | null,
-        nextBillingDateFormatted: null as string | null,
-        subscriptionStartedAt: null as string | null,
-        renewalDaysLeft: 0,
-        whopPortalUrl: "https://whop.com/hub/memberships/",
-      };
-    }
-
-    let rawStatus = profile.trial_status ?? "TRIAL_PENDING";
-    const now = Date.now();
-
-    // Fetch user metadata for visitor stats and linked checkout credentials
     let linkViews = 0;
     let firstVisitAt: string | null = null;
-    let isSuspended = false;
     let whopCustomerEmail: string | null = null;
-    let linkedWhopActive = false;
     let userMetadata: Record<string, unknown> = {};
 
     if (admin) {
@@ -157,296 +147,92 @@ export const getTrialState = createServerFn({ method: "GET" })
           (userMetadata["linked_whop_email"] as string) ||
           null;
 
-        if (
-          userMetadata["is_suspended"] === true ||
-          rawStatus === "SUSPENDED" ||
-          rawStatus === "BANNED"
-        ) {
-          isSuspended = true;
+        // Fetch membership customer email if not found in auth metadata
+        if (!whopCustomerEmail) {
+          const { data: mem } = await admin
+            .from("whop_memberships")
+            .select("customer_email")
+            .eq("user_id", context.userId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (mem?.customer_email) whopCustomerEmail = mem.customer_email;
         }
-
-        const userEmail = authUser?.user?.email?.toLowerCase().trim();
-
-        // Check if there is an active membership record in whop_memberships table
-        let { data: dbMem } = await admin
-          .from("whop_memberships")
-          .select("membership_id, customer_email, status")
-          .eq("user_id", context.userId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        // Fallback: search by customer email if user_id was not linked yet
-        if (!dbMem && (userEmail || whopCustomerEmail)) {
-          const searchEmail = whopCustomerEmail || userEmail;
-          if (searchEmail) {
-            const { data: emailMem } = await admin
-              .from("whop_memberships")
-              .select("membership_id, customer_email, status")
-              .ilike("customer_email", searchEmail)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            if (emailMem) {
-              dbMem = emailMem;
-              // Link user_id to this membership record
-              try {
-                await admin
-                  .from("whop_memberships")
-                  .update({ user_id: context.userId })
-                  .eq("membership_id", emailMem.membership_id);
-              } catch {
-                /* ignore */
-              }
-            }
-          }
-        }
-
-        if (dbMem && (dbMem.status === "active" || dbMem.status === "subscribed")) {
-          linkedWhopActive = true;
-          if (dbMem.customer_email) whopCustomerEmail = dbMem.customer_email;
-          if (!profile.whop_membership_id || profile.trial_status !== "SUBSCRIBED") {
-            await admin
-              .from("profiles")
-              .update({ trial_status: "SUBSCRIBED", whop_membership_id: dbMem.membership_id })
-              .eq("id", context.userId);
-            rawStatus = "SUBSCRIBED";
-          }
-        }
-      } catch (err) {
-        console.warn("Could not query membership reconciliation:", err);
-      }
-    }
-
-    if (isSuspended) {
-      return {
-        status: "SUSPENDED" as const,
-        rawStatus: "SUSPENDED",
-        expiresAt: null as string | null,
-        expired: true,
-        daysLeft: 0,
-        isSubscribed: false,
-        isCancelled: false,
-        isPendingFirstVisit: false,
-        hasActiveAccess: false,
-        whopMembershipId: null,
-        whopCustomerEmail: null,
-        linkViews,
-        firstVisitAt,
-        whopPortalUrl: "https://whop.com/hub/memberships/",
-      };
-    }
-
-    const isMasterAdmin = context.userId === MASTER_ADMIN_ID;
-
-    // Has a valid membership if profile has a membership ID or status is marked SUBSCRIBED
-    const hasMembershipRecord =
-      !!profile.whop_membership_id &&
-      typeof profile.whop_membership_id === "string" &&
-      (profile.whop_membership_id.startsWith("mem_") ||
-        profile.whop_membership_id.startsWith("pay_") ||
-        profile.whop_membership_id.length > 5);
-
-    const isSubscribed =
-      isMasterAdmin ||
-      linkedWhopActive ||
-      rawStatus === "SUBSCRIBED" ||
-      profile.trial_status === "SUBSCRIBED" ||
-      userMetadata["whop_status"] === "SUBSCRIBED" ||
-      userMetadata["whop_verified"] === true ||
-      userMetadata["trial_status"] === "SUBSCRIBED" ||
-      hasMembershipRecord;
-
-    // Auto-heal profile record if user metadata shows subscribed but profile table lags behind
-    if (
-      !isMasterAdmin &&
-      admin &&
-      isSubscribed &&
-      profile.trial_status !== "SUBSCRIBED" &&
-      profile.trial_status !== "ADMIN"
-    ) {
-      try {
-        await admin
-          .from("profiles")
-          .update({ trial_status: "SUBSCRIBED" })
-          .eq("id", context.userId);
-        rawStatus = "SUBSCRIBED";
       } catch {
         /* ignore */
       }
     }
 
-    const isCancelled =
-      !isSubscribed && (rawStatus === "CANCELLED" || profile.trial_status === "CANCELLED");
+    const whopPlanType = (userMetadata["whop_plan_type"] as string)?.toLowerCase();
+    const isYearly = whopPlanType === "yearly" || whopPlanType === "annual" || access.daysLeft > 45;
 
-    // 2. Check if trial is pending first customer visit
-    const isPendingFirstVisit =
-      !isSubscribed &&
-      !isCancelled &&
-      (rawStatus === "TRIAL_PENDING" || (!profile.trial_expiry && rawStatus !== "TRIAL"));
+    const planType: "monthly" | "yearly" = isYearly ? "yearly" : "monthly";
 
-    if (isPendingFirstVisit) {
-      return {
-        status: "TRIAL_PENDING" as const,
-        rawStatus: "TRIAL_PENDING",
-        expiresAt: null as string | null,
-        expired: false,
-        daysLeft: 7,
-        isSubscribed: false,
-        isCancelled: false,
-        isPendingFirstVisit: true,
-        hasActiveAccess: true,
-        whopMembershipId: profile.whop_membership_id || null,
-        whopCustomerEmail,
-        linkViews,
-        firstVisitAt,
-        whopPortalUrl: "https://whop.com/hub/memberships/",
-      };
-    }
-
-    // 3. Active trial validation
-    let expiresAt = profile.trial_expiry ?? null;
-    if (!isSubscribed && !isCancelled && expiresAt) {
-      const expiryMs = new Date(expiresAt).getTime();
-      const maxAllowedExpiry = now + 14 * 24 * 60 * 60 * 1000;
-      if (expiryMs > maxAllowedExpiry) {
-        const correctedExpiry = new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString();
-        if (admin) {
-          await admin
-            .from("profiles")
-            .update({ trial_expiry: correctedExpiry })
-            .eq("id", context.userId);
-        }
-        expiresAt = correctedExpiry;
-      }
-    }
-
-    const expired =
-      !isSubscribed && !isCancelled && !!expiresAt && new Date(expiresAt).getTime() < now;
-    const daysLeft =
-      !isSubscribed && !isCancelled && expiresAt
-        ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - now) / (1000 * 60 * 60 * 24)))
-        : 0;
-
-    // 4. Calculate & persist next billing date for subscribed accounts
-    let nextBillingIso: string | null = null;
-    let subscriptionStartedAt: string | null = null;
-
-    if (isSubscribed) {
-      subscriptionStartedAt =
-        (userMetadata["subscription_started_at"] as string) ||
-        profile.created_at ||
-        new Date().toISOString();
-
-      const whopPlanType = (userMetadata["whop_plan_type"] as string)?.toLowerCase() || "monthly";
-      const isYearlyPlan =
-        whopPlanType === "yearly" ||
-        whopPlanType === "annual" ||
-        whopPlanType === "year" ||
-        whopPlanType === "1year";
-      const cycleDays = isYearlyPlan ? 365 : 30;
-
-      let storedNextBilling = userMetadata["next_billing_date"] as string | undefined;
-      if (
-        !storedNextBilling &&
-        profile.trial_expiry &&
-        new Date(profile.trial_expiry).getTime() > now + 7 * 24 * 60 * 60 * 1000
-      ) {
-        storedNextBilling = profile.trial_expiry;
-      }
-
-      if (storedNextBilling) {
-        const remainingMs = new Date(storedNextBilling).getTime() - now;
-        // If yearly plan, remaining duration should be > 60 days. If less, recalculate to 365 days from now!
-        if (isYearlyPlan && remainingMs < 60 * 24 * 60 * 60 * 1000) {
-          nextBillingIso = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
-        } else if (!isYearlyPlan && remainingMs > 40 * 24 * 60 * 60 * 1000) {
-          nextBillingIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        } else {
-          nextBillingIso = storedNextBilling;
-        }
+    let planName = "Detailr Pro Monthly ($12.99/mo)";
+    if (access.isSubscribed) {
+      if (access.cancelAtPeriodEnd) {
+        planName = isYearly
+          ? "Detailr Pro Annual Pass ($145/yr) — Auto-renew Cancelled"
+          : "Detailr Pro Monthly ($12.99/mo) — Auto-renew Cancelled";
+      } else if (access.inGracePeriod) {
+        planName = isYearly
+          ? "Detailr Pro Annual Pass ($145/yr) — Payment Past Due"
+          : "Detailr Pro Monthly ($12.99/mo) — Payment Past Due";
       } else {
-        nextBillingIso = new Date(Date.now() + cycleDays * 24 * 60 * 60 * 1000).toISOString();
+        planName = isYearly
+          ? "Detailr Pro Annual Pass ($145/yr)"
+          : "Detailr Pro Monthly ($12.99/mo)";
       }
-
-      if (admin) {
-        try {
-          if (profile.trial_expiry !== nextBillingIso) {
-            await admin
-              .from("profiles")
-              .update({ trial_expiry: nextBillingIso })
-              .eq("id", context.userId);
-          }
-          if (
-            userMetadata["next_billing_date"] !== nextBillingIso ||
-            userMetadata["whop_plan_type"] !== (isYearlyPlan ? "yearly" : "monthly")
-          ) {
-            await admin.auth.admin.updateUserById(context.userId, {
-              user_metadata: {
-                ...userMetadata,
-                next_billing_date: nextBillingIso,
-                subscription_started_at: subscriptionStartedAt,
-                whop_plan_type: isYearlyPlan ? "yearly" : "monthly",
-                whop_status: "SUBSCRIBED",
-                whop_verified: true,
-              },
-            });
-          }
-        } catch {
-          /* ignore */
-        }
-      }
+    } else if (access.isCancelled) {
+      planName = "Detailr Pro (Cancelled)";
+    } else if (access.isPendingFirstVisit) {
+      planName = "7-Day Free Trial (Pending First Visit)";
+    } else if (access.isTrialActive) {
+      planName = "7-Day Free Trial";
     }
 
-    const nextBillingDateFormatted = nextBillingIso
-      ? new Date(nextBillingIso).toLocaleDateString("en-US", {
+    const nextBillingDateFormatted = access.currentPeriodEnd
+      ? new Date(access.currentPeriodEnd).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
           year: "numeric",
         })
       : null;
 
-    const renewalDaysLeft = nextBillingIso
-      ? Math.max(0, Math.ceil((new Date(nextBillingIso).getTime() - now) / (1000 * 60 * 60 * 24)))
-      : 0;
-
-    // Normalised status for UI banners & indicators
-    const status = isSubscribed
-      ? ("ACTIVE" as const)
-      : isCancelled
-        ? ("CANCELLED" as const)
-        : expired
-          ? ("EXPIRED" as const)
-          : ("TRIALING" as const);
+    const subscriptionStartedAt =
+      (userMetadata["subscription_started_at"] as string) || profile?.created_at || null;
 
     return {
-      status, // "ACTIVE" | "TRIALING" | "TRIAL_PENDING" | "EXPIRED" | "CANCELLED" | "SUSPENDED"
-      rawStatus, // "SUBSCRIBED" | "TRIAL" | "TRIAL_PENDING" | "CANCELLED" | "PAST_DUE" | "SUSPENDED"
-      expiresAt,
-      expired,
-      daysLeft: isSubscribed ? renewalDaysLeft : daysLeft,
-      isSubscribed,
-      isCancelled,
-      isPendingFirstVisit: false,
-      hasActiveAccess: isSubscribed || isCancelled || !expired,
-      whopMembershipId: profile.whop_membership_id || null,
-      whopCustomerEmail,
-      nextBillingDate: nextBillingIso,
+      status: access.status,
+      rawStatus: profile?.trial_status || "TRIAL_PENDING",
+      hasActiveAccess: access.hasAccess,
+      isSubscribed: access.isSubscribed,
+      isCancelled: access.isCancelled,
+      cancelAtPeriodEnd: access.cancelAtPeriodEnd,
+      inGracePeriod: access.inGracePeriod,
+      expired: access.isExpired,
+      isSuspended: access.isSuspended,
+      isPendingFirstVisit: access.isPendingFirstVisit,
+      daysLeft: access.daysLeft,
+      renewalDaysLeft: access.daysLeft,
+      expiresAt: access.currentPeriodEnd,
+      nextBillingDate: access.currentPeriodEnd,
       nextBillingDateFormatted,
       subscriptionStartedAt,
-      renewalDaysLeft,
+      whopMembershipId: profile?.whop_membership_id || null,
+      whopCustomerEmail,
+      whopPortalUrl: "https://whop.com/hub/memberships/",
+      planType,
+      planName,
       linkViews,
       firstVisitAt,
-      whopPortalUrl: "https://whop.com/hub/memberships/",
     };
   });
 
 /**
- * Reconciles and links Whop subscriptions when emails differ
- * (e.g. user registered on Detailr with srti@gmail.com and checked out on Whop with jjj@gmail.com).
+ * Allows a user to link a payment completed with an alternate email or direct membership ID.
  */
-export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
+export const linkWhopEmailOrMembership = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { whopEmailOrMembershipId: string }) => data)
   .handler(async ({ input, context }) => {
@@ -463,19 +249,20 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
     const query = rawInput.toLowerCase();
     const isEmail = query.includes("@");
 
-    // Check whop_memberships database table for recorded payment
+    // Check whop_memberships database table
     let matchedMembership: {
       id: string;
       membership_id: string;
       customer_email: string;
       status: string;
+      plan_type?: string;
     } | null = null;
 
     try {
       if (isEmail) {
         const { data } = await admin
           .from("whop_memberships")
-          .select("id, membership_id, customer_email, status")
+          .select("id, membership_id, customer_email, status, plan_type")
           .ilike("customer_email", query)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -484,33 +271,17 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
       } else {
         const { data } = await admin
           .from("whop_memberships")
-          .select("id, membership_id, customer_email, status")
+          .select("id, membership_id, customer_email, status, plan_type")
           .eq("membership_id", rawInput)
           .maybeSingle();
         matchedMembership = data;
       }
     } catch {
-      /* whop_memberships table lookup */
+      /* ignore */
     }
 
-    // Save linked email in user metadata so future webhooks match automatically
-    try {
-      const { data: authUser } = await admin.auth.admin.getUserById(context.userId);
-      const currentMeta = authUser?.user?.user_metadata || {};
-      await admin.auth.admin.updateUserById(context.userId, {
-        user_metadata: {
-          ...currentMeta,
-          linked_whop_email: isEmail ? query : currentMeta["linked_whop_email"],
-          whop_membership_id:
-            matchedMembership?.membership_id ||
-            (rawInput.startsWith("mem_") ? rawInput : currentMeta["whop_membership_id"]),
-          whop_verified: true,
-          whop_status: "SUBSCRIBED",
-        },
-      });
-    } catch (metaErr) {
-      console.warn("Could not save linked whop email:", metaErr);
-    }
+    const cycleDays = matchedMembership?.plan_type === "yearly" ? 365 : 30;
+    const nextBillingDate = new Date(Date.now() + cycleDays * 24 * 60 * 60 * 1000).toISOString();
 
     if (matchedMembership) {
       // Link the membership record to this user
@@ -523,8 +294,6 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
         /* ignore */
       }
 
-      const nextBillingDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
       await admin
         .from("profiles")
         .update({
@@ -534,14 +303,30 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
         })
         .eq("id", context.userId);
 
+      try {
+        const { data: authUser } = await admin.auth.admin.getUserById(context.userId);
+        const currentMeta = authUser?.user?.user_metadata || {};
+        await admin.auth.admin.updateUserById(context.userId, {
+          user_metadata: {
+            ...currentMeta,
+            linked_whop_email: matchedMembership.customer_email,
+            whop_membership_id: matchedMembership.membership_id,
+            whop_verified: true,
+            whop_status: "SUBSCRIBED",
+            next_billing_date: nextBillingDate,
+          },
+        });
+      } catch {
+        /* ignore */
+      }
+
       return {
         success: true,
         message: `Subscription successfully verified and linked to ${matchedMembership.customer_email}! Detailr Pro is now active.`,
       };
     }
 
-    // If not found in database yet, but input looks like a valid Whop ID or checkout email:
-    const nextBillingDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    // Direct membership reference ID fallback
     if (rawInput.startsWith("mem_") || rawInput.startsWith("pay_")) {
       await admin
         .from("profiles")
@@ -558,7 +343,7 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
       };
     }
 
-    // If an email was linked, also update dates
+    // Email link fallback
     await admin
       .from("profiles")
       .update({
@@ -574,7 +359,8 @@ export const linkWhopSubscriptionByEmail = createServerFn({ method: "POST" })
   });
 
 /**
- * Cancels a user's subscription in-app and provides direct access to Whop customer hub.
+ * Cancels a user's subscription in-app:
+ * Sets cancel_at_period_end so the customer retains paid access through the end of their period.
  */
 export const cancelUserSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -586,11 +372,11 @@ export const cancelUserSubscription = createServerFn({ method: "POST" })
 
     const { data: profile } = await admin
       .from("profiles")
-      .select("whop_membership_id")
+      .select("whop_membership_id, trial_expiry")
       .eq("id", context.userId)
       .maybeSingle();
 
-    // 1. Update database profile status to CANCELLED
+    // 1. Update database profile status to CANCELLED (preserves trial_expiry for prepaid access)
     await admin.from("profiles").update({ trial_status: "CANCELLED" }).eq("id", context.userId);
 
     // 2. Mark membership record as cancelled
@@ -619,7 +405,7 @@ export const cancelUserSubscription = createServerFn({ method: "POST" })
       console.warn("Could not save cancellation metadata:", metaErr);
     }
 
-    // 4. If Whop API key is configured and membership ID is known, attempt Whop cancellation
+    // 4. If Whop API key is configured and membership ID is known, notify Whop API
     const whopApiKey = process.env["WHOP_API_KEY"];
     const membershipId = profile?.whop_membership_id;
 
@@ -637,10 +423,19 @@ export const cancelUserSubscription = createServerFn({ method: "POST" })
       }
     }
 
+    const prepaidUntilFormatted = profile?.trial_expiry
+      ? new Date(profile.trial_expiry).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : null;
+
     return {
       success: true,
-      message:
-        "Your Pro subscription has been cancelled. Your quote link will remain active through the remainder of your paid billing period.",
+      message: prepaidUntilFormatted
+        ? `Your subscription has been cancelled. Your quote link and Pro features will remain fully active until ${prepaidUntilFormatted}.`
+        : "Your subscription has been cancelled. Your quote link will remain active through the end of your billing cycle.",
       whopPortalUrl: "https://whop.com/hub/memberships/",
     };
   });
@@ -648,43 +443,68 @@ export const cancelUserSubscription = createServerFn({ method: "POST" })
 /**
  * Reconciles subscription after returning from Whop checkout success page.
  */
-export const reconcileCheckout = createServerFn({ method: "POST" })
+export const reconcileUserPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: userData } = await context.supabase.auth.getUser();
-    const result = await secureVerifyAndFinalizeReturn({
-      userId: context.userId,
-      userEmail: userData.user?.email,
-      plan: "monthly",
-    });
-    return { isSubscribed: result.verified, status: result.verified ? "SUBSCRIBED" : "TRIAL" };
+    const admin = getAdminClient();
+    if (!admin) return { isSubscribed: false, status: "UNAVAILABLE" };
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("trial_status, trial_expiry, whop_membership_id")
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    if (profile?.trial_status === "SUBSCRIBED" || profile?.trial_status === "ADMIN") {
+      return { isSubscribed: true, status: profile.trial_status };
+    }
+
+    // Check whop_memberships for a recent active record linked to this user
+    const { data: dbMem } = await admin
+      .from("whop_memberships")
+      .select("membership_id, status")
+      .eq("user_id", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (dbMem && (dbMem.status === "active" || dbMem.status === "subscribed")) {
+      const nextBillingDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      await admin
+        .from("profiles")
+        .update({
+          trial_status: "SUBSCRIBED",
+          whop_membership_id: dbMem.membership_id,
+          trial_expiry: nextBillingDate,
+        })
+        .eq("id", context.userId);
+
+      return { isSubscribed: true, status: "SUBSCRIBED" };
+    }
+
+    return { isSubscribed: false, status: profile?.trial_status || "PENDING" };
   });
 
 /**
- * Server function to securely verify and finalize return from Whop checkout.
- * Validates cryptographic signatures, verifies against whop_memberships,
- * and sets subscription dates securely.
+ * Finalizes checkout return with cryptographic signature verification.
  */
-export const verifyBillingReturn = createServerFn({ method: "POST" })
+export const secureVerifyAndFinalizeCheckoutReturn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (data: {
-      plan?: string;
-      membershipId?: string;
-      customerEmail?: string;
-      sig?: string;
-      ts?: number;
-    }) => data,
+    (data: { plan: string; uid: string; sig: string; ts: string; membershipId?: string }) => data,
   )
   .handler(async ({ input, context }) => {
-    const { data: userData } = await context.supabase.auth.getUser();
     return secureVerifyAndFinalizeReturn({
       userId: context.userId,
-      userEmail: userData.user?.email,
       plan: input.plan,
-      membershipId: input.membershipId,
-      customerEmail: input.customerEmail,
+      uid: input.uid,
       sig: input.sig,
       ts: input.ts,
+      membershipId: input.membershipId,
     });
   });
+
+// Aliases for backwards compatibility across existing routes
+export const verifyBillingReturn = secureVerifyAndFinalizeCheckoutReturn;
+export const linkWhopSubscriptionByEmail = linkWhopEmailOrMembership;
+export const reconcileCheckout = reconcileUserPayment;
