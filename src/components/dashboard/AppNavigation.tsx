@@ -119,13 +119,13 @@ export function AppNavigation({
           <div className="flex items-center gap-3 shrink-0">
             <QuoteFlowLogo size="sm" linkToHome />
             {profile && (
-              <span className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600">
-                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> Shop Online
+              <span className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
+                <span className="size-1.5 rounded-full bg-primary animate-pulse" /> Shop Online
               </span>
             )}
             {isSubscribed && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400">
-                <Sparkles className="size-3 text-emerald-600" /> PRO MEMBER
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/15 px-2.5 py-0.5 text-[10px] font-extrabold text-primary">
+                <Sparkles className="size-3 text-primary" /> PRO MEMBER
               </span>
             )}
           </div>
@@ -152,7 +152,7 @@ export function AppNavigation({
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
-              <ReceiptText className="size-3.5 opacity-80 text-emerald-500" />
+              <ReceiptText className="size-3.5 opacity-80 text-primary" />
               <span>Quotes</span>
             </Link>
 
@@ -179,7 +179,7 @@ export function AppNavigation({
               <Send className="size-3.5 opacity-80 text-blue-500" />
               <span>Alerts</span>
               {profile?.telegram_chat_id ? (
-                <span className="size-1.5 rounded-full bg-emerald-500" />
+                <span className="size-1.5 rounded-full bg-primary" />
               ) : (
                 <span className="size-1.5 rounded-full bg-amber-500" />
               )}
@@ -247,7 +247,7 @@ export function AppNavigation({
                   title="Copy your public quote form link"
                 >
                   {copied ? (
-                    <Check className="size-3.5 text-emerald-600" />
+                    <Check className="size-3.5 text-primary" />
                   ) : (
                     <Copy className="size-3.5 opacity-70" />
                   )}
@@ -304,10 +304,10 @@ export function AppNavigation({
                   asChild
                   variant="outline"
                   size="sm"
-                  className="h-8 rounded-xl px-2.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 font-bold text-[10px] uppercase tracking-wider transition-all"
+                  className="h-8 rounded-xl px-2.5 border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 font-bold text-[10px] uppercase tracking-wider transition-all"
                 >
                   <Link to="/upgrade">
-                    <Sparkles className="size-3.5 mr-1 text-emerald-600" /> Pro Plan
+                    <Sparkles className="size-3.5 mr-1 text-primary" /> Pro Plan
                   </Link>
                 </Button>
               ) : isCancelled ? (
@@ -388,7 +388,7 @@ export function AppNavigation({
                     : "border-border/40 bg-muted/20 text-muted-foreground"
                 }`}
               >
-                <ReceiptText className="size-4 text-emerald-500 shrink-0" />
+                <ReceiptText className="size-4 text-primary shrink-0" />
                 <div>
                   <div className="font-bold">Quotes & Leads</div>
                   <div className="text-[10px] font-normal text-muted-foreground">Submissions</div>
@@ -510,7 +510,7 @@ export function AppNavigation({
                   onClick={copyQuoteLink}
                 >
                   {copied ? (
-                    <Check className="size-4 text-emerald-600" />
+                    <Check className="size-4 text-primary" />
                   ) : (
                     <Copy className="size-4 opacity-70" />
                   )}
@@ -544,13 +544,13 @@ export function AppNavigation({
                 variant="ghost"
                 size="sm"
                 className={`h-9 rounded-xl px-3 font-bold text-xs gap-1.5 ${
-                  isSubscribed ? "text-emerald-600 dark:text-emerald-400" : ""
+                  isSubscribed ? "text-primary" : ""
                 }`}
               >
                 <Link to="/upgrade">
                   {isSubscribed ? (
                     <>
-                      <Sparkles className="size-4 text-emerald-600" /> Pro Plan (Active)
+                      <Sparkles className="size-4 text-primary" /> Pro Plan (Active)
                     </>
                   ) : isCancelled ? (
                     <>
@@ -694,7 +694,7 @@ export function AppNavigation({
         </DialogContent>
       </Dialog>
 
-      {/* OPay-Inspired Fixed Mobile Bottom Navigation Dock */}
+      {/* Mobile Bottom Navigation Dock */}
       <nav
         aria-label="Quick Mobile Navigation"
         className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/70 px-2 py-1.5 flex items-center justify-around shadow-xl"
@@ -703,7 +703,7 @@ export function AppNavigation({
           to="/dashboard"
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-colors ${
             activeTab === "quotes" || activeTab === "dashboard"
-              ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+              ? "text-primary dark:text-blue-400 font-extrabold"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -715,7 +715,7 @@ export function AppNavigation({
           to="/quotes"
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-colors ${
             activeTab === "all-quotes"
-              ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+              ? "text-primary dark:text-blue-400 font-extrabold"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -727,7 +727,7 @@ export function AppNavigation({
           to="/pricing"
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-colors ${
             activeTab === "pricing"
-              ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+              ? "text-primary dark:text-blue-400 font-extrabold"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -739,14 +739,14 @@ export function AppNavigation({
           to="/notifications"
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-colors relative ${
             activeTab === "notifications"
-              ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+              ? "text-primary dark:text-blue-400 font-extrabold"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <Bell className="size-5 shrink-0" />
           <span>Alerts</span>
           {profile?.telegram_chat_id ? (
-            <span className="absolute top-1 right-2.5 size-1.5 rounded-full bg-emerald-500" />
+            <span className="absolute top-1 right-2.5 size-1.5 rounded-full bg-primary" />
           ) : (
             <span className="absolute top-1 right-2.5 size-1.5 rounded-full bg-amber-500" />
           )}
@@ -756,7 +756,7 @@ export function AppNavigation({
           to="/settings"
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-colors ${
             activeTab === "settings" || activeTab === "profile"
-              ? "text-emerald-600 dark:text-emerald-400 font-extrabold"
+              ? "text-primary dark:text-blue-400 font-extrabold"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >

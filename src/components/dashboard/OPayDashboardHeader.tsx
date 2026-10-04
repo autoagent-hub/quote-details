@@ -100,12 +100,12 @@ export function OPayDashboardHeader({
   return (
     <div className="space-y-6">
       {/* ========================================================================= */}
-      {/* 1. OPay High-Contrast Account Hero Card (Emerald & Deep Teal)            */}
+      {/* 1. High-Contrast Account Hero Card (Landing Page Signature Royal Blue)     */}
       {/* ========================================================================= */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#00965C] via-[#00A86B] to-[#007F4E] text-white p-6 sm:p-8 shadow-xl shadow-emerald-950/20 border border-emerald-500/30">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 text-white p-6 sm:p-8 shadow-xl shadow-blue-950/20 border border-blue-500/30">
         {/* Soft background ambient rings */}
         <div className="absolute -right-16 -top-16 size-72 rounded-full bg-white/10 pointer-events-none blur-3xl" />
-        <div className="absolute -left-12 -bottom-12 size-56 rounded-full bg-teal-300/15 pointer-events-none blur-2xl" />
+        <div className="absolute -left-12 -bottom-12 size-56 rounded-full bg-sky-300/15 pointer-events-none blur-2xl" />
 
         <div className="relative z-10 space-y-6">
           {/* Header Row: Shop Identity & Status Badge */}
@@ -124,7 +124,7 @@ export function OPayDashboardHeader({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-emerald-100">{greeting},</span>
+                  <span className="text-xs font-semibold text-blue-100">{greeting},</span>
                   <span className="text-base sm:text-lg font-black text-white tracking-tight">
                     {profile.business_name || "Detailer"}
                   </span>
@@ -132,8 +132,8 @@ export function OPayDashboardHeader({
                 <div className="flex items-center gap-2 text-xs text-white/80 font-mono mt-0.5">
                   <span>/{profile.slug}</span>
                   <span aria-hidden="true">·</span>
-                  <span className="inline-flex items-center gap-1 text-emerald-200 font-sans font-bold">
-                    <span className="size-2 rounded-full bg-emerald-300 animate-pulse" />
+                  <span className="inline-flex items-center gap-1 text-blue-200 font-sans font-bold">
+                    <span className="size-2 rounded-full bg-blue-300 animate-pulse" />
                     Accepting Quotes
                   </span>
                 </div>
@@ -159,14 +159,14 @@ export function OPayDashboardHeader({
             </div>
           </div>
 
-          {/* Center: Total Pipeline Balance Display with OPay Privacy Eye */}
+          {/* Center: Total Pipeline Balance Display with Privacy Eye */}
           <div className="pt-2 pb-1 space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-100">
+            <div className="flex items-center gap-2 text-xs font-semibold text-blue-100">
               <span>Total Lead Value</span>
               <button
                 type="button"
                 onClick={toggleShowBalance}
-                className="p-1 rounded-lg hover:bg-white/15 text-emerald-100 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="p-1 rounded-lg hover:bg-white/15 text-blue-100 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 title={showBalance ? "Hide amount" : "Show amount"}
                 aria-label={showBalance ? "Hide amount" : "Show amount"}
               >
@@ -178,7 +178,7 @@ export function OPayDashboardHeader({
               <span className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white font-mono">
                 {showBalance ? money(totalPipeline, profile.currency) : "••••••••"}
               </span>
-              <span className="text-xs text-emerald-100 font-medium">
+              <span className="text-xs text-blue-100 font-medium">
                 across {quotes.length} total {quotes.length === 1 ? "quote" : "quotes"}
               </span>
             </div>
@@ -191,7 +191,7 @@ export function OPayDashboardHeader({
               onClick={() => onSelectTab("quotes")}
               className="text-left p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
-              <div className="text-[11px] font-semibold text-emerald-100">Customer Leads</div>
+              <div className="text-[11px] font-semibold text-blue-100">Customer Leads</div>
               <div className="text-lg sm:text-2xl font-black text-white mt-0.5">
                 {showBalance ? quotes.length : "••"}
               </div>
@@ -202,7 +202,7 @@ export function OPayDashboardHeader({
               onClick={() => onSelectTab("pricing")}
               className="text-left p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
-              <div className="text-[11px] font-semibold text-emerald-100">Avg. Quote</div>
+              <div className="text-[11px] font-semibold text-blue-100">Avg. Quote</div>
               <div className="text-lg sm:text-2xl font-black text-white mt-0.5">
                 {showBalance ? money(avgQuote, profile.currency) : "••"}
               </div>
@@ -215,11 +215,11 @@ export function OPayDashboardHeader({
               }
               className="text-left p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
-              <div className="text-[11px] font-semibold text-emerald-100">Phone Alerts</div>
+              <div className="text-[11px] font-semibold text-blue-100">Phone Alerts</div>
               <div className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5 mt-1">
                 <span
                   className={`size-2 rounded-full ${
-                    isConnected ? "bg-emerald-300" : "bg-amber-300 animate-pulse"
+                    isConnected ? "bg-blue-300" : "bg-amber-300 animate-pulse"
                   }`}
                 />
                 <span className="truncate">{isConnected ? "Connected" : "Connect"}</span>
@@ -237,7 +237,7 @@ export function OPayDashboardHeader({
         <div className="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-border/50">
             <div className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-emerald-500" />
+              <span className="size-2 rounded-full bg-primary" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
                 Share & Acquire Leads
               </h3>
@@ -250,14 +250,10 @@ export function OPayDashboardHeader({
             <button
               type="button"
               onClick={handleCopyLink}
-              className="flex flex-col items-center justify-center gap-2 p-3 sm:p-3.5 rounded-2xl border border-border/60 bg-muted/20 hover:bg-emerald-500/10 hover:border-emerald-500/40 text-foreground transition-all group active:scale-98"
+              className="flex flex-col items-center justify-center gap-2 p-3 sm:p-3.5 rounded-2xl border border-border/60 bg-muted/20 hover:bg-primary/10 hover:border-primary/40 text-foreground transition-all group active:scale-98"
             >
-              <div className="size-11 rounded-2xl bg-emerald-500/10 group-hover:bg-emerald-500/20 text-emerald-600 flex items-center justify-center transition-colors shadow-xs">
-                {copied ? (
-                  <Check className="size-5 text-emerald-600" />
-                ) : (
-                  <Copy className="size-5" />
-                )}
+              <div className="size-11 rounded-2xl bg-primary/10 group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-xs">
+                {copied ? <Check className="size-5 text-primary" /> : <Copy className="size-5" />}
               </div>
               <span className="text-xs font-bold text-center leading-tight">
                 {copied ? "Copied!" : "Copy Link"}
@@ -357,12 +353,12 @@ export function OPayDashboardHeader({
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. OPay-Style Recent Activity Card (High Contrast Transaction Feed)      */}
+      {/* 3. Recent Activity Card (High Contrast Transaction Feed)                 */}
       {/* ========================================================================= */}
       <div className="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-border/50">
           <div className="flex items-center gap-2">
-            <ReceiptText className="size-4 text-emerald-600" />
+            <ReceiptText className="size-4 text-primary" />
             <h3 className="text-sm font-bold text-foreground">Recent Customer Leads</h3>
             <Badge variant="secondary" className="font-mono text-xs px-2 py-0.5">
               {quotes.length}
@@ -371,7 +367,7 @@ export function OPayDashboardHeader({
           <button
             type="button"
             onClick={() => onSelectTab("quotes")}
-            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors"
+            className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
           >
             <span>View All</span>
             <ChevronRight className="size-3.5" />
@@ -386,7 +382,7 @@ export function OPayDashboardHeader({
                 className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/20 -mx-2 px-2 rounded-xl transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-2xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-black text-sm flex items-center justify-center shrink-0 border border-emerald-500/20">
+                  <div className="size-10 rounded-2xl bg-primary/10 text-primary dark:text-blue-400 font-black text-sm flex items-center justify-center shrink-0 border border-primary/20">
                     {(q.customer_name || "C").charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -411,7 +407,7 @@ export function OPayDashboardHeader({
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-                  <span className="font-mono font-black text-base text-emerald-600 dark:text-emerald-400">
+                  <span className="font-mono font-black text-base text-primary dark:text-blue-400">
                     {showBalance
                       ? money(q.estimated_price, q.currency || profile.currency)
                       : "••••"}
@@ -425,7 +421,7 @@ export function OPayDashboardHeader({
                         className="h-7 text-xs font-bold rounded-lg px-2"
                       >
                         <a href={`tel:${q.customer_phone}`}>
-                          <Phone className="size-3 mr-1 text-emerald-600" />
+                          <Phone className="size-3 mr-1 text-primary" />
                           <span>Call</span>
                         </a>
                       </Button>
@@ -437,7 +433,7 @@ export function OPayDashboardHeader({
                         onClick={() => handleCopyPhone(q.customer_phone, q.id)}
                       >
                         {copiedQuoteId === q.id ? (
-                          <Check className="size-3 text-emerald-600" />
+                          <Check className="size-3 text-primary" />
                         ) : (
                           <Copy className="size-3" />
                         )}
@@ -464,7 +460,7 @@ export function OPayDashboardHeader({
               type="button"
               onClick={handleCopyLink}
               size="sm"
-              className="h-8 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="h-8 rounded-xl font-bold text-xs bg-primary hover:bg-primary/90 text-white"
             >
               <Copy className="size-3.5 mr-1.5" /> Copy Quote Link
             </Button>

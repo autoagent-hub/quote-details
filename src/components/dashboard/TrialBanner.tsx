@@ -146,20 +146,20 @@ export function TrialBanner({
   // 2. SUBSCRIBED: Show PRO BADGE and Next Billing Date on Dashboard
   if (effectiveStatus === "ACTIVE" || isSubscribed) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-teal-500/10 p-4 sm:p-5 text-xs shadow-md backdrop-blur-md">
+      <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-blue-600/10 via-primary/5 to-indigo-600/10 p-4 sm:p-5 text-xs shadow-md backdrop-blur-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start sm:items-center gap-3.5">
-            <div className="size-10 flex items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
+            <div className="size-10 flex items-center justify-center rounded-xl bg-primary/20 text-primary dark:text-blue-400 border border-primary/30 shrink-0">
               <Sparkles className="size-5" />
             </div>
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="bg-emerald-600 text-white dark:bg-emerald-500 dark:text-black font-extrabold uppercase tracking-widest text-[10px] px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                <Badge className="bg-primary text-white font-extrabold uppercase tracking-widest text-[10px] px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
                   <CheckCircle2 className="size-3" />
                   PRO MEMBER
                 </Badge>
                 {effectiveNextBillingDate && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary dark:text-blue-300 bg-primary/10 px-2.5 py-0.5 rounded-md border border-primary/20">
                     <Calendar className="size-3 opacity-80" />
                     Next billing date: <strong>{effectiveNextBillingDate}</strong>
                   </span>
@@ -183,7 +183,7 @@ export function TrialBanner({
               asChild
               variant="outline"
               size="sm"
-              className="h-8 rounded-xl font-bold text-xs border-emerald-500/30 bg-background/80 text-emerald-600 hover:bg-emerald-500/10 shadow-sm"
+              className="h-8 rounded-xl font-bold text-xs border-primary/30 bg-background/80 text-primary hover:bg-primary/10 shadow-sm"
             >
               <Link to="/upgrade">Manage Plan & Billing</Link>
             </Button>

@@ -358,13 +358,13 @@ function Landing() {
               {/* Trust Indicators */}
               <div className="mt-6 flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <Check className="size-4 text-emerald-500 font-bold" /> No credit card required
+                  <Check className="size-4 text-primary font-bold" /> No credit card required
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Check className="size-4 text-emerald-500 font-bold" /> 3-minute quick setup
+                  <Check className="size-4 text-primary font-bold" /> 3-minute quick setup
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Check className="size-4 text-emerald-500 font-bold" /> Cancel anytime
+                  <Check className="size-4 text-primary font-bold" /> Cancel anytime
                 </span>
               </div>
             </motion.div>
@@ -388,7 +388,7 @@ function Landing() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-3 left-3 flex items-center gap-2 text-xs font-semibold text-white">
-                    <span className="flex size-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="flex size-2 rounded-full bg-blue-400 animate-pulse" />
                     <span>Real-Time Lead Engine Active</span>
                   </div>
                 </div>
@@ -413,7 +413,7 @@ function Landing() {
                         <p className="text-[11px] text-muted-foreground">Telegram Bot · Just now</p>
                       </div>
                     </div>
-                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600">
+                    <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
                       ⚡ HOT LEAD
                     </span>
                   </div>
@@ -423,9 +423,7 @@ function Landing() {
                       <span className="font-semibold text-foreground">
                         🚗 2024 Ford Bronco (SUV)
                       </span>
-                      <span className="font-display text-base font-bold text-emerald-600">
-                        $290.00
-                      </span>
+                      <span className="font-display text-base font-bold text-primary">$290.00</span>
                     </div>
                     <p className="text-muted-foreground">
                       <strong className="text-foreground">Package:</strong> Full Signature Detail &
@@ -473,7 +471,7 @@ function Landing() {
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-5 sm:grid-cols-4 sm:gap-8 text-center">
           {[
             { value: "$240K+", label: "Quotes generated for detailers", color: "text-foreground" },
-            { value: "< 20s", label: "Average time to customer quote", color: "text-emerald-600" },
+            { value: "< 20s", label: "Average time to customer quote", color: "text-primary" },
             { value: "100%", label: "Direct profits kept (0% fee)", color: "text-primary" },
             { value: "3.2x", label: "Higher lead conversion rate", color: "text-foreground" },
           ].map((metric, i) => (
@@ -544,8 +542,8 @@ function Landing() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="text-xs font-semibold text-emerald-600">
+                  <span className="size-2 rounded-full bg-primary animate-ping" />
+                  <span className="text-xs font-semibold text-primary">
                     Calculations update dynamically
                   </span>
                 </div>
@@ -681,13 +679,13 @@ function Landing() {
                       <span className="font-semibold text-foreground">{tierName}</span>
                     </div>
                     {petHair && (
-                      <div className="flex justify-between text-emerald-600">
+                      <div className="flex justify-between text-primary font-medium">
                         <span>+ Pet Hair Extraction</span>
                         <span>$40</span>
                       </div>
                     )}
                     {headlights && (
-                      <div className="flex justify-between text-emerald-600">
+                      <div className="flex justify-between text-primary font-medium">
                         <span>+ Headlight Restoration</span>
                         <span>$50</span>
                       </div>
@@ -712,7 +710,7 @@ function Landing() {
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                     🚨 <strong className="text-foreground">New Quote:</strong> {vehicleName} ·{" "}
-                    {tierName} · <strong className="text-emerald-600">${calculatedTotal}</strong>
+                    {tierName} · <strong className="text-primary">${calculatedTotal}</strong>
                   </p>
                 </div>
 
@@ -914,7 +912,7 @@ function Landing() {
                         "Zero commission fees on your detailing jobs",
                       ].map((item) => (
                         <li key={`landing-monthly-${item}`} className="flex items-start gap-2.5">
-                          <Check className="mt-0.5 size-4 shrink-0 text-emerald-500 font-bold" />
+                          <Check className="mt-0.5 size-4 shrink-0 text-primary font-bold" />
                           <span className="text-foreground leading-snug">{item}</span>
                         </li>
                       ))}
@@ -967,7 +965,7 @@ function Landing() {
                       <span className="text-xs font-sans font-medium text-muted-foreground">
                         / year
                       </span>
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans text-[11px] font-bold ml-auto">
+                      <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary dark:text-blue-400 font-sans text-[11px] font-bold ml-auto">
                         ~$9/mo equivalent
                       </span>
                     </div>
@@ -998,7 +996,7 @@ function Landing() {
                         "Zero commission fees on your detailing jobs",
                       ].map((item) => (
                         <li key={`landing-yearly-${item}`} className="flex items-start gap-2.5">
-                          <Check className="mt-0.5 size-4 shrink-0 text-emerald-500 font-bold" />
+                          <Check className="mt-0.5 size-4 shrink-0 text-primary font-bold" />
                           <span className="text-foreground leading-snug">{item}</span>
                         </li>
                       ))}

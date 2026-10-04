@@ -138,12 +138,12 @@ function DashboardPage() {
                     className="text-xs font-bold gap-2 py-2.5 px-4 rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:shadow-md transition-all flex flex-col items-start text-left sm:flex-row sm:items-center text-muted-foreground hover:text-foreground"
                   >
                     <div className="flex items-center gap-2">
-                      <ReceiptText className="size-4 opacity-90 text-emerald-600" />
+                      <ReceiptText className="size-4 opacity-90 text-primary" />
                       <span>Leads & Quotes</span>
                     </div>
                     <Badge
                       variant="secondary"
-                      className="px-1.5 py-0 h-4 min-w-[18px] text-[9px] font-mono border-none bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold"
+                      className="px-1.5 py-0 h-4 min-w-[18px] text-[9px] font-mono border-none bg-primary/10 text-primary dark:text-blue-400 font-bold"
                     >
                       {quotes?.length ?? 0}
                     </Badge>
@@ -170,7 +170,7 @@ function DashboardPage() {
                       <span>Telegram Alerts</span>
                     </div>
                     <span
-                      className={`size-2 rounded-full ${profile.telegram_chat_id ? "bg-emerald-500" : "bg-amber-500"}`}
+                      className={`size-2 rounded-full ${profile.telegram_chat_id ? "bg-primary" : "bg-amber-500"}`}
                     />
                   </TabsTrigger>
 
@@ -268,8 +268,8 @@ function DashboardPage() {
 
         <footer className="mt-16 border-t border-border/40 pt-8 pb-12 text-[11px] font-bold text-muted-foreground/40 uppercase tracking-[0.2em] flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/5 border border-emerald-500/10 text-emerald-600/60">
-              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 text-primary/70">
+              <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               <span>Detailr Edge Cloud Active</span>
             </div>
           </div>
