@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Settings,
   User,
-  Shield,
   Bell,
   Sliders,
   Store,
@@ -12,7 +11,6 @@ import {
   ExternalLink,
   Check,
   Copy,
-  KeyRound,
   Send,
   Sparkles,
   ArrowRight,
@@ -50,7 +48,6 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function SettingsPage() {
   const [copied, setCopied] = useState(false);
-  const [resettingPassword, setResettingPassword] = useState(false);
 
   const { data: user } = useQuery({
     queryKey: ["auth-user"],
@@ -87,23 +84,6 @@ function SettingsPage() {
     setCopied(true);
     toast.success("Public quote link copied!");
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleSendPasswordReset = async () => {
-    if (!user?.email) return;
-    setResettingPassword(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/settings`,
-      });
-      if (error) throw error;
-      toast.success("Password reset email sent! Check your inbox.");
-    } catch (err: unknown) {
-      const e = err as Error;
-      toast.error(e.message || "Failed to send password reset email");
-    } finally {
-      setResettingPassword(false);
-    }
   };
 
   const quickPages = [
@@ -257,20 +237,19 @@ function SettingsPage() {
         {/* Subscription & Billing Dashboard Card */}
         <SubscriptionBillingCard />
 
-        {/* Account Details & Security Cards */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Account Profile */}
-          <Card className="rounded-2xl border-border/60 shadow-xs">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <User className="size-4 text-primary" />
-                <span>Account Credentials</span>
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Your primary login email and identity credentials.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-xs">
+        {/* Account Profile Card */}
+        <Card className="rounded-2xl border-border/60 shadow-xs">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <User className="size-4 text-primary" />
+              <span>Account Credentials</span>
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Your primary login email and identity credentials.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-xs">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="account-email" className="text-xs font-semibold">
                   Registered Email
@@ -294,68 +273,23 @@ function SettingsPage() {
                   className="bg-muted/40 font-mono text-[11px] cursor-not-allowed"
                 />
               </div>
+            </div>
 
-              <div className="rounded-xl border border-border/40 bg-muted/20 p-3 flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <p className="font-semibold text-foreground">Authentication Provider</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {user?.app_metadata?.provider === "google"
-                      ? "Connected via Google Sign-In"
-                      : "Email & Password login"}
-                  </p>
-                </div>
-                <Badge variant="outline" className="font-bold text-[10px]">
-                  {user?.app_metadata?.provider || "Supabase"}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Security & Password */}
-          <Card className="rounded-2xl border-border/60 shadow-xs">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Shield className="size-4 text-emerald-500" />
-                <span>Security & Access</span>
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Manage your password, session security, and access tokens.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-xs">
-              <div className="rounded-xl border border-border/40 bg-muted/20 p-4 space-y-3">
-                <div className="flex items-center gap-2 text-foreground font-semibold">
-                  <KeyRound className="size-4 text-amber-500" />
-                  <span>Password Reset</span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Need to change or set a password for your account? We'll email a secure password
-                  reset link to <strong className="text-foreground">{user?.email}</strong>.
-                </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="rounded-xl text-xs font-bold gap-1.5"
-                  onClick={handleSendPasswordReset}
-                  disabled={resettingPassword || !user?.email}
-                >
-                  <Send className="size-3.5" />
-                  <span>
-                    {resettingPassword ? "Sending Email..." : "Send Password Reset Email"}
-                  </span>
-                </Button>
-              </div>
-
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 flex items-center gap-3 text-emerald-700 dark:text-emerald-300">
-                <Check className="size-4 shrink-0 text-emerald-500" />
-                <p className="text-[11px] leading-relaxed">
-                  Your session is protected with secure cryptographic tokens and encrypted in
-                  transit.
+            <div className="rounded-xl border border-border/40 bg-muted/20 p-3 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="font-semibold text-foreground">Authentication Provider</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {user?.app_metadata?.provider === "google"
+                    ? "Connected via Google Sign-In"
+                    : "Email & Password login"}
                 </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Badge variant="outline" className="font-bold text-[10px]">
+                {user?.app_metadata?.provider || "Supabase"}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Integration Status Card */}
         <Card className="rounded-2xl border-border/60 shadow-xs">
@@ -375,7 +309,7 @@ function SettingsPage() {
                   <span className="text-xs font-bold text-foreground">Telegram Alerts</span>
                   <span
                     className={`size-2 rounded-full ${
-                      profile?.telegram_chat_id ? "bg-emerald-500" : "bg-amber-500"
+                      profile?.telegram_chat_id ? "bg-primary" : "bg-amber-500"
                     }`}
                   />
                 </div>
@@ -395,7 +329,7 @@ function SettingsPage() {
               <div className="rounded-xl border border-border/40 bg-muted/20 p-3 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-foreground">Public Quote Link</span>
-                  <span className="size-2 rounded-full bg-emerald-500" />
+                  <span className="size-2 rounded-full bg-primary" />
                 </div>
                 <p className="text-[11px] text-muted-foreground">
                   {profile?.slug ? `Active at /${profile.slug}` : "Slug not configured"}
@@ -411,7 +345,7 @@ function SettingsPage() {
               <div className="rounded-xl border border-border/40 bg-muted/20 p-3 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-foreground">Pricing Catalog</span>
-                  <span className="size-2 rounded-full bg-emerald-500" />
+                  <span className="size-2 rounded-full bg-primary" />
                 </div>
                 <p className="text-[11px] text-muted-foreground">
                   Configured in {profile?.currency || "USD"} with vehicle categories
