@@ -31,14 +31,12 @@ import { TelegramConnectModal } from "./TelegramConnectModal";
 interface OPayDashboardHeaderProps {
   profile: Profile;
   quotes: Quote[];
-  onSelectTab: (tab: string) => void;
   isSubscribed?: boolean;
 }
 
 export function OPayDashboardHeader({
   profile,
   quotes,
-  onSelectTab,
   isSubscribed = false,
 }: OPayDashboardHeaderProps) {
   const [showBalance, setShowBalance] = useState(() => {
@@ -186,45 +184,50 @@ export function OPayDashboardHeader({
 
           {/* Sub-Metrics Grid (High-Contrast White Glass Tiles) */}
           <div className="grid grid-cols-3 gap-2.5 sm:gap-4 pt-4 border-t border-white/20">
-            <button
-              type="button"
-              onClick={() => onSelectTab("quotes")}
-              className="text-left p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            <Link
+              to="/quotes"
+              className="text-left p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white block"
             >
               <div className="text-[11px] font-semibold text-blue-100">Customer Leads</div>
               <div className="text-lg sm:text-2xl font-black text-white mt-0.5">
                 {showBalance ? quotes.length : "••"}
               </div>
-            </button>
+            </Link>
 
-            <button
-              type="button"
-              onClick={() => onSelectTab("pricing")}
-              className="text-left p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            <Link
+              to="/pricing"
+              className="text-left p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white block"
             >
               <div className="text-[11px] font-semibold text-blue-100">Avg. Quote</div>
               <div className="text-lg sm:text-2xl font-black text-white mt-0.5">
                 {showBalance ? money(avgQuote, profile.currency) : "••"}
               </div>
-            </button>
+            </Link>
 
-            <button
-              type="button"
-              onClick={() =>
-                isConnected ? onSelectTab("notifications") : setConnectModalOpen(true)
-              }
-              className="text-left p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            >
-              <div className="text-[11px] font-semibold text-blue-100">Phone Alerts</div>
-              <div className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5 mt-1">
-                <span
-                  className={`size-2 rounded-full ${
-                    isConnected ? "bg-blue-300" : "bg-amber-300 animate-pulse"
-                  }`}
-                />
-                <span className="truncate">{isConnected ? "Connected" : "Connect"}</span>
-              </div>
-            </button>
+            {isConnected ? (
+              <Link
+                to="/notifications"
+                className="text-left p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white block"
+              >
+                <div className="text-[11px] font-semibold text-blue-100">Phone Alerts</div>
+                <div className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5 mt-1">
+                  <span className="size-2 rounded-full bg-blue-300" />
+                  <span className="truncate">Connected</span>
+                </div>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConnectModalOpen(true)}
+                className="text-left p-3 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white block w-full"
+              >
+                <div className="text-[11px] font-semibold text-blue-100">Phone Alerts</div>
+                <div className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5 mt-1">
+                  <span className="size-2 rounded-full bg-amber-300 animate-pulse" />
+                  <span className="truncate">Connect</span>
+                </div>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -234,7 +237,10 @@ export function OPayDashboardHeader({
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Action Group 1: Share & Acquire (Customer Facing) */}
-        <div className="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-sm space-y-4">
+        <div
+          data-tour="share-actions"
+          className="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-sm space-y-4"
+        >
           <div className="flex items-center justify-between pb-3 border-b border-border/50">
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-primary" />
@@ -294,7 +300,10 @@ export function OPayDashboardHeader({
         </div>
 
         {/* Action Group 2: Shop Operations (Internal Controls) */}
-        <div className="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-sm space-y-4">
+        <div
+          data-tour="shop-actions"
+          className="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-sm space-y-4"
+        >
           <div className="flex items-center justify-between pb-3 border-b border-border/50">
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-primary" />
@@ -307,9 +316,8 @@ export function OPayDashboardHeader({
 
           <div className="grid grid-cols-3 gap-2.5">
             {/* Edit Services & Rates */}
-            <button
-              type="button"
-              onClick={() => onSelectTab("pricing")}
+            <Link
+              to="/pricing"
               className="flex flex-col items-center justify-center gap-2 p-3 sm:p-3.5 rounded-2xl border border-border/60 bg-muted/20 hover:bg-primary/10 hover:border-primary/40 text-foreground transition-all group active:scale-98"
             >
               <div className="size-11 rounded-2xl bg-primary/10 group-hover:bg-primary/20 text-primary flex items-center justify-center transition-colors shadow-xs">
@@ -317,29 +325,37 @@ export function OPayDashboardHeader({
               </div>
               <span className="text-xs font-bold text-center leading-tight">Service Rates</span>
               <span className="text-[10px] text-muted-foreground text-center">Adjust pricing</span>
-            </button>
+            </Link>
 
             {/* Telegram Phone Alerts */}
-            <button
-              type="button"
-              onClick={() =>
-                isConnected ? onSelectTab("notifications") : setConnectModalOpen(true)
-              }
-              className="flex flex-col items-center justify-center gap-2 p-3 sm:p-3.5 rounded-2xl border border-border/60 bg-muted/20 hover:bg-sky-500/10 hover:border-sky-500/40 text-foreground transition-all group active:scale-98"
-            >
-              <div className="size-11 rounded-2xl bg-sky-500/10 group-hover:bg-sky-500/20 text-sky-600 flex items-center justify-center transition-colors shadow-xs">
-                <Send className="size-5" />
-              </div>
-              <span className="text-xs font-bold text-center leading-tight">Phone Alerts</span>
-              <span className="text-[10px] text-muted-foreground text-center">
-                {isConnected ? "Active" : "Connect bot"}
-              </span>
-            </button>
+            {isConnected ? (
+              <Link
+                to="/notifications"
+                className="flex flex-col items-center justify-center gap-2 p-3 sm:p-3.5 rounded-2xl border border-border/60 bg-muted/20 hover:bg-sky-500/10 hover:border-sky-500/40 text-foreground transition-all group active:scale-98"
+              >
+                <div className="size-11 rounded-2xl bg-sky-500/10 group-hover:bg-sky-500/20 text-sky-600 flex items-center justify-center transition-colors shadow-xs">
+                  <Send className="size-5" />
+                </div>
+                <span className="text-xs font-bold text-center leading-tight">Phone Alerts</span>
+                <span className="text-[10px] text-muted-foreground text-center">Active</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConnectModalOpen(true)}
+                className="flex flex-col items-center justify-center gap-2 p-3 sm:p-3.5 rounded-2xl border border-border/60 bg-muted/20 hover:bg-sky-500/10 hover:border-sky-500/40 text-foreground transition-all group active:scale-98"
+              >
+                <div className="size-11 rounded-2xl bg-sky-500/10 group-hover:bg-sky-500/20 text-sky-600 flex items-center justify-center transition-colors shadow-xs">
+                  <Send className="size-5" />
+                </div>
+                <span className="text-xs font-bold text-center leading-tight">Phone Alerts</span>
+                <span className="text-[10px] text-muted-foreground text-center">Connect bot</span>
+              </button>
+            )}
 
             {/* Shop Profile */}
-            <button
-              type="button"
-              onClick={() => onSelectTab("settings")}
+            <Link
+              to="/profile"
               className="flex flex-col items-center justify-center gap-2 p-3 sm:p-3.5 rounded-2xl border border-border/60 bg-muted/20 hover:bg-purple-500/10 hover:border-purple-500/40 text-foreground transition-all group active:scale-98"
             >
               <div className="size-11 rounded-2xl bg-purple-500/10 group-hover:bg-purple-500/20 text-purple-600 flex items-center justify-center transition-colors shadow-xs">
@@ -347,7 +363,7 @@ export function OPayDashboardHeader({
               </div>
               <span className="text-xs font-bold text-center leading-tight">Shop Profile</span>
               <span className="text-[10px] text-muted-foreground text-center">Name & branding</span>
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -355,7 +371,10 @@ export function OPayDashboardHeader({
       {/* ========================================================================= */}
       {/* 3. Recent Activity Card (High Contrast Transaction Feed)                 */}
       {/* ========================================================================= */}
-      <div className="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-sm space-y-4">
+      <div
+        data-tour="recent-leads"
+        className="rounded-3xl border border-border/80 bg-card p-5 sm:p-6 shadow-sm space-y-4"
+      >
         <div className="flex items-center justify-between pb-3 border-b border-border/50">
           <div className="flex items-center gap-2">
             <ReceiptText className="size-4 text-primary" />
@@ -364,14 +383,13 @@ export function OPayDashboardHeader({
               {quotes.length}
             </Badge>
           </div>
-          <button
-            type="button"
-            onClick={() => onSelectTab("quotes")}
+          <Link
+            to="/quotes"
             className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
           >
             <span>View All</span>
             <ChevronRight className="size-3.5" />
-          </button>
+          </Link>
         </div>
 
         {recentQuotes.length > 0 ? (

@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   HelpCircle,
   Play,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,51 +31,38 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: "welcome",
     targetSelector: '[data-tour="welcome-hero"]',
-    title: "Welcome to Detailr Online! 🚗",
+    title: "Account Overview & Pipeline 🚗",
     description:
-      "Your automated auto detailing quote system is ready. Here is a 30-second guided tour of your dashboard features.",
+      "Monitor your total quote revenue with the privacy toggle, track lead conversion metrics, and see live shop status at a glance.",
     icon: <Sparkles className="size-5 text-primary" />,
-    badgeText: "Step 1 of 5 · Overview",
+    badgeText: "Step 1 of 4 · Overview",
   },
   {
-    id: "quotes",
-    targetSelector: '[data-tour="quotes-tab"]',
-    tabKey: "quotes",
-    title: "Customer Leads & Quotes",
+    id: "share",
+    targetSelector: '[data-tour="share-actions"]',
+    title: "Share & Acquire Leads 🔗",
     description:
-      "All incoming customer quote requests appear here in real time. View vehicle details, estimated prices, customer phone numbers, and submitted photos.",
-    icon: <ReceiptText className="size-5 text-emerald-500" />,
-    badgeText: "Step 2 of 5 · Leads",
+      "1-tap copy your customized quote calculator link to put in your Instagram bio, TikTok, or send directly to car owners.",
+    icon: <Globe className="size-5 text-primary" />,
+    badgeText: "Step 2 of 4 · Acquisition",
   },
   {
-    id: "pricing",
-    targetSelector: '[data-tour="pricing-tab"]',
-    tabKey: "pricing",
-    title: "Services & Custom Pricing",
+    id: "operations",
+    targetSelector: '[data-tour="shop-actions"]',
+    title: "Shop Operations & Alerts ⚙️",
     description:
-      "Easily customize base rates for Sedans, SUVs, and Trucks. Manage add-ons (like Pet Hair Removal or Ceramic Coating) and vehicle size multipliers.",
-    icon: <Sliders className="size-5 text-amber-500" />,
-    badgeText: "Step 3 of 5 · Pricing",
+      "Adjust vehicle pricing rates, connect your instant Telegram push alerts, and manage your branding in one place.",
+    icon: <Sliders className="size-5 text-primary" />,
+    badgeText: "Step 3 of 4 · Operations",
   },
   {
-    id: "notifications",
-    targetSelector: '[data-tour="notifications-tab"]',
-    tabKey: "notifications",
-    title: "Instant Telegram Phone Alerts",
+    id: "leads",
+    targetSelector: '[data-tour="recent-leads"]',
+    title: "Live Customer Leads Feed 📋",
     description:
-      "Get real-time push notifications on your mobile phone whenever a customer requests a quote. Includes 1-tap view buttons & photo attachments.",
-    icon: <Send className="size-5 text-blue-500" />,
-    badgeText: "Step 4 of 5 · Alerts",
-  },
-  {
-    id: "settings",
-    targetSelector: '[data-tour="settings-tab"]',
-    tabKey: "settings",
-    title: "Shop Profile & Shareable Link",
-    description:
-      "Manage your business name, currency, phone number, and custom quote link URL slug. Share your link on Instagram, Facebook, or Google!",
-    icon: <Store className="size-5 text-purple-500" />,
-    badgeText: "Step 5 of 5 · Shop Profile",
+      "Customer quote inquiries appear here with vehicle details, estimated totals, and 1-tap call and text shortcuts.",
+    icon: <ReceiptText className="size-5 text-primary" />,
+    badgeText: "Step 4 of 4 · Leads Stream",
   },
 ];
 
