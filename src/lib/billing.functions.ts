@@ -168,7 +168,7 @@ export const getTrialState = createServerFn({ method: "GET" })
 
     const planType: "monthly" | "yearly" = isYearly ? "yearly" : "monthly";
 
-    let planName = "Detailr Pro Monthly ($12.99/mo)";
+    let planName = "7-Day Free Trial";
     if (access.isSubscribed) {
       if (access.cancelAtPeriodEnd) {
         planName = isYearly
@@ -188,6 +188,10 @@ export const getTrialState = createServerFn({ method: "GET" })
     } else if (access.isPendingFirstVisit) {
       planName = "7-Day Free Trial (Pending First Visit)";
     } else if (access.isTrialActive) {
+      planName = "7-Day Free Trial";
+    } else if (access.isExpired) {
+      planName = "Trial Expired";
+    } else {
       planName = "7-Day Free Trial";
     }
 

@@ -180,21 +180,12 @@ export function SubscriptionBillingCard({
         <CardHeader className="p-5 sm:p-6 pb-4 border-b border-border/60">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
-                  <CreditCard className="size-5 text-primary" />
-                  Subscription & Billing
-                </CardTitle>
-                <Badge
-                  variant="outline"
-                  className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30 px-2 py-0.5 rounded-full"
-                >
-                  <ShieldCheck className="size-3" />
-                  Verified Server Sync
-                </Badge>
-              </div>
+              <CardTitle className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+                <CreditCard className="size-5 text-primary" />
+                Subscription & Billing
+              </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Cryptographically synchronized with Whop Payment Network
+                Whop Billing & Membership
               </CardDescription>
             </div>
 
@@ -263,8 +254,8 @@ export function SubscriptionBillingCard({
             }`}
           >
             <div className="space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Zap className="size-3.5 text-amber-500" /> Current Subscription Status
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Zap className="size-3.5 text-primary" /> Active Plan
               </span>
               <h4 className="text-base sm:text-lg font-extrabold text-foreground">{planName}</h4>
               <p className="text-xs text-muted-foreground">
