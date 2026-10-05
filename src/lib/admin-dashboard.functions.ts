@@ -3,6 +3,7 @@ import { getAdminClient } from "@/lib/admin.server";
 import { sendWeeklySummaryToDetailer } from "@/lib/weekly-summary.functions";
 import { sendAdminTelegramAlert } from "@/lib/admin-telegram.functions";
 import { logAdminAction } from "@/lib/audit-logger.server";
+import { isAdminEmail } from "@/lib/admin-auth";
 
 const ADMIN_EMAIL = "support@detailr.online";
 
@@ -70,7 +71,7 @@ export const adminVerifyLogin = createServerFn({ method: "POST" })
     if (!admin) return { success: false, error: "Database configuration unavailable" };
 
     const email = data.email.trim().toLowerCase();
-    if (email !== ADMIN_EMAIL) {
+    if (!isAdminEmail(email)) {
       return { success: false, error: "Access denied: Unauthorized admin email address." };
     }
 

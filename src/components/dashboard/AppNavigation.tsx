@@ -85,7 +85,7 @@ export function AppNavigation({
     !!trial?.isSubscribed;
   const isCancelled = profile?.trial_status === "CANCELLED" || !!trial?.isCancelled;
 
-  const isUserAdmin = isAdminEmail(userEmail);
+  const isUserAdmin = isAdminEmail(userEmail) || profile?.trial_status === "ADMIN";
 
   const copyQuoteLink = () => {
     if (!profile?.slug) return;
@@ -290,11 +290,11 @@ export function AppNavigation({
                   asChild
                   variant="outline"
                   size="sm"
-                  className="h-8 rounded-xl px-2.5 border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-all font-bold text-[10px] uppercase tracking-wider"
+                  className="h-8 rounded-xl px-2.5 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-all font-bold text-[10px] uppercase tracking-wider"
                 >
                   <Link to="/master-hq">
-                    <Shield className="size-3.5 mr-1" />
-                    <span>Admin</span>
+                    <Shield className="size-3.5 mr-1 text-amber-500" />
+                    <span>Admin HQ</span>
                   </Link>
                 </Button>
               )}
@@ -466,6 +466,27 @@ export function AppNavigation({
                   </div>
                 </div>
               </Link>
+
+              {isUserAdmin && (
+                <Link
+                  to="/master-hq"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="col-span-2 flex items-center gap-2 p-3 rounded-2xl text-xs font-bold text-left border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                >
+                  <Shield className="size-4 text-amber-500 shrink-0" />
+                  <div>
+                    <div className="font-bold flex items-center gap-1.5">
+                      <span>Master Admin Console</span>
+                      <span className="text-[9px] uppercase px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-600 font-extrabold">
+                        HQ
+                      </span>
+                    </div>
+                    <div className="text-[10px] font-normal text-muted-foreground">
+                      Platform KPIs, Detailers, Quotes & Telegram
+                    </div>
+                  </div>
+                </Link>
+              )}
 
               <Link
                 to="/help"

@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { isAdminEmail } from "@/lib/admin-auth";
 
-export const Route = createFileRoute("/master-hq/login")({
+export const Route = createFileRoute("/admin")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
@@ -29,7 +29,6 @@ export const Route = createFileRoute("/master-hq/login")({
       throw redirect({ to: "/master-hq" });
     }
 
-    // Normal logged-in user without admin privileges -> redirect to their dashboard
     throw redirect({ to: "/dashboard" });
   },
   component: () => null,

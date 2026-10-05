@@ -94,9 +94,24 @@ export const Route = createFileRoute("/master-hq/")({
     const { data } = await supabase.auth.getSession();
     const user = data.session?.user;
     if (!user) {
-      throw redirect({ to: "/login" });
+      throw redirect({ to: "/login?redirect=/master-hq" });
     }
-    if (!isAdminEmail(user.email)) {
+
+    const email = user.email?.toLowerCase();
+    let hasAdmin = isAdminEmail(email) || user.user_metadata?.["role"] === "admin";
+
+    if (!hasAdmin) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("trial_status")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profile?.trial_status === "ADMIN") {
+        hasAdmin = true;
+      }
+    }
+
+    if (!hasAdmin) {
       throw redirect({ to: "/dashboard" });
     }
   },
@@ -139,19 +154,35 @@ function AdminDashboardPage() {
   const [authChecking, setAuthChecking] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const email = data.session?.user?.email?.toLowerCase();
-      if (isAdminEmail(email)) {
-        setAdminUser({ email: email!, id: data.session!.user.id });
+    supabase.auth.getSession().then(async ({ data }) => {
+      const user = data.session?.user;
+      if (!user) {
+        setAuthChecking(false);
+        navigate({ to: "/login?redirect=/master-hq" });
+        return;
+      }
+
+      const email = user.email?.toLowerCase();
+      let hasAdmin = isAdminEmail(email) || user.user_metadata?.["role"] === "admin";
+
+      if (!hasAdmin) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("trial_status")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (profile?.trial_status === "ADMIN") {
+          hasAdmin = true;
+        }
+      }
+
+      if (hasAdmin) {
+        setAdminUser({ email: email || "admin@detailr.online", id: user.id });
         setAuthChecking(false);
       } else {
         setAuthChecking(false);
-        if (data.session?.user) {
-          toast.error("Access restricted: Administrator privileges required.");
-          navigate({ to: "/dashboard" });
-        } else {
-          navigate({ to: "/login" });
-        }
+        toast.error("Access restricted: Administrator privileges required.");
+        navigate({ to: "/dashboard" });
       }
     });
   }, [navigate]);
