@@ -3,6 +3,7 @@ import { getAdminClient } from "@/lib/admin.server";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeText, sanitizePhone, sanitizeStringArray } from "@/lib/sanitize";
 import { verifyServerSubscriptionAccess } from "@/lib/subscription-guard.server";
+import { deductCredit } from "@/lib/credit.server";
 
 export type PublicQuoteInput = {
   detailerId: string;
@@ -42,6 +43,16 @@ export const submitPublicQuote = createServerFn({ method: "POST" })
 
     if (subAccess.isSuspended) {
       throw new Error("Access Denied: This shop is currently suspended.");
+    }
+
+    // Deduct 1 credit for bot usage
+    if (!data.isTest) {
+      const creditCheck = await deductCredit(data.detailerId, 1);
+      if (!creditCheck.success) {
+        throw new Error(
+          creditCheck.reason || "Out of credits. AI bot quote processing is currently paused.",
+        );
+      }
     }
 
     // Sanitize all inputs to strip HTML, script tags, and protect against injection

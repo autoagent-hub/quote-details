@@ -1778,51 +1778,6 @@ function AdminDashboardPage() {
                 </div>
               </div>
             </div>
-
-            {/* Whop Webhook Health & Security */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6 space-y-4">
-              <div className="flex items-center gap-2 font-semibold text-white">
-                <Crown className="size-5 text-amber-400" /> Whop Billing & Subscription Webhook
-              </div>
-              <p className="text-xs text-slate-400">
-                Incoming subscriptions and payments are cryptographically authenticated using
-                timing-safe HMAC SHA-256 verification.
-              </p>
-
-              <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs font-mono text-slate-400 space-y-1">
-                <div>
-                  Endpoint:{" "}
-                  <strong className="text-slate-200">POST /api/public/whop-webhook</strong>
-                </div>
-                <div>
-                  Status:{" "}
-                  <span className="text-emerald-400 font-semibold">Active & HMAC Protected</span>
-                </div>
-                <div>
-                  Price: <strong className="text-slate-200">$39/month (Recurring)</strong>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
-                <span>
-                  Active Subscriptions:{" "}
-                  <strong className="text-emerald-400">{metrics?.subscribedCount || 0}</strong>
-                </span>
-                <span>
-                  Active Checkout:{" "}
-                  <a
-                    href={
-                      checkoutUrlData?.checkoutUrl || "https://whop.com/checkout/plan_IrzVc4vCnCiQ1"
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    Launch Link
-                  </a>
-                </span>
-              </div>
-            </div>
           </div>
         )}
 

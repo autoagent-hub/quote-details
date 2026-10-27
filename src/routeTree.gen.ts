@@ -12,9 +12,21 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as Business_slugRouteImport } from './routes/$business_slug'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BlogRouteImport } from './routes/blog'
+import { Route as ChangelogRouteImport } from './routes/changelog'
+import { Route as CookieRouteImport } from './routes/cookie'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as RefundRouteImport } from './routes/refund'
+import { Route as SecurityRouteImport } from './routes/security'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as StatusRouteImport } from './routes/status'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TestimonialsRouteImport } from './routes/testimonials'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHelpRouteImport } from './routes/_authenticated/help'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
@@ -25,9 +37,11 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated/upgrade'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as BillingReturnRouteImport } from './routes/billing/return'
 import { Route as MasterHqIndexRouteImport } from './routes/master-hq/index'
 import { Route as MasterHqLoginRouteImport } from './routes/master-hq/login'
 import { Route as ApiPublicCheckEmailDomainRouteImport } from './routes/api/public/check-email-domain'
+import { Route as ApiPublicCheckSlugRouteImport } from './routes/api/public/check-slug'
 import { Route as ApiPublicCronWeeklySummaryRouteImport } from './routes/api/public/cron-weekly-summary'
 import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google-callback'
 import { Route as ApiPublicWhopWebhookRouteImport } from './routes/api/public/whop-webhook'
@@ -48,9 +62,34 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChangelogRoute = ChangelogRouteImport.update({
+  id: '/changelog',
+  path: '/changelog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CookieRoute = CookieRouteImport.update({
+  id: '/cookie',
+  path: '/cookie',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -58,9 +97,44 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundRoute = RefundRouteImport.update({
+  id: '/refund',
+  path: '/refund',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusRoute = StatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestimonialsRoute = TestimonialsRouteImport.update({
+  id: '/testimonials',
+  path: '/testimonials',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -114,6 +188,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => AuthRoute,
 } as any)
+const BillingReturnRoute = BillingReturnRouteImport.update({
+  id: '/billing/return',
+  path: '/billing/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MasterHqIndexRoute = MasterHqIndexRouteImport.update({
   id: '/master-hq/',
   path: '/master-hq/',
@@ -130,6 +209,11 @@ const ApiPublicCheckEmailDomainRoute =
     path: '/api/public/check-email-domain',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCheckSlugRoute = ApiPublicCheckSlugRouteImport.update({
+  id: '/api/public/check-slug',
+  path: '/api/public/check-slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronWeeklySummaryRoute =
   ApiPublicCronWeeklySummaryRouteImport.update({
     id: '/api/public/cron-weekly-summary',
@@ -161,9 +245,21 @@ const ApiPublicTelegramWebhookRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$business_slug': typeof Business_slugRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRouteWithChildren
+  '/blog': typeof BlogRoute
+  '/changelog': typeof ChangelogRoute
+  '/cookie': typeof CookieRoute
+  '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
+  '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/status': typeof StatusRoute
+  '/support': typeof SupportRoute
+  '/terms': typeof TermsRoute
+  '/testimonials': typeof TestimonialsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/help': typeof AuthenticatedHelpRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
@@ -173,10 +269,12 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/billing/return': typeof BillingReturnRoute
   '/master-hq/login': typeof MasterHqLoginRoute
   '/auth/': typeof AuthIndexRoute
   '/master-hq/': typeof MasterHqIndexRoute
   '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
+  '/api/public/check-slug': typeof ApiPublicCheckSlugRoute
   '/api/public/cron-weekly-summary': typeof ApiPublicCronWeeklySummaryRoute
   '/api/public/google-callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
@@ -186,8 +284,20 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$business_slug': typeof Business_slugRoute
+  '/admin': typeof AdminRoute
+  '/blog': typeof BlogRoute
+  '/changelog': typeof ChangelogRoute
+  '/cookie': typeof CookieRoute
+  '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
+  '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/status': typeof StatusRoute
+  '/support': typeof SupportRoute
+  '/terms': typeof TermsRoute
+  '/testimonials': typeof TestimonialsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/help': typeof AuthenticatedHelpRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
@@ -197,10 +307,12 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/billing/return': typeof BillingReturnRoute
   '/master-hq/login': typeof MasterHqLoginRoute
   '/auth': typeof AuthIndexRoute
   '/master-hq': typeof MasterHqIndexRoute
   '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
+  '/api/public/check-slug': typeof ApiPublicCheckSlugRoute
   '/api/public/cron-weekly-summary': typeof ApiPublicCronWeeklySummaryRoute
   '/api/public/google-callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
@@ -212,9 +324,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$business_slug': typeof Business_slugRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRouteWithChildren
+  '/blog': typeof BlogRoute
+  '/changelog': typeof ChangelogRoute
+  '/cookie': typeof CookieRoute
+  '/docs': typeof DocsRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
+  '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/status': typeof StatusRoute
+  '/support': typeof SupportRoute
+  '/terms': typeof TermsRoute
+  '/testimonials': typeof TestimonialsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/help': typeof AuthenticatedHelpRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
@@ -224,10 +348,12 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/billing/return': typeof BillingReturnRoute
   '/master-hq/login': typeof MasterHqLoginRoute
   '/auth/': typeof AuthIndexRoute
   '/master-hq/': typeof MasterHqIndexRoute
   '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
+  '/api/public/check-slug': typeof ApiPublicCheckSlugRoute
   '/api/public/cron-weekly-summary': typeof ApiPublicCronWeeklySummaryRoute
   '/api/public/google-callback': typeof ApiPublicGoogleCallbackRoute
   '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
@@ -239,9 +365,21 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$business_slug'
+    | '/admin'
     | '/auth'
+    | '/blog'
+    | '/changelog'
+    | '/cookie'
+    | '/docs'
     | '/login'
+    | '/privacy'
+    | '/refund'
+    | '/security'
     | '/signup'
+    | '/status'
+    | '/support'
+    | '/terms'
+    | '/testimonials'
     | '/dashboard'
     | '/help'
     | '/notifications'
@@ -251,10 +389,12 @@ export interface FileRouteTypes {
     | '/settings'
     | '/upgrade'
     | '/auth/callback'
+    | '/billing/return'
     | '/master-hq/login'
     | '/auth/'
     | '/master-hq/'
     | '/api/public/check-email-domain'
+    | '/api/public/check-slug'
     | '/api/public/cron-weekly-summary'
     | '/api/public/google-callback'
     | '/api/public/whop-webhook'
@@ -264,8 +404,20 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$business_slug'
+    | '/admin'
+    | '/blog'
+    | '/changelog'
+    | '/cookie'
+    | '/docs'
     | '/login'
+    | '/privacy'
+    | '/refund'
+    | '/security'
     | '/signup'
+    | '/status'
+    | '/support'
+    | '/terms'
+    | '/testimonials'
     | '/dashboard'
     | '/help'
     | '/notifications'
@@ -275,10 +427,12 @@ export interface FileRouteTypes {
     | '/settings'
     | '/upgrade'
     | '/auth/callback'
+    | '/billing/return'
     | '/master-hq/login'
     | '/auth'
     | '/master-hq'
     | '/api/public/check-email-domain'
+    | '/api/public/check-slug'
     | '/api/public/cron-weekly-summary'
     | '/api/public/google-callback'
     | '/api/public/whop-webhook'
@@ -289,9 +443,21 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/$business_slug'
+    | '/admin'
     | '/auth'
+    | '/blog'
+    | '/changelog'
+    | '/cookie'
+    | '/docs'
     | '/login'
+    | '/privacy'
+    | '/refund'
+    | '/security'
     | '/signup'
+    | '/status'
+    | '/support'
+    | '/terms'
+    | '/testimonials'
     | '/_authenticated/dashboard'
     | '/_authenticated/help'
     | '/_authenticated/notifications'
@@ -301,10 +467,12 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/upgrade'
     | '/auth/callback'
+    | '/billing/return'
     | '/master-hq/login'
     | '/auth/'
     | '/master-hq/'
     | '/api/public/check-email-domain'
+    | '/api/public/check-slug'
     | '/api/public/cron-weekly-summary'
     | '/api/public/google-callback'
     | '/api/public/whop-webhook'
@@ -316,12 +484,26 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   Business_slugRoute: typeof Business_slugRoute
+  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRouteWithChildren
+  BlogRoute: typeof BlogRoute
+  ChangelogRoute: typeof ChangelogRoute
+  CookieRoute: typeof CookieRoute
+  DocsRoute: typeof DocsRoute
   LoginRoute: typeof LoginRoute
+  PrivacyRoute: typeof PrivacyRoute
+  RefundRoute: typeof RefundRoute
+  SecurityRoute: typeof SecurityRoute
   SignupRoute: typeof SignupRoute
+  StatusRoute: typeof StatusRoute
+  SupportRoute: typeof SupportRoute
+  TermsRoute: typeof TermsRoute
+  TestimonialsRoute: typeof TestimonialsRoute
+  BillingReturnRoute: typeof BillingReturnRoute
   MasterHqLoginRoute: typeof MasterHqLoginRoute
   MasterHqIndexRoute: typeof MasterHqIndexRoute
   ApiPublicCheckEmailDomainRoute: typeof ApiPublicCheckEmailDomainRoute
+  ApiPublicCheckSlugRoute: typeof ApiPublicCheckSlugRoute
   ApiPublicCronWeeklySummaryRoute: typeof ApiPublicCronWeeklySummaryRoute
   ApiPublicGoogleCallbackRoute: typeof ApiPublicGoogleCallbackRoute
   ApiPublicWhopWebhookRoute: typeof ApiPublicWhopWebhookRoute
@@ -351,11 +533,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/changelog': {
+      id: '/changelog'
+      path: '/changelog'
+      fullPath: '/changelog'
+      preLoaderRoute: typeof ChangelogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cookie': {
+      id: '/cookie'
+      path: '/cookie'
+      fullPath: '/cookie'
+      preLoaderRoute: typeof CookieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -365,11 +582,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund': {
+      id: '/refund'
+      path: '/refund'
+      fullPath: '/refund'
+      preLoaderRoute: typeof RefundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status': {
+      id: '/status'
+      path: '/status'
+      fullPath: '/status'
+      preLoaderRoute: typeof StatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/testimonials': {
+      id: '/testimonials'
+      path: '/testimonials'
+      fullPath: '/testimonials'
+      preLoaderRoute: typeof TestimonialsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -442,6 +708,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/billing/return': {
+      id: '/billing/return'
+      path: '/billing/return'
+      fullPath: '/billing/return'
+      preLoaderRoute: typeof BillingReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/master-hq/': {
       id: '/master-hq/'
       path: '/master-hq'
@@ -461,6 +734,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/check-email-domain'
       fullPath: '/api/public/check-email-domain'
       preLoaderRoute: typeof ApiPublicCheckEmailDomainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/check-slug': {
+      id: '/api/public/check-slug'
+      path: '/api/public/check-slug'
+      fullPath: '/api/public/check-slug'
+      preLoaderRoute: typeof ApiPublicCheckSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/cron-weekly-summary': {
@@ -544,12 +824,26 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   Business_slugRoute: Business_slugRoute,
+  AdminRoute: AdminRoute,
   AuthRoute: AuthRouteWithChildren,
+  BlogRoute: BlogRoute,
+  ChangelogRoute: ChangelogRoute,
+  CookieRoute: CookieRoute,
+  DocsRoute: DocsRoute,
   LoginRoute: LoginRoute,
+  PrivacyRoute: PrivacyRoute,
+  RefundRoute: RefundRoute,
+  SecurityRoute: SecurityRoute,
   SignupRoute: SignupRoute,
+  StatusRoute: StatusRoute,
+  SupportRoute: SupportRoute,
+  TermsRoute: TermsRoute,
+  TestimonialsRoute: TestimonialsRoute,
+  BillingReturnRoute: BillingReturnRoute,
   MasterHqLoginRoute: MasterHqLoginRoute,
   MasterHqIndexRoute: MasterHqIndexRoute,
   ApiPublicCheckEmailDomainRoute: ApiPublicCheckEmailDomainRoute,
+  ApiPublicCheckSlugRoute: ApiPublicCheckSlugRoute,
   ApiPublicCronWeeklySummaryRoute: ApiPublicCronWeeklySummaryRoute,
   ApiPublicGoogleCallbackRoute: ApiPublicGoogleCallbackRoute,
   ApiPublicWhopWebhookRoute: ApiPublicWhopWebhookRoute,
