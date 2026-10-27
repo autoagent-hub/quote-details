@@ -13,13 +13,39 @@ export const initiateFlutterwaveTopup = createServerFn({ method: "POST" })
     const db = admin ?? context.supabase;
 
     let email = "detailer@detailr.online";
+    let currency = "USD";
+
     if (admin) {
       try {
         const { data: authUser } = await admin.auth.admin.getUserById(context.userId);
         if (authUser?.user?.email) email = authUser.user.email;
+
+        const { data: profile } = await admin
+          .from("profiles")
+          .select("currency")
+          .eq("id", context.userId)
+          .maybeSingle();
+
+        if (profile?.currency) {
+          currency = profile.currency.toUpperCase();
+        }
       } catch {
         /* ignore */
       }
+    }
+
+    // Adjust amount based on account currency
+    let finalAmount = amount;
+    if (currency === "NGN") {
+      finalAmount = amount * 1500; // Standard FX estimate for NGN
+    } else if (currency === "GBP") {
+      finalAmount = Math.round(amount * 0.8);
+    } else if (currency === "EUR") {
+      finalAmount = Math.round(amount * 0.92);
+    } else if (currency === "CAD") {
+      finalAmount = Math.round(amount * 1.35);
+    } else if (currency === "AUD") {
+      finalAmount = Math.round(amount * 1.55);
     }
 
     const txRef = `detailr_credit_${context.userId}_${Date.now()}`;
@@ -28,8 +54,8 @@ export const initiateFlutterwaveTopup = createServerFn({ method: "POST" })
     return {
       success: true,
       txRef,
-      amount,
-      currency: "USD",
+      amount: finalAmount,
+      currency,
       email,
       publicKey,
       credits,

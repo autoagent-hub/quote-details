@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Check, Sparkles, Zap, CreditCard, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Check, Zap, CreditCard, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,8 @@ import { Card } from "@/components/ui/card";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { getTrialState } from "@/lib/billing.functions";
 import { initiateFlutterwaveTopup, verifyFlutterwaveTopup } from "@/lib/flutterwave.functions";
+import { money } from "@/lib/pricing";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
   ssr: false,
@@ -26,10 +28,10 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
   component: UpgradePage,
 });
 
-const CREDIT_PACKAGES = [
-  { credits: 100, amount: 10, label: "Starter Pack (100 Credits)" },
-  { credits: 300, amount: 25, label: "Pro Pack (300 Credits) — Best Value", featured: true },
-  { credits: 700, amount: 50, label: "Scale Pack (700 Credits)" },
+const BASE_CREDIT_PACKAGES = [
+  { credits: 100, baseAmount: 10, label: "Starter Pack (100 Credits)" },
+  { credits: 300, baseAmount: 25, label: "Pro Pack (300 Credits) — Best Value", featured: true },
+  { credits: 700, baseAmount: 50, label: "Scale Pack (700 Credits)" },
 ];
 
 function UpgradePage() {
@@ -45,6 +47,31 @@ function UpgradePage() {
     queryFn: () => fetchTrial(),
   });
 
+  const { data: profile } = useQuery({
+    queryKey: ["profile-currency"],
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return { currency: "USD" };
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("currency")
+        .eq("id", user.user.id)
+        .maybeSingle();
+      return { currency: p?.currency || "USD" };
+    },
+  });
+
+  const currency = (profile?.currency || "USD").toUpperCase();
+
+  const getAdjustedAmount = (baseAmount: number) => {
+    if (currency === "NGN") return baseAmount * 1500;
+    if (currency === "GBP") return Math.round(baseAmount * 0.8);
+    if (currency === "EUR") return Math.round(baseAmount * 0.92);
+    if (currency === "CAD") return Math.round(baseAmount * 1.35);
+    if (currency === "AUD") return Math.round(baseAmount * 1.55);
+    return baseAmount;
+  };
+
   const [creditsBalance, setCreditsBalance] = useState<number>(50);
 
   // Load Flutterwave v3 script
@@ -58,10 +85,10 @@ function UpgradePage() {
     document.body.appendChild(script);
   }, []);
 
-  const handleBuyCredits = async (credits: number, amount: number) => {
+  const handleBuyCredits = async (credits: number, baseAmount: number) => {
     setIsProcessing(true);
     try {
-      const init = await doInitiate({ data: { amountUsd: amount, creditsAmount: credits } });
+      const init = await doInitiate({ data: { amountUsd: baseAmount, creditsAmount: credits } });
 
       // @ts-expect-error FlutterwaveCheckout global
       if (typeof window.FlutterwaveCheckout === "function") {
@@ -142,7 +169,7 @@ function UpgradePage() {
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
             Credits are deducted strictly based on bot usage (1 credit per AI bot quote or
-            interaction). Top up securely via Flutterwave.
+            interaction). Prices automatically adapt to your account currency ({currency}).
           </p>
         </div>
 
@@ -160,7 +187,7 @@ function UpgradePage() {
               </div>
 
               <h2 className="text-lg sm:text-xl font-black text-foreground">
-                Pay-As-You-Go Credit System
+                Pay-As-You-Go Credit System ({currency})
               </h2>
 
               <p className="text-xs text-muted-foreground">
@@ -176,69 +203,74 @@ function UpgradePage() {
           <div className="space-y-1">
             <h3 className="text-base font-bold text-foreground">Top-Up Credit Packages</h3>
             <p className="text-xs text-muted-foreground">
-              Select a reload package below to pay securely via Flutterwave.
+              Select a reload package below to pay securely via Flutterwave in {currency}.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {CREDIT_PACKAGES.map((pkg) => (
-              <Card
-                key={pkg.credits}
-                className={`relative rounded-2xl border-2 p-6 flex flex-col justify-between transition-all ${
-                  pkg.featured
-                    ? "border-primary bg-card shadow-lg ring-2 ring-primary/20"
-                    : "border-border/80 bg-card hover:border-border"
-                }`}
-              >
-                {pkg.featured && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold uppercase tracking-wider shadow-sm">
-                    Most Popular
+            {BASE_CREDIT_PACKAGES.map((pkg) => {
+              const adjustedAmt = getAdjustedAmount(pkg.baseAmount);
+              return (
+                <Card
+                  key={pkg.credits}
+                  className={`relative rounded-2xl border-2 p-6 flex flex-col justify-between transition-all ${
+                    pkg.featured
+                      ? "border-primary bg-card shadow-lg ring-2 ring-primary/20"
+                      : "border-border/80 bg-card hover:border-border"
+                  }`}
+                >
+                  {pkg.featured && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-extrabold uppercase tracking-wider shadow-sm">
+                      Most Popular
+                    </div>
+                  )}
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground">{pkg.label}</h4>
+                      <p className="text-[11px] text-muted-foreground">Never expires</p>
+                    </div>
+                    <div className="flex items-baseline gap-1 font-mono">
+                      <span className="text-3xl font-extrabold text-foreground">
+                        {money(adjustedAmt, currency)}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-sans">
+                        / {pkg.credits} credits
+                      </span>
+                    </div>
+                    <ul className="space-y-2 text-xs text-muted-foreground pt-2">
+                      <li className="flex items-center gap-2">
+                        <Check className="size-3.5 text-emerald-500 font-bold" />
+                        <span>{pkg.credits} AI Bot Interactions</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="size-3.5 text-emerald-500 font-bold" />
+                        <span>Instant balance reload ({currency})</span>
+                      </li>
+                    </ul>
                   </div>
-                )}
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-bold text-foreground">{pkg.label}</h4>
-                    <p className="text-[11px] text-muted-foreground">Never expires</p>
-                  </div>
-                  <div className="flex items-baseline gap-1 font-mono">
-                    <span className="text-3xl font-extrabold text-foreground">${pkg.amount}</span>
-                    <span className="text-xs text-muted-foreground font-sans">
-                      / {pkg.credits} credits
-                    </span>
-                  </div>
-                  <ul className="space-y-2 text-xs text-muted-foreground pt-2">
-                    <li className="flex items-center gap-2">
-                      <Check className="size-3.5 text-emerald-500 font-bold" />
-                      <span>{pkg.credits} AI Bot Interactions</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="size-3.5 text-emerald-500 font-bold" />
-                      <span>Instant balance reload</span>
-                    </li>
-                  </ul>
-                </div>
 
-                <div className="pt-6 mt-6 border-t border-border/40">
-                  <Button
-                    variant={pkg.featured ? "hero" : "outline"}
-                    className="w-full h-10 rounded-xl font-bold text-xs shadow-sm"
-                    disabled={isProcessing}
-                    onClick={() => handleBuyCredits(pkg.credits, pkg.amount)}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="size-3.5 mr-1.5 animate-spin" /> Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="size-3.5 mr-1.5" /> Buy {pkg.credits} Credits ($
-                        {pkg.amount})
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </Card>
-            ))}
+                  <div className="pt-6 mt-6 border-t border-border/40">
+                    <Button
+                      variant={pkg.featured ? "hero" : "outline"}
+                      className="w-full h-10 rounded-xl font-bold text-xs shadow-sm"
+                      disabled={isProcessing}
+                      onClick={() => handleBuyCredits(pkg.credits, pkg.baseAmount)}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="size-3.5 mr-1.5 animate-spin" /> Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="size-3.5 mr-1.5" /> Buy {pkg.credits} Credits (
+                          {money(adjustedAmt, currency)})
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </main>
