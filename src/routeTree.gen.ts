@@ -43,8 +43,8 @@ import { Route as MasterHqLoginRouteImport } from './routes/master-hq/login'
 import { Route as ApiPublicCheckEmailDomainRouteImport } from './routes/api/public/check-email-domain'
 import { Route as ApiPublicCheckSlugRouteImport } from './routes/api/public/check-slug'
 import { Route as ApiPublicCronWeeklySummaryRouteImport } from './routes/api/public/cron-weekly-summary'
+import { Route as ApiPublicFlutterwaveWebhookRouteImport } from './routes/api/public/flutterwave-webhook'
 import { Route as ApiPublicGoogleCallbackRouteImport } from './routes/api/public/google-callback'
-import { Route as ApiPublicWhopWebhookRouteImport } from './routes/api/public/whop-webhook'
 import { Route as AuthV1CallbackRouteImport } from './routes/auth/v1/callback'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 
@@ -220,14 +220,15 @@ const ApiPublicCronWeeklySummaryRoute =
     path: '/api/public/cron-weekly-summary',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicFlutterwaveWebhookRoute =
+  ApiPublicFlutterwaveWebhookRouteImport.update({
+    id: '/api/public/flutterwave-webhook',
+    path: '/api/public/flutterwave-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicGoogleCallbackRoute = ApiPublicGoogleCallbackRouteImport.update({
   id: '/api/public/google-callback',
   path: '/api/public/google-callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicWhopWebhookRoute = ApiPublicWhopWebhookRouteImport.update({
-  id: '/api/public/whop-webhook',
-  path: '/api/public/whop-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthV1CallbackRoute = AuthV1CallbackRouteImport.update({
@@ -276,8 +277,8 @@ export interface FileRoutesByFullPath {
   '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
   '/api/public/check-slug': typeof ApiPublicCheckSlugRoute
   '/api/public/cron-weekly-summary': typeof ApiPublicCronWeeklySummaryRoute
+  '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/google-callback': typeof ApiPublicGoogleCallbackRoute
-  '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
   '/auth/v1/callback': typeof AuthV1CallbackRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
@@ -314,8 +315,8 @@ export interface FileRoutesByTo {
   '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
   '/api/public/check-slug': typeof ApiPublicCheckSlugRoute
   '/api/public/cron-weekly-summary': typeof ApiPublicCronWeeklySummaryRoute
+  '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/google-callback': typeof ApiPublicGoogleCallbackRoute
-  '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
   '/auth/v1/callback': typeof AuthV1CallbackRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
@@ -355,8 +356,8 @@ export interface FileRoutesById {
   '/api/public/check-email-domain': typeof ApiPublicCheckEmailDomainRoute
   '/api/public/check-slug': typeof ApiPublicCheckSlugRoute
   '/api/public/cron-weekly-summary': typeof ApiPublicCronWeeklySummaryRoute
+  '/api/public/flutterwave-webhook': typeof ApiPublicFlutterwaveWebhookRoute
   '/api/public/google-callback': typeof ApiPublicGoogleCallbackRoute
-  '/api/public/whop-webhook': typeof ApiPublicWhopWebhookRoute
   '/auth/v1/callback': typeof AuthV1CallbackRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
@@ -396,8 +397,8 @@ export interface FileRouteTypes {
     | '/api/public/check-email-domain'
     | '/api/public/check-slug'
     | '/api/public/cron-weekly-summary'
+    | '/api/public/flutterwave-webhook'
     | '/api/public/google-callback'
-    | '/api/public/whop-webhook'
     | '/auth/v1/callback'
     | '/api/public/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -434,8 +435,8 @@ export interface FileRouteTypes {
     | '/api/public/check-email-domain'
     | '/api/public/check-slug'
     | '/api/public/cron-weekly-summary'
+    | '/api/public/flutterwave-webhook'
     | '/api/public/google-callback'
-    | '/api/public/whop-webhook'
     | '/auth/v1/callback'
     | '/api/public/telegram/webhook'
   id:
@@ -474,8 +475,8 @@ export interface FileRouteTypes {
     | '/api/public/check-email-domain'
     | '/api/public/check-slug'
     | '/api/public/cron-weekly-summary'
+    | '/api/public/flutterwave-webhook'
     | '/api/public/google-callback'
-    | '/api/public/whop-webhook'
     | '/auth/v1/callback'
     | '/api/public/telegram/webhook'
   fileRoutesById: FileRoutesById
@@ -505,8 +506,8 @@ export interface RootRouteChildren {
   ApiPublicCheckEmailDomainRoute: typeof ApiPublicCheckEmailDomainRoute
   ApiPublicCheckSlugRoute: typeof ApiPublicCheckSlugRoute
   ApiPublicCronWeeklySummaryRoute: typeof ApiPublicCronWeeklySummaryRoute
+  ApiPublicFlutterwaveWebhookRoute: typeof ApiPublicFlutterwaveWebhookRoute
   ApiPublicGoogleCallbackRoute: typeof ApiPublicGoogleCallbackRoute
-  ApiPublicWhopWebhookRoute: typeof ApiPublicWhopWebhookRoute
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
 }
 
@@ -750,18 +751,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronWeeklySummaryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/flutterwave-webhook': {
+      id: '/api/public/flutterwave-webhook'
+      path: '/api/public/flutterwave-webhook'
+      fullPath: '/api/public/flutterwave-webhook'
+      preLoaderRoute: typeof ApiPublicFlutterwaveWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/google-callback': {
       id: '/api/public/google-callback'
       path: '/api/public/google-callback'
       fullPath: '/api/public/google-callback'
       preLoaderRoute: typeof ApiPublicGoogleCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/whop-webhook': {
-      id: '/api/public/whop-webhook'
-      path: '/api/public/whop-webhook'
-      fullPath: '/api/public/whop-webhook'
-      preLoaderRoute: typeof ApiPublicWhopWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/v1/callback': {
@@ -845,8 +846,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCheckEmailDomainRoute: ApiPublicCheckEmailDomainRoute,
   ApiPublicCheckSlugRoute: ApiPublicCheckSlugRoute,
   ApiPublicCronWeeklySummaryRoute: ApiPublicCronWeeklySummaryRoute,
+  ApiPublicFlutterwaveWebhookRoute: ApiPublicFlutterwaveWebhookRoute,
   ApiPublicGoogleCallbackRoute: ApiPublicGoogleCallbackRoute,
-  ApiPublicWhopWebhookRoute: ApiPublicWhopWebhookRoute,
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
 }
 export const routeTree = rootRouteImport

@@ -41,6 +41,8 @@ import {
   Link as LinkIcon,
   Save,
   RotateCcw,
+  Globe,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -1697,6 +1699,85 @@ function AdminDashboardPage() {
                 <Play className="size-3.5" />{" "}
                 {cronRunning ? "Executing Cron Dispatch..." : "Trigger Manual Weekly Email Run Now"}
               </Button>
+            </div>
+
+            {/* Deployment URL & Flutterwave Webhook Endpoint */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6 space-y-4">
+              <div className="flex items-center gap-2 font-semibold text-white">
+                <Globe className="size-5 text-cyan-400" /> Deployment Domain & Flutterwave Webhook
+                URL
+              </div>
+              <p className="text-xs text-slate-400">
+                Copy your active deployment domain and webhook endpoint below to register them in
+                your Flutterwave dashboard settings.
+              </p>
+
+              <div className="space-y-3 pt-1">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                    Deployment Origin
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      readOnly
+                      value={
+                        typeof window !== "undefined"
+                          ? window.location.origin
+                          : "https://detailr.online"
+                      }
+                      className="bg-slate-950 border-slate-800 text-xs font-mono text-slate-200 h-10"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const origin =
+                          typeof window !== "undefined"
+                            ? window.location.origin
+                            : "https://detailr.online";
+                        void navigator.clipboard.writeText(origin);
+                        toast.success("Deployment origin copied to clipboard!");
+                      }}
+                      className="h-10 px-3 bg-slate-800 border-slate-700 text-xs text-white hover:bg-slate-700 shrink-0"
+                    >
+                      <Copy className="size-3.5 mr-1" /> Copy
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                    Flutterwave Webhook Endpoint
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      readOnly
+                      value={`${
+                        typeof window !== "undefined"
+                          ? window.location.origin
+                          : "https://detailr.online"
+                      }/api/public/flutterwave-webhook`}
+                      className="bg-slate-950 border-slate-800 text-xs font-mono text-cyan-300 h-10"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const webhookUrl = `${
+                          typeof window !== "undefined"
+                            ? window.location.origin
+                            : "https://detailr.online"
+                        }/api/public/flutterwave-webhook`;
+                        void navigator.clipboard.writeText(webhookUrl);
+                        toast.success("Flutterwave webhook URL copied to clipboard!");
+                      }}
+                      className="h-10 px-3 bg-slate-800 border-slate-700 text-xs text-white hover:bg-slate-700 shrink-0"
+                    >
+                      <Copy className="size-3.5 mr-1" /> Copy URL
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Platform Checkout Link Configuration */}

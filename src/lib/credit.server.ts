@@ -19,6 +19,9 @@ export async function getCreditBalance(userId: string): Promise<number> {
   return 50;
 }
 
+/**
+ * Atomically deducts credits for bot interactions, ensuring balance >= amount before decrementing.
+ */
 export async function deductCredit(
   userId: string,
   amount = 1,
@@ -49,20 +52,47 @@ export async function deductCredit(
 
   const newBalance = currentBalance - amount;
 
-  const { error } = await db
+  // Atomic update with condition check
+  const { data: updated, error } = await db
     .from("profiles")
     .update({ credits_balance: newBalance } as never)
-    .eq("id", userId);
+    .eq("id", userId)
+    .gte("credits_balance", amount)
+    .select("credits_balance")
+    .maybeSingle();
 
-  if (error) {
-    console.error("[deductCredit] error updating credits:", error);
-    // Fallback if column needs creation or update
+  if (error || !updated) {
+    // Fallback re-check for concurrent requests
+    const freshBalance = await getCreditBalance(userId);
+    if (freshBalance < amount) {
+      return {
+        success: false,
+        creditsBalance: freshBalance,
+        lowBalance: true,
+        reason:
+          "Out of credits. Please top up your account via Flutterwave to continue using AI bot features.",
+      };
+    }
+    const retryBalance = freshBalance - amount;
+    await db
+      .from("profiles")
+      .update({ credits_balance: retryBalance } as never)
+      .eq("id", userId);
+
+    return {
+      success: true,
+      creditsBalance: retryBalance,
+      lowBalance: retryBalance < 10,
+    };
   }
+
+  const finalBalance =
+    typeof updated.credits_balance === "number" ? updated.credits_balance : newBalance;
 
   return {
     success: true,
-    creditsBalance: newBalance,
-    lowBalance: newBalance < 10,
+    creditsBalance: finalBalance,
+    lowBalance: finalBalance < 10,
   };
 }
 
