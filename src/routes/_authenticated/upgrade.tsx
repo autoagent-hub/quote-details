@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { getTrialState } from "@/lib/billing.functions";
 import { initiateFlutterwaveTopup, verifyFlutterwaveTopup } from "@/lib/flutterwave.functions";
@@ -41,6 +42,7 @@ function UpgradePage() {
   const doVerify = useServerFn(verifyFlutterwaveTopup);
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [customCredits, setCustomCredits] = useState<number>(100);
 
   const { data: trial } = useQuery({
     queryKey: ["trial-state"],
@@ -69,8 +71,14 @@ function UpgradePage() {
     if (currency === "EUR") return Math.round(baseAmount * 0.92);
     if (currency === "CAD") return Math.round(baseAmount * 1.35);
     if (currency === "AUD") return Math.round(baseAmount * 1.55);
+    if (currency === "KES") return Math.round(baseAmount * 130);
+    if (currency === "GHS") return Math.round(baseAmount * 15);
+    if (currency === "ZAR") return Math.round(baseAmount * 18);
     return baseAmount;
   };
+
+  const customBaseUsd = Math.max(1, Math.round(customCredits * 0.1 * 100) / 100);
+  const customAdjustedAmount = getAdjustedAmount(customBaseUsd);
 
   const [creditsBalance, setCreditsBalance] = useState<number>(50);
 
@@ -198,12 +206,68 @@ function UpgradePage() {
           </div>
         </Card>
 
+        {/* Custom Credit Amount Calculator */}
+        <Card className="rounded-2xl border-2 border-border/80 bg-card p-6 space-y-4 shadow-sm">
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-foreground">Custom Credit Amount</h3>
+            <p className="text-xs text-muted-foreground">
+              Enter the exact number of credits you want to buy. Rate is $0.10 USD per credit ($10
+              for 100 credits), converted in real-time to {currency}.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-bold text-foreground">Number of Credits</label>
+              <Input
+                type="number"
+                min={10}
+                max={10000}
+                value={customCredits}
+                onChange={(e) => setCustomCredits(Math.max(10, parseInt(e.target.value) || 10))}
+                className="bg-background border-border text-sm font-bold h-11"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground">
+                Real-time Equivalent
+              </label>
+              <div className="h-11 px-3 rounded-xl bg-muted/50 border border-border flex items-center justify-between font-mono text-sm font-bold text-foreground">
+                <span>{money(customAdjustedAmount, currency)}</span>
+                <span className="text-xs font-sans text-muted-foreground">
+                  {customCredits} Credits
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Button
+              variant="hero"
+              className="w-full h-11 rounded-xl font-bold text-xs shadow-sm"
+              disabled={isProcessing}
+              onClick={() => handleBuyCredits(customCredits, customBaseUsd)}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" /> Processing Payment...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="size-4 mr-2" /> Top Up {customCredits} Credits for{" "}
+                  {money(customAdjustedAmount, currency)}
+                </>
+              )}
+            </Button>
+          </div>
+        </Card>
+
         {/* Credit Packages */}
         <div className="space-y-4">
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-foreground">Top-Up Credit Packages</h3>
+            <h3 className="text-base font-bold text-foreground">Preset Credit Packages</h3>
             <p className="text-xs text-muted-foreground">
-              Select a reload package below to pay securely via Flutterwave in {currency}.
+              Select a popular reload package below to pay securely via Flutterwave in {currency}.
             </p>
           </div>
 

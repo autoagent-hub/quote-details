@@ -3,6 +3,20 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAdminClient } from "@/lib/admin.server";
 import { addCredits } from "@/lib/credit.server";
 
+const FX_RATES: Record<string, number> = {
+  USD: 1.0,
+  NGN: 1500.0,
+  GBP: 0.8,
+  EUR: 0.92,
+  CAD: 1.35,
+  AUD: 1.55,
+  KES: 130.0,
+  GHS: 15.0,
+  ZAR: 18.0,
+  UGX: 3700.0,
+  TZS: 2600.0,
+};
+
 export const initiateFlutterwaveTopup = createServerFn({ method: "POST" })
   .validator((data: { amountUsd: number; creditsAmount: number }) => data)
   .handler(async ({ data, context }) => {
@@ -34,19 +48,8 @@ export const initiateFlutterwaveTopup = createServerFn({ method: "POST" })
       }
     }
 
-    // Adjust amount based on account currency
-    let finalAmount = amount;
-    if (currency === "NGN") {
-      finalAmount = amount * 1500; // Standard FX estimate for NGN
-    } else if (currency === "GBP") {
-      finalAmount = Math.round(amount * 0.8);
-    } else if (currency === "EUR") {
-      finalAmount = Math.round(amount * 0.92);
-    } else if (currency === "CAD") {
-      finalAmount = Math.round(amount * 1.35);
-    } else if (currency === "AUD") {
-      finalAmount = Math.round(amount * 1.55);
-    }
+    const rate = FX_RATES[currency] ?? 1.0;
+    const finalAmount = currency === "USD" ? amount : Math.round(amount * rate);
 
     const txRef = `detailr_credit_${context.userId}_${Date.now()}`;
     const publicKey = process.env["FLUTTERWAVE_PUBLIC_KEY"] || "FLWPUBK_TEST-DEMOKEY123456789";
