@@ -45,16 +45,6 @@ export const submitPublicQuote = createServerFn({ method: "POST" })
       throw new Error("Access Denied: This shop is currently suspended.");
     }
 
-    // Deduct 1 credit for bot usage
-    if (!data.isTest) {
-      const creditCheck = await deductCredit(data.detailerId, 1);
-      if (!creditCheck.success) {
-        throw new Error(
-          creditCheck.reason || "Out of credits. AI bot quote processing is currently paused.",
-        );
-      }
-    }
-
     // Sanitize all inputs to strip HTML, script tags, and protect against injection
     const cleanCustomerName = sanitizeText(data.customerName, 100);
     const cleanCustomerPhone = sanitizePhone(data.customerPhone, 30);

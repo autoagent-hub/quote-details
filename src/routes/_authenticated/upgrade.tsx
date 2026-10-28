@@ -30,9 +30,9 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
 });
 
 const BASE_CREDIT_PACKAGES = [
-  { credits: 100, baseAmount: 10, label: "Starter Pack (100 Credits)" },
-  { credits: 300, baseAmount: 25, label: "Pro Pack (300 Credits) — Best Value", featured: true },
-  { credits: 700, baseAmount: 50, label: "Scale Pack (700 Credits)" },
+  { credits: 50, baseAmount: 10, label: "Starter Pack (50 Credits)" },
+  { credits: 250, baseAmount: 45, label: "Pro Pack (250 Credits) — Best Value", featured: true },
+  { credits: 600, baseAmount: 100, label: "Scale Pack (600 Credits)" },
 ];
 
 function UpgradePage() {
@@ -42,7 +42,7 @@ function UpgradePage() {
   const doVerify = useServerFn(verifyFlutterwaveTopup);
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [customCredits, setCustomCredits] = useState<number>(100);
+  const [customCredits, setCustomCredits] = useState<number>(50);
 
   const { data: trial } = useQuery({
     queryKey: ["trial-state"],
@@ -77,7 +77,7 @@ function UpgradePage() {
     return baseAmount;
   };
 
-  const customBaseUsd = Math.max(1, Math.round(customCredits * 0.1 * 100) / 100);
+  const customBaseUsd = Math.max(10, Math.round(customCredits * 0.2 * 100) / 100);
   const customAdjustedAmount = getAdjustedAmount(customBaseUsd);
 
   const [creditsBalance, setCreditsBalance] = useState<number>(50);
@@ -176,8 +176,9 @@ function UpgradePage() {
             AI Bot Credits & Billing
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Credits are deducted strictly based on bot usage (1 credit per AI bot quote or
-            interaction). Prices automatically adapt to your account currency ({currency}).
+            Credits are deducted per successful customer quote sent to Telegram (test quotes are
+            free). Minimum purchase is $10 for 50 credits. Prices automatically adapt to your
+            account currency ({currency}).
           </p>
         </div>
 
@@ -199,8 +200,8 @@ function UpgradePage() {
               </h2>
 
               <p className="text-xs text-muted-foreground">
-                1 credit is deducted each time your AI bot successfully processes a customer quote
-                or sends an automated response.
+                1 credit is deducted only when a valid customer quote is successfully delivered to
+                your Telegram chat. Test submissions do not deduct credits.
               </p>
             </div>
           </div>
@@ -211,20 +212,22 @@ function UpgradePage() {
           <div className="space-y-1">
             <h3 className="text-base font-bold text-foreground">Custom Credit Amount</h3>
             <p className="text-xs text-muted-foreground">
-              Enter the exact number of credits you want to buy. Rate is $0.10 USD per credit ($10
-              for 100 credits), converted in real-time to {currency}.
+              Minimum purchase is $10 for 50 credits. Enter your desired credits below to see the
+              real-time equivalent in {currency}.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-foreground">Number of Credits</label>
+              <label className="text-xs font-bold text-foreground">
+                Number of Credits (Min 50)
+              </label>
               <Input
                 type="number"
-                min={10}
+                min={50}
                 max={10000}
                 value={customCredits}
-                onChange={(e) => setCustomCredits(Math.max(10, parseInt(e.target.value) || 10))}
+                onChange={(e) => setCustomCredits(Math.max(50, parseInt(e.target.value) || 50))}
                 className="bg-background border-border text-sm font-bold h-11"
               />
             </div>
@@ -245,7 +248,7 @@ function UpgradePage() {
             <Button
               variant="hero"
               className="w-full h-11 rounded-xl font-bold text-xs shadow-sm"
-              disabled={isProcessing}
+              disabled={isProcessing || customCredits < 50}
               onClick={() => handleBuyCredits(customCredits, customBaseUsd)}
             >
               {isProcessing ? (
@@ -265,7 +268,9 @@ function UpgradePage() {
         {/* Credit Packages */}
         <div className="space-y-4">
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-foreground">Preset Credit Packages</h3>
+            <h3 className="text-base font-bold text-foreground">
+              Preset Credit Packages (Min $10)
+            </h3>
             <p className="text-xs text-muted-foreground">
               Select a popular reload package below to pay securely via Flutterwave in {currency}.
             </p>

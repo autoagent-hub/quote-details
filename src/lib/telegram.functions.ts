@@ -7,6 +7,7 @@ import {
 } from "@/lib/subscription-guard.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAdminClient } from "@/lib/admin.server";
+import { getCreditBalance, deductCredit } from "@/lib/credit.server";
 
 type AlertInput = {
   quoteId?: string;
@@ -354,6 +355,30 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       return { sent: false, reason: "trial_expired" as const };
     }
 
+    // Credit Balance Check for non-test quotes
+    if (!data.isTest) {
+      const currentCredits = await getCreditBalance(data.detailerId);
+      if (currentCredits < 1) {
+        const appUrl = process.env["PUBLIC_APP_URL"] || "https://detailr.online";
+        const upgradeUrl = `${appUrl.replace(/\/$/, "")}/upgrade`;
+        await fetchWithRetry(
+          `${API}${token}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `⚠️ <b>Detailr Alert: Quote Delivery Paused</b>\n\nA customer requested a quote, but your AI bot credit balance is 0.\n\n👉 <a href="${upgradeUrl}">Top up your credits via Flutterwave to resume lead delivery</a>`,
+              parse_mode: "HTML",
+              disable_web_page_preview: true,
+            }),
+          },
+          1,
+        );
+        return { sent: false, reason: "out_of_credits" as const };
+      }
+    }
+
     let botUsername = process.env["TELEGRAM_BOT_USERNAME"] || "DetailrBot";
     if (!process.env["TELEGRAM_BOT_USERNAME"]) {
       try {
@@ -439,6 +464,9 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
 
         if (resText.ok) {
           textSent = true;
+          if (!data.isTest) {
+            await deductCredit(data.detailerId, 1);
+          }
         } else {
           console.error(
             "[telegram] sendMessage error status:",
