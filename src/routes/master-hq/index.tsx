@@ -51,6 +51,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { isAdminEmail } from "@/lib/admin-auth";
+import { getServerIp } from "@/lib/server-ip.functions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -235,6 +236,11 @@ function AdminDashboardPage() {
   });
 
   // 6. Fetch admin Telegram connection status
+  const { data: serverIpData } = useQuery({
+    queryKey: ["admin", "server-ip"],
+    queryFn: () => getServerIp(),
+    enabled: !!adminUser,
+  });
   const {
     data: telegramStatus,
     isLoading: telegramStatusLoading,
@@ -1741,6 +1747,33 @@ function AdminDashboardPage() {
                       className="h-10 px-3 bg-slate-800 border-slate-700 text-xs text-white hover:bg-slate-700 shrink-0"
                     >
                       <Copy className="size-3.5 mr-1" /> Copy
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                    Server / Deployment IP Address
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      readOnly
+                      value={serverIpData?.ip || "Resolving IP..."}
+                      className="bg-slate-950 border-slate-800 text-xs font-mono text-emerald-300 h-10"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const ip = serverIpData?.ip || "";
+                        if (ip) {
+                          void navigator.clipboard.writeText(ip);
+                          toast.success("Server IP copied to clipboard!");
+                        }
+                      }}
+                      className="h-10 px-3 bg-slate-800 border-slate-700 text-xs text-white hover:bg-slate-700 shrink-0"
+                    >
+                      <Copy className="size-3.5 mr-1" /> Copy IP
                     </Button>
                   </div>
                 </div>
