@@ -122,7 +122,8 @@ export const cancelUserSubscription = createServerFn({ method: "POST" })
   .handler(async () => {
     return {
       success: true,
-      message: "Detailr operates on pay-as-you-go credits. There are no recurring auto-renewals to cancel.",
+      message:
+        "Detailr operates on pay-as-you-go credits. There are no recurring auto-renewals to cancel.",
     };
   });
 

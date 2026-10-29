@@ -156,7 +156,8 @@ export function TrialExpiredLock({ profile, trial }: TrialExpiredLockProps) {
             </span>
             <span>·</span>
             <span className="flex items-center gap-1">
-              <CheckCircle2 className="size-3.5 text-emerald-500" /> Pay-as-you-go · No monthly contracts
+              <CheckCircle2 className="size-3.5 text-emerald-500" /> Pay-as-you-go · No monthly
+              contracts
             </span>
           </div>
         </div>

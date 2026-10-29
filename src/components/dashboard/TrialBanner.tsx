@@ -2,14 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  Sparkles,
-  X,
-  CheckCircle2,
-  AlertTriangle,
-  Coins,
-  CreditCard,
-} from "lucide-react";
+import { Sparkles, X, CheckCircle2, AlertTriangle, Coins, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getTrialState } from "@/lib/billing.functions";
@@ -83,8 +76,7 @@ export function TrialBanner({
     ? "SUSPENDED"
     : isSubscribed
       ? "ACTIVE"
-      : trial?.status ||
-        (profile?.trial_status === "TRIAL_PENDING" ? "TRIAL_PENDING" : "TRIALING");
+      : trial?.status || (profile?.trial_status === "TRIAL_PENDING" ? "TRIAL_PENDING" : "TRIALING");
 
   const daysLeft = trial?.daysLeft ?? 7;
   const firstVisitAt = trial?.firstVisitAt ?? null;
@@ -137,8 +129,8 @@ export function TrialBanner({
                 )}
               </div>
               <p className="text-xs text-muted-foreground font-medium">
-                1 credit is deducted per successful customer quote sent to your Telegram phone alert.
-                Zero recurring monthly fees.
+                1 credit is deducted per successful customer quote sent to your Telegram phone
+                alert. Zero recurring monthly fees.
               </p>
             </div>
           </div>
@@ -230,7 +222,9 @@ export function TrialBanner({
               </strong>{" "}
               remaining in your free trial.
               {firstVisitAt && (
-                <span className="opacity-60 ml-1.5 font-normal">· Triggered by first customer visit</span>
+                <span className="opacity-60 ml-1.5 font-normal">
+                  · Triggered by first customer visit
+                </span>
               )}
             </p>
           </div>

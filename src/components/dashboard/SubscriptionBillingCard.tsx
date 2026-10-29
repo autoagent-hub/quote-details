@@ -200,7 +200,8 @@ export function SubscriptionBillingCard({
             </div>
             <p className="text-xs text-muted-foreground max-w-xl">
               1 credit is deducted per successful customer quote sent to your Telegram phone alert.
-              Visits to your quote link, admin tests, and pricing calculations do not consume credits.
+              Visits to your quote link, admin tests, and pricing calculations do not consume
+              credits.
             </p>
           </div>
 
@@ -232,7 +233,8 @@ export function SubscriptionBillingCard({
             </span>
             <p className="font-bold text-foreground text-sm">Pay-As-You-Go</p>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              No monthly or annual recurring charges. Top up on demand. Purchased credits never expire.
+              No monthly or annual recurring charges. Top up on demand. Purchased credits never
+              expire.
             </p>
           </div>
 

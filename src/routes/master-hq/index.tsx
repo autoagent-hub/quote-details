@@ -863,7 +863,8 @@ function AdminDashboardPage() {
                             {user.calculatedState === "SUBSCRIBED" ? (
                               <div>
                                 <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
-                                  <CheckCircle2 className="mr-1 size-3 text-emerald-400" /> Pro Active
+                                  <CheckCircle2 className="mr-1 size-3 text-emerald-400" /> Pro
+                                  Active
                                 </Badge>
                               </div>
                             ) : user.calculatedState === "TRIAL_PENDING" ? (

@@ -106,7 +106,8 @@ function SettingsPage() {
     },
     {
       title: "Credits & Top-Up",
-      description: "Buy quote credits ($10 min for 50 leads), monitor balance, and view purchase history.",
+      description:
+        "Buy quote credits ($10 min for 50 leads), monitor balance, and view purchase history.",
       to: "/upgrade",
       icon: Coins,
       badge: `${typeof profile?.credits_balance === "number" ? profile.credits_balance : 50} Credits`,
