@@ -117,7 +117,7 @@ export async function verifyServerSubscriptionAccess(
     };
   }
 
-  const credits = typeof profile?.credits_balance === "number" ? profile.credits_balance : 50;
+  const credits = typeof profile?.credits_balance === "number" ? profile.credits_balance : 0;
 
   // 4. Pending first customer visit
   const isPending =
@@ -184,7 +184,7 @@ export async function verifyServerSubscriptionAccess(
       };
     }
 
-    // Expired with zero credits
+    // Expired with zero credits - user must pay as they go
     return {
       hasAccess: false,
       isSubscribed: false,
@@ -198,7 +198,7 @@ export async function verifyServerSubscriptionAccess(
       daysLeft: 0,
       currentPeriodEnd: profile.trial_expiry,
       reason:
-        "Your 7-day free trial has expired. Please top up your credits to continue receiving leads.",
+        "Your 7-day free trial has ended. Please top up pay-as-you-go credits ($10 min for 50 leads) to continue receiving leads.",
       status: "EXPIRED",
     };
   }

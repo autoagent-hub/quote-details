@@ -189,7 +189,7 @@ const homepageFaqs = [
   {
     question: "Does Detailr charge commission fees on my detailing jobs?",
     answer:
-      "No! Detailr is a flat $12.99/month with zero commission fees and unlimited leads. You keep 100% of your earnings from all detailing jobs.",
+      "No! Detailr charges zero commission fees on your jobs. You start with a full 7-day free trial, followed by transparent pay-as-you-go lead credits ($10 for 50 customer leads). You keep 100% of your earnings from all detailing jobs with zero recurring contracts.",
   },
   {
     question: "How do I share my quote calculator with customers?",
@@ -894,7 +894,7 @@ function Landing() {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground pt-1">
-                      Includes 50 free credits · Paused until first customer visit
+                      Unlimited leads for 7 days · No credits needed during trial
                     </p>
                   </div>
 
@@ -904,12 +904,12 @@ function Landing() {
                     </p>
                     <ul className="space-y-2.5 text-xs">
                       {[
-                        "50 free bot credits for customer quotes",
+                        "Unlimited customer quotes sent to Telegram (0 credits needed)",
                         "Trial countdown starts on first customer link visit",
-                        "Instant push notifications to Telegram",
+                        "Instant push notifications to Telegram in under 2 seconds",
                         "Custom branded link: detailr.online/your-slug",
                         "Photo uploads & vehicle rates calculator",
-                        "Test quote submissions are always 100% free",
+                        "Pay-as-you-go credits ($10 min for 50 leads) after 7 days",
                       ].map((item) => (
                         <li key={`trial-${item}`} className="flex items-start gap-2">
                           <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-500 font-bold" />

@@ -59,7 +59,7 @@ export const getTrialState = createServerFn({ method: "GET" })
     const creditsBalance =
       typeof (profile as { credits_balance?: number })?.credits_balance === "number"
         ? (profile as { credits_balance?: number }).credits_balance!
-        : 50;
+        : 0;
 
     let linkViews = 0;
     let firstVisitAt: string | null = null;

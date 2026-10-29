@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
   Bell,
@@ -272,102 +272,105 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
     };
   }
 
-  const handleGoogleCredentialResponse = async (response: { credential?: string }) => {
-    if (!response?.credential) {
-      toast.error("No credential received from Google");
-      return;
-    }
+  const handleGoogleCredentialResponse = useCallback(
+    async (response: { credential?: string }) => {
+      if (!response?.credential) {
+        toast.error("No credential received from Google");
+        return;
+      }
 
-    setGoogleLoading(true);
-    try {
-      // 1. First try Supabase signInWithIdToken
+      setGoogleLoading(true);
       try {
-        const { data: idAuthData, error: idAuthError } = await supabase.auth.signInWithIdToken({
-          provider: "google",
-          token: response.credential,
+        // 1. First try Supabase signInWithIdToken
+        try {
+          const { data: idAuthData, error: idAuthError } = await supabase.auth.signInWithIdToken({
+            provider: "google",
+            token: response.credential,
+          });
+
+          if (!idAuthError && idAuthData?.user) {
+            const userEmail = idAuthData.user.email;
+            if (userEmail) {
+              try {
+                await ensureGoogleUserOnboarded({
+                  data: {
+                    email: userEmail,
+                    businessName: businessName.trim(),
+                    userId: idAuthData.user.id,
+                  },
+                });
+              } catch (err) {
+                console.warn("[google-auth] ensureGoogleUserOnboarded notice:", err);
+              }
+            }
+            toast.success("Successfully signed in with Google!");
+            window.location.href = "/dashboard";
+            return;
+          }
+        } catch (directErr) {
+          console.warn(
+            "[google-auth] Direct signInWithIdToken error, attempting server exchange:",
+            directErr,
+          );
+        }
+
+        // 2. Server verification fallback (generates verified magiclink token_hash)
+        const res = await fetch("/api/public/google-callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ credential: response.credential }),
         });
 
-        if (!idAuthError && idAuthData?.user) {
-          const userEmail = idAuthData.user.email;
-          if (userEmail) {
-            try {
-              await ensureGoogleUserOnboarded({
-                data: {
-                  email: userEmail,
-                  businessName: businessName.trim(),
-                  userId: idAuthData.user.id,
-                },
-              });
-            } catch (err) {
-              console.warn("[google-auth] ensureGoogleUserOnboarded notice:", err);
-            }
-          }
-          toast.success("Successfully signed in with Google!");
-          window.location.href = "/dashboard";
-          return;
+        const data = (await res.json()) as {
+          token_hash?: string;
+          id_token?: string;
+          email?: string;
+          error?: string;
+        };
+
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "Google authentication failed");
         }
-      } catch (directErr) {
-        console.warn(
-          "[google-auth] Direct signInWithIdToken error, attempting server exchange:",
-          directErr,
-        );
-      }
 
-      // 2. Server verification fallback (generates verified magiclink token_hash)
-      const res = await fetch("/api/public/google-callback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential: response.credential }),
-      });
+        if (data.token_hash) {
+          const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+            token_hash: data.token_hash,
+            type: "magiclink",
+          });
 
-      const data = (await res.json()) as {
-        token_hash?: string;
-        id_token?: string;
-        email?: string;
-        error?: string;
-      };
+          if (otpError) throw otpError;
 
-      if (!res.ok || data.error) {
-        throw new Error(data.error || "Google authentication failed");
-      }
-
-      if (data.token_hash) {
-        const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
-          token_hash: data.token_hash,
-          type: "magiclink",
-        });
-
-        if (otpError) throw otpError;
-
-        if (otpData?.user) {
-          const userEmail = otpData.user.email || data.email;
-          if (userEmail) {
-            try {
-              await ensureGoogleUserOnboarded({
-                data: {
-                  email: userEmail,
-                  businessName: businessName.trim(),
-                  userId: otpData.user.id,
-                },
-              });
-            } catch (err) {
-              console.warn("[google-auth] ensureGoogleUserOnboarded notice:", err);
+          if (otpData?.user) {
+            const userEmail = otpData.user.email || data.email;
+            if (userEmail) {
+              try {
+                await ensureGoogleUserOnboarded({
+                  data: {
+                    email: userEmail,
+                    businessName: businessName.trim(),
+                    userId: otpData.user.id,
+                  },
+                });
+              } catch (err) {
+                console.warn("[google-auth] ensureGoogleUserOnboarded notice:", err);
+              }
             }
+            toast.success("Successfully signed in with Google!");
+            window.location.href = "/dashboard";
+            return;
           }
-          toast.success("Successfully signed in with Google!");
-          window.location.href = "/dashboard";
-          return;
         }
-      }
 
-      throw new Error("Unable to establish authenticated session");
-    } catch (err: unknown) {
-      const e = err as Error;
-      toast.error(e.message || "Failed to sign in with Google");
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
+        throw new Error("Unable to establish authenticated session");
+      } catch (err: unknown) {
+        const e = err as Error;
+        toast.error(e.message || "Failed to sign in with Google");
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    [businessName],
+  );
 
   useEffect(() => {
     if (mode === "forgot") return;
@@ -430,7 +433,7 @@ export function AuthCard({ initialMode = "signin" }: AuthCardProps) {
     return () => {
       mounted = false;
     };
-  }, [mode]);
+  }, [mode, handleGoogleCredentialResponse]);
 
   // Password strength helper
   const passwordStrength = (pass: string) => {

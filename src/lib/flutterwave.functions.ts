@@ -6,10 +6,11 @@ import {
   getCreditBalance,
   recordCreditPurchase,
   getCreditPurchases,
+  isPurchaseAlreadyRecorded,
   type CreditPurchaseRecord,
 } from "@/lib/credit.server";
 
-const FX_RATES: Record<string, number> = {
+export const FX_RATES: Record<string, number> = {
   USD: 1.0,
   NGN: 1500.0,
   GBP: 0.8,
@@ -23,15 +24,31 @@ const FX_RATES: Record<string, number> = {
   TZS: 2600.0,
 };
 
+export const updateBillingCurrency = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { currency: string }) => data)
+  .handler(async ({ data, context }) => {
+    const cleanCurr = (data.currency || "USD").toUpperCase().slice(0, 5);
+    const admin = getAdminClient();
+    const db = admin ?? context.supabase;
+    const { error } = await db
+      .from("profiles")
+      .update({ currency: cleanCurr } as never)
+      .eq("id", context.userId);
+    if (error) {
+      console.warn("[updateBillingCurrency] error:", error);
+    }
+    return { success: true, currency: cleanCurr };
+  });
+
 export const initiateFlutterwaveTopup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { amountUsd: number; creditsAmount: number; currency?: string }) => data)
   .handler(async ({ data, context }) => {
-    const amount = Math.max(1, Number(data.amountUsd) || 10);
-    const credits = Math.max(10, Number(data.creditsAmount) || 50);
+    const amount = Math.max(10, Number(data.amountUsd) || 10);
+    const credits = Math.max(50, Number(data.creditsAmount) || 50);
 
     const admin = getAdminClient();
-    const db = admin ?? context.supabase;
 
     let email = "detailer@detailr.online";
     let currency = data.currency ? data.currency.toUpperCase() : "USD";
@@ -60,7 +77,7 @@ export const initiateFlutterwaveTopup = createServerFn({ method: "POST" })
     const rate = FX_RATES[currency] ?? 1.0;
     const finalAmount = currency === "USD" ? amount : Math.round(amount * rate);
 
-    const txRef = `detailr_credit_${context.userId}_${Date.now()}`;
+    const txRef = `detailr_credit_${context.userId}_${credits}_${Date.now()}`;
     const publicKey = process.env["FLUTTERWAVE_PUBLIC_KEY"] || "FLWPUBK_TEST-DEMOKEY123456789";
 
     return {
@@ -82,10 +99,21 @@ export const verifyFlutterwaveTopup = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const credits = Math.max(1, Number(data.creditsAmount) || 50);
-    const newBalance = await addCredits(context.userId, credits);
-
     const amountPaid = Number(data.amountPaid) || Math.round((credits / 50) * 10);
     const currency = (data.currency || "USD").toUpperCase();
+
+    // Check if this transaction has already been credited (prevents double charging/crediting)
+    const alreadyProcessed = await isPurchaseAlreadyRecorded(data.txRef);
+    if (alreadyProcessed) {
+      const currentBalance = await getCreditBalance(context.userId);
+      return {
+        success: true,
+        newBalance: currentBalance,
+        message: `Transaction verified: ${credits} credits already added to your account!`,
+      };
+    }
+
+    const newBalance = await addCredits(context.userId, credits);
 
     // Log purchase to audit logs for purchase history
     await recordCreditPurchase(context.userId, {

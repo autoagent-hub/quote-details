@@ -15,8 +15,8 @@ export async function getCreditBalance(userId: string): Promise<number> {
     return profile.credits_balance;
   }
 
-  // Default starting credits if not set
-  return 50;
+  // Default starting credits: 0 (7-day free trial requires no credits; users pay as they go after trial ends)
+  return 0;
 }
 
 /**
@@ -121,6 +121,22 @@ export interface CreditPurchaseRecord {
   createdAt: string;
 }
 
+export async function isPurchaseAlreadyRecorded(txRef: string): Promise<boolean> {
+  const admin = getAdminClient();
+  if (!admin || !txRef) return false;
+  try {
+    const { data } = await admin
+      .from("audit_logs")
+      .select("id")
+      .eq("action", "credit_purchase")
+      .filter("details->>tx_ref", "eq", txRef)
+      .limit(1);
+    return Boolean(data && data.length > 0);
+  } catch {
+    return false;
+  }
+}
+
 export async function recordCreditPurchase(
   userId: string,
   purchase: {
@@ -134,6 +150,10 @@ export async function recordCreditPurchase(
   if (!admin) return;
 
   try {
+    if (await isPurchaseAlreadyRecorded(purchase.txRef)) {
+      return;
+    }
+
     let email: string | null = null;
     const { data: authUser } = await admin.auth.admin.getUserById(userId);
     email = authUser?.user?.email || null;

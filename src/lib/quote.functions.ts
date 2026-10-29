@@ -3,7 +3,6 @@ import { getAdminClient } from "@/lib/admin.server";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeText, sanitizePhone, sanitizeStringArray } from "@/lib/sanitize";
 import { verifyServerSubscriptionAccess } from "@/lib/subscription-guard.server";
-import { deductCredit } from "@/lib/credit.server";
 
 export type PublicQuoteInput = {
   detailerId: string;
@@ -37,7 +36,7 @@ export const submitPublicQuote = createServerFn({ method: "POST" })
     if (!subAccess.hasAccess && !data.isTest) {
       throw new Error(
         subAccess.reason ||
-          "Subscription Required: This shop's free trial has expired. Quote requests are paused until upgraded.",
+          "Credits Required: This shop's free trial has ended and lead credits are depleted. Quote requests are paused until credits are topped up.",
       );
     }
 

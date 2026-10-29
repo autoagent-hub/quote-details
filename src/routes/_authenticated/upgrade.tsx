@@ -16,6 +16,7 @@ import {
   Clock,
   ShieldCheck,
   TrendingUp,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,6 +38,8 @@ import {
   verifyFlutterwaveTopup,
   getUserCreditPurchases,
   getCreditDashboardData,
+  updateBillingCurrency,
+  FX_RATES,
 } from "@/lib/flutterwave.functions";
 import { money } from "@/lib/pricing";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,10 +84,20 @@ function UpgradePage() {
   const doVerify = useServerFn(verifyFlutterwaveTopup);
   const fetchPurchases = useServerFn(getUserCreditPurchases);
   const fetchDashboardData = useServerFn(getCreditDashboardData);
+  const doUpdateCurrency = useServerFn(updateBillingCurrency);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [customCreditsInput, setCustomCreditsInput] = useState<string>("50");
-  const [selectedCurrency, setSelectedCurrency] = useState<string>("");
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(() => {
+    try {
+      if (typeof window !== "undefined") {
+        return localStorage.getItem("detailr_user_currency") || "";
+      }
+    } catch {
+      // ignore
+    }
+    return "";
+  });
 
   const { data: trial } = useQuery({
     queryKey: ["trial-state"],
@@ -120,39 +133,44 @@ function UpgradePage() {
   const handleCurrencyChange = async (newCurr: string) => {
     setSelectedCurrency(newCurr);
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (user.user) {
-        await supabase
-          .from("profiles")
-          .update({ currency: newCurr } as never)
-          .eq("id", user.user.id);
-        await queryClient.invalidateQueries({ queryKey: ["profile-currency"] });
-        await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      if (typeof window !== "undefined") {
+        localStorage.setItem("detailr_user_currency", newCurr);
       }
+    } catch {
+      // ignore
+    }
+    try {
+      await doUpdateCurrency({ data: { currency: newCurr } });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["profile-currency"] }),
+        queryClient.invalidateQueries({ queryKey: ["profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["trial-state"] }),
+      ]);
       toast.success(`Currency switched to ${newCurr}`);
     } catch (err) {
       console.warn("Failed to persist currency change:", err);
+      toast.info(`Switched display currency to ${newCurr}`);
     }
   };
 
   const getAdjustedAmount = (baseAmount: number) => {
-    if (currency === "NGN") return baseAmount * 1500;
-    if (currency === "GBP") return Math.round(baseAmount * 0.8);
-    if (currency === "EUR") return Math.round(baseAmount * 0.92);
-    if (currency === "CAD") return Math.round(baseAmount * 1.35);
-    if (currency === "AUD") return Math.round(baseAmount * 1.55);
-    if (currency === "KES") return Math.round(baseAmount * 130);
-    if (currency === "GHS") return Math.round(baseAmount * 15);
-    if (currency === "ZAR") return Math.round(baseAmount * 18);
-    return baseAmount;
+    const rate = FX_RATES[currency] ?? 1.0;
+    if (currency === "USD") return baseAmount;
+    if (currency === "NGN" || currency === "KES" || currency === "UGX" || currency === "TZS") {
+      return Math.round(baseAmount * rate);
+    }
+    return Math.round(baseAmount * rate * 100) / 100;
   };
 
   const rawNum = parseInt(customCreditsInput, 10);
   const isValidNum = !isNaN(rawNum) && rawNum > 0;
   const numericCredits = isValidNum ? rawNum : 0;
-  const isBelowMin = !isValidNum || numericCredits < 50;
-  const effectiveCredits = isBelowMin ? 50 : numericCredits;
-  const customBaseUsd = Math.max(10, Math.round(effectiveCredits * 0.2 * 100) / 100);
+  const hasInput = customCreditsInput.trim().length > 0;
+  const isBelowMin = hasInput && numericCredits < 50;
+  const isReadyToBuy = hasInput && numericCredits >= 50;
+
+  // Custom base USD: $0.20 per credit, minimum $10 for 50 credits
+  const customBaseUsd = isReadyToBuy ? Math.round(numericCredits * 0.2 * 100) / 100 : 10;
   const customAdjustedAmount = getAdjustedAmount(customBaseUsd);
 
   const creditsBalance = dashboardData?.balance ?? 50;
@@ -347,7 +365,7 @@ function UpgradePage() {
                 ? "Countdown begins only when your 1st customer visits."
                 : trial?.expiresAt
                   ? `Expires on ${new Date(trial.expiresAt).toLocaleDateString()}`
-                  : "50 Free Credits provided during trial."}
+                  : "Unlimited leads during 7-day trial (no credits needed). Pay-as-you-go after trial ends."}
             </p>
           </Card>
 
@@ -374,12 +392,12 @@ function UpgradePage() {
         </div>
 
         {/* Custom Credit Amount Calculator */}
-        <Card className="rounded-2xl border-2 border-border/80 bg-card p-6 space-y-4 shadow-sm">
+        <Card className="rounded-2xl border-2 border-border/80 bg-card p-6 space-y-5 shadow-sm">
           <div className="space-y-1">
             <h3 className="text-base font-bold text-foreground">Custom Credit Top-Up</h3>
             <p className="text-xs text-muted-foreground">
               Minimum purchase is 50 credits ($10 USD equivalent). Enter your desired credits below
-              to see the real-time price in {currency}.
+              or tap a quick-pick preset to see the real-time price in {currency}.
             </p>
           </div>
 
@@ -388,56 +406,123 @@ function UpgradePage() {
               <label className="text-xs font-bold text-foreground">
                 Number of Credits (Minimum 50)
               </label>
-              <Input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="50"
-                value={customCreditsInput}
-                onChange={(e) => {
-                  const cleaned = e.target.value.replace(/[^0-9]/g, "");
-                  setCustomCreditsInput(cleaned);
-                }}
-                className="bg-background border-border text-sm font-bold h-11"
-              />
+              <div className="relative">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="e.g. 50"
+                  value={customCreditsInput}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const cleaned = e.target.value.replace(/[^0-9]/g, "");
+                    setCustomCreditsInput(cleaned);
+                  }}
+                  className="bg-background border-border text-sm font-bold h-11 pr-9"
+                />
+                {customCreditsInput && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomCreditsInput("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
+                    title="Clear credit input"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-muted-foreground">
                 Real-time Equivalent
               </label>
               <div className="h-11 px-3 rounded-xl bg-muted/50 border border-border flex items-center justify-between font-mono text-sm font-bold text-foreground">
-                <span>{money(customAdjustedAmount, currency)}</span>
-                <span className="text-xs font-sans text-muted-foreground">
-                  {effectiveCredits} Credits
-                </span>
+                {isReadyToBuy ? (
+                  <>
+                    <span>{money(customAdjustedAmount, currency)}</span>
+                    <span className="text-xs font-sans text-muted-foreground font-semibold">
+                      {numericCredits} Credits
+                    </span>
+                  </>
+                ) : isBelowMin ? (
+                  <>
+                    <span className="text-amber-500 font-sans text-xs">Min 50 required</span>
+                    <span className="text-xs font-sans text-muted-foreground">
+                      {numericCredits} entered
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs font-sans text-muted-foreground font-normal">
+                      Min $10 / 50 leads
+                    </span>
+                    <span className="text-xs font-sans text-muted-foreground">50 Credits min</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          {customCreditsInput && numericCredits < 50 && (
-            <p className="text-xs text-amber-500 font-medium">
-              Minimum order is 50 credits. Your order will be set to 50 credits upon checkout.
+          {/* Quick-pick Preset Buttons */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40">
+            <span className="text-[11px] font-bold text-muted-foreground mr-1">Quick pick:</span>
+            {[
+              { credits: 50, usd: 10, label: "50 Leads" },
+              { credits: 100, usd: 20, label: "100 Leads" },
+              { credits: 250, usd: 45, label: "250 Leads" },
+              { credits: 500, usd: 90, label: "500 Leads" },
+              { credits: 1000, usd: 180, label: "1,000 Leads" },
+            ].map((item) => {
+              const active = customCreditsInput === String(item.credits);
+              return (
+                <button
+                  key={item.credits}
+                  type="button"
+                  onClick={() => setCustomCreditsInput(String(item.credits))}
+                  className={`px-3 py-1.5 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                    active
+                      ? "bg-primary text-primary-foreground border-primary shadow-xs ring-1 ring-primary/40"
+                      : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted border-border"
+                  }`}
+                >
+                  {item.label} · {money(getAdjustedAmount(item.usd), currency)}
+                </button>
+              );
+            })}
+          </div>
+
+          {isBelowMin && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-xl">
+              <AlertTriangle className="size-4 shrink-0 text-amber-600" />
+              Minimum order is 50 credits ($10 USD equivalent). Please enter 50 or more credits.
             </p>
           )}
 
-          <div className="pt-2">
+          <div className="pt-1">
             <Button
               variant="hero"
-              className="w-full h-11 rounded-xl font-bold text-xs shadow-sm"
-              disabled={isProcessing}
+              className="w-full h-11 rounded-xl font-bold text-xs shadow-sm cursor-pointer"
+              disabled={isProcessing || !isReadyToBuy}
               onClick={() => {
-                const targetCredits = Math.max(50, numericCredits || 50);
-                const targetUsd = Math.max(10, Math.round(targetCredits * 0.2 * 100) / 100);
-                handleBuyCredits(targetCredits, targetUsd);
+                if (!isReadyToBuy) return;
+                handleBuyCredits(numericCredits, customBaseUsd);
               }}
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="size-4 mr-2 animate-spin" /> Processing Payment...
                 </>
+              ) : !hasInput ? (
+                <>
+                  <CreditCard className="size-4 mr-2" /> Enter Credit Amount (50 min · $10)
+                </>
+              ) : isBelowMin ? (
+                <>
+                  <CreditCard className="size-4 mr-2" /> Minimum 50 Credits Required ($10 min)
+                </>
               ) : (
                 <>
-                  <CreditCard className="size-4 mr-2" /> Top Up {effectiveCredits} Credits for{" "}
+                  <CreditCard className="size-4 mr-2" /> Top Up {numericCredits} Credits for{" "}
                   {money(customAdjustedAmount, currency)}
                 </>
               )}

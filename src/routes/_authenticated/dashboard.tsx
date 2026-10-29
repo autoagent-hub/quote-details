@@ -11,10 +11,8 @@ import { AppNavigation } from "@/components/dashboard/AppNavigation";
 import { OPayDashboardHeader } from "@/components/dashboard/OPayDashboardHeader";
 import { TrialBanner } from "@/components/dashboard/TrialBanner";
 import { Onboarding } from "@/components/dashboard/Onboarding";
-import {
-  DashboardOnboardingTour,
-  useDashboardTour,
-} from "@/components/dashboard/DashboardOnboardingTour";
+import { DashboardOnboardingTour } from "@/components/dashboard/DashboardOnboardingTour";
+import { useDashboardTour } from "@/components/dashboard/useDashboardTour";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({

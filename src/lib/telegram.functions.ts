@@ -345,7 +345,7 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: `⚠️ <b>Detailr Alert: Quote Request Paused</b>\n\nA customer requested a quote, but your 7-day free trial has expired.\n\n👉 <a href="${upgradeUrl}">Activate Pro Plan to unlock incoming leads</a>`,
+            text: `⚠️ <b>Detailr Alert: Quote Request Paused</b>\n\nA customer requested a quote, but your free trial has ended and lead credits are depleted.\n\n👉 <a href="${upgradeUrl}">Top up lead credits to unlock incoming leads</a>`,
             parse_mode: "HTML",
             disable_web_page_preview: true,
           }),
@@ -355,8 +355,8 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
       return { sent: false, reason: "trial_expired" as const };
     }
 
-    // Credit Balance Check for non-test quotes
-    if (!data.isTest) {
+    // Credit Balance Check: only required when NOT in test mode AND 7-day free trial has ended
+    if (!data.isTest && !subAccess.isTrialActive) {
       const currentCredits = await getCreditBalance(data.detailerId);
       if (currentCredits < 1) {
         const appUrl = process.env["PUBLIC_APP_URL"] || "https://detailr.online";
@@ -368,7 +368,7 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
               chat_id: chatId,
-              text: `⚠️ <b>Detailr Alert: Quote Delivery Paused</b>\n\nA customer requested a quote, but your AI bot credit balance is 0.\n\n👉 <a href="${upgradeUrl}">Top up your credits via Flutterwave to resume lead delivery</a>`,
+              text: `⚠️ <b>Detailr Alert: Quote Delivery Paused</b>\n\nA customer requested a quote, but your 7-day free trial has ended and you have 0 pay-as-you-go credits.\n\n👉 <a href="${upgradeUrl}">Top up your credits via Flutterwave ($10 min for 50 leads) to resume lead delivery</a>`,
               parse_mode: "HTML",
               disable_web_page_preview: true,
             }),
@@ -464,7 +464,8 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
 
         if (resText.ok) {
           textSent = true;
-          if (!data.isTest) {
+          // Only deduct credits if NOT in test mode AND NOT in 7-day free trial
+          if (!data.isTest && !subAccess.isTrialActive) {
             await deductCredit(data.detailerId, 1);
           }
         } else {

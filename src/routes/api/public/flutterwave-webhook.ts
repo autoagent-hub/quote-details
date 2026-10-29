@@ -62,11 +62,20 @@ export const Route = createFileRoute("/api/public/flutterwave-webhook")({
         const txRef = data?.tx_ref || "";
         const email = data?.customer?.email || "";
 
-        // Parse userId from tx_ref format: detailr_credit_${userId}_${timestamp}
+        // Parse userId and optional credits from tx_ref format: detailr_credit_${userId}_${credits}_${timestamp}
         let userId: string | null = null;
+        let explicitCredits: number | null = null;
         const parts = txRef.split("_");
         if (parts.length >= 4 && parts[0] === "detailr" && parts[1] === "credit") {
           userId = parts[2];
+          if (
+            parts.length >= 5 &&
+            !isNaN(Number(parts[3])) &&
+            Number(parts[3]) > 0 &&
+            Number(parts[3]) < 100000
+          ) {
+            explicitCredits = Number(parts[3]);
+          }
         }
 
         const admin = getAdminClient();
@@ -98,21 +107,49 @@ export const Route = createFileRoute("/api/public/flutterwave-webhook")({
           return Response.json({ status: "error", reason: "User not resolved" }, { status: 400 });
         }
 
-        // Determine credit amount based on paid amount or metadata
-        // Default conversion: $10 or equivalent = 100 credits, $25 = 300 credits, etc.
+        // Idempotency: verify this transaction was not already credited
+        const { isPurchaseAlreadyRecorded, recordCreditPurchase } =
+          await import("@/lib/credit.server");
+        const alreadyCredited = await isPurchaseAlreadyRecorded(txRef);
+        if (alreadyCredited) {
+          return Response.json({
+            status: "already_processed",
+            message: "Transaction already processed and credited",
+          });
+        }
+
+        // Determine credit amount: min $10 for 50 credits ($0.20/lead)
         const paidAmount = Number(data?.amount) || 10;
-        let creditsToAdd = 100;
-        if (paidAmount >= 45 || paidAmount >= 70000) {
-          creditsToAdd = 700;
-        } else if (paidAmount >= 22 || paidAmount >= 35000) {
-          creditsToAdd = 300;
-        } else if (paidAmount >= 9 || paidAmount >= 12000) {
-          creditsToAdd = 100;
+        const currency = (data?.currency || "USD").toUpperCase();
+
+        let creditsToAdd = 50;
+        if (explicitCredits && explicitCredits >= 50) {
+          creditsToAdd = explicitCredits;
+        } else if (currency === "USD") {
+          if (paidAmount >= 100) creditsToAdd = 600;
+          else if (paidAmount >= 45) creditsToAdd = 250;
+          else if (paidAmount >= 10) creditsToAdd = 50;
+          else creditsToAdd = Math.max(50, Math.round(paidAmount * 5));
         } else {
-          creditsToAdd = Math.round(paidAmount * 10);
+          // For foreign currencies, scale from $10 = 50 credits
+          if (paidAmount >= 150000)
+            creditsToAdd = 600; // ~NGN Scale Pack
+          else if (paidAmount >= 67500)
+            creditsToAdd = 250; // ~NGN Pro Pack
+          else if (paidAmount >= 15000)
+            creditsToAdd = 50; // ~NGN Starter Pack
+          else creditsToAdd = 50;
         }
 
         const newBalance = await addCredits(userId, creditsToAdd);
+
+        // Record purchase to audit logs for purchase history
+        await recordCreditPurchase(userId, {
+          txRef,
+          credits: creditsToAdd,
+          amount: paidAmount,
+          currency,
+        });
 
         console.info(
           `[flutterwave-webhook] Successfully added ${creditsToAdd} credits for user ${userId}. New balance: ${newBalance}`,

@@ -213,17 +213,18 @@ export function TrialBanner({
           </div>
           <div className="space-y-0.5">
             <p className="font-bold uppercase tracking-widest text-[10px] text-amber-600 opacity-80">
-              Free Trial Active
+              Free Trial Active · Unlimited Leads (No Credits Needed)
             </p>
             <p className="font-medium">
               You have{" "}
               <strong className="font-bold">
                 {daysLeft} {daysLeft === 1 ? "day" : "days"}
               </strong>{" "}
-              remaining in your free trial.
+              remaining in your free trial. All customer leads are free. Once 7 days reach, you only
+              pay as you go.
               {firstVisitAt && (
                 <span className="opacity-60 ml-1.5 font-normal">
-                  · Triggered by first customer visit
+                  · Started on 1st customer visit
                 </span>
               )}
             </p>

@@ -83,12 +83,13 @@ export function SubscriptionBillingCard({
     );
   }
 
-  const creditsBalance = trial?.creditsBalance ?? 50;
+  const creditsBalance = trial?.creditsBalance ?? 0;
   const isPendingFirstVisit = !!trial?.isPendingFirstVisit;
   const isTrialActive = trial?.status === "TRIALING";
+  const isTrialOngoing = isPendingFirstVisit || isTrialActive;
   const daysRemaining = trial?.daysLeft ?? 7;
-  const isOutOfCredits = creditsBalance === 0;
-  const isLowCredits = creditsBalance > 0 && creditsBalance <= 10;
+  const isOutOfCredits = !isTrialOngoing && creditsBalance === 0;
+  const isLowCredits = !isTrialOngoing && creditsBalance > 0 && creditsBalance <= 10;
 
   const trialExpiryFormatted = trial?.expiresAt
     ? new Date(trial.expiresAt).toLocaleDateString("en-US", {
@@ -181,27 +182,39 @@ export function SubscriptionBillingCard({
         {/* Credit Balance Highlight Hero */}
         <div
           className={`rounded-2xl p-4 sm:p-6 border flex flex-col sm:flex-row sm:items-center justify-between gap-5 ${
-            isOutOfCredits
-              ? "bg-rose-500/5 border-rose-500/25"
-              : isLowCredits
-                ? "bg-amber-500/5 border-amber-500/25"
-                : "bg-emerald-500/5 border-emerald-500/25"
+            isTrialOngoing
+              ? "bg-sky-500/5 border-sky-500/25"
+              : isOutOfCredits
+                ? "bg-rose-500/5 border-rose-500/25"
+                : isLowCredits
+                  ? "bg-amber-500/5 border-amber-500/25"
+                  : "bg-emerald-500/5 border-emerald-500/25"
           }`}
         >
           <div className="space-y-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Zap className="size-3.5 text-emerald-500" /> Current Available Balance
+              {isTrialOngoing ? (
+                <>
+                  <Sparkles className="size-3.5 text-sky-500" /> Free Trial Mode
+                </>
+              ) : (
+                <>
+                  <Zap className="size-3.5 text-emerald-500" /> Pay-As-You-Go Balance
+                </>
+              )}
             </span>
             <div className="flex items-baseline gap-2">
               <h3 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-                {creditsBalance}
+                {isTrialOngoing ? "Unlimited" : creditsBalance}
               </h3>
-              <span className="text-sm font-bold text-muted-foreground">Credits Available</span>
+              <span className="text-sm font-bold text-muted-foreground">
+                {isTrialOngoing ? "Leads Included Free (0 Credits Needed)" : "Credits Available"}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground max-w-xl">
-              1 credit is deducted per successful customer quote sent to your Telegram phone alert.
-              Visits to your quote link, admin tests, and pricing calculations do not consume
-              credits.
+              {isTrialOngoing
+                ? "During your 7-day free trial, customer quote requests are sent to Telegram with zero credits needed and zero deductions. Once your 7 days reach, you only pay as you go ($10 min for 50 leads)."
+                : "1 credit is deducted per successful customer quote sent to Telegram. Test submissions, pricing calculators, and link views are always 100% free."}
             </p>
           </div>
 
@@ -215,7 +228,9 @@ export function SubscriptionBillingCard({
               >
                 <Link to="/upgrade">
                   <Coins className="size-4" />
-                  <span>Top Up Credits ($10 min)</span>
+                  <span>
+                    {isTrialOngoing ? "View Pay-As-You-Go Packs" : "Top Up Credits ($10 min)"}
+                  </span>
                   <ChevronRight className="size-3.5 ml-0.5" />
                 </Link>
               </Button>
