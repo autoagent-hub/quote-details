@@ -51,7 +51,7 @@ export function TrialBanner({
   const creditsBalance =
     typeof profile?.credits_balance === "number"
       ? profile.credits_balance
-      : (trial?.creditsBalance ?? 50);
+      : (trial?.creditsBalance ?? 0);
 
   const isSuspended =
     profile?.trial_status === "SUSPENDED" ||
@@ -64,8 +64,8 @@ export function TrialBanner({
     creditsBalance > 0 ||
     !!trial?.isSubscribed;
 
-  // If user has ample credits and hideIfSubscribed is on, hide banner
-  if (isSubscribed && creditsBalance > 10 && hideIfSubscribed) {
+  // If user has ample credits (>= 10) and hideIfSubscribed is on, hide banner
+  if (isSubscribed && creditsBalance >= 10 && hideIfSubscribed) {
     return null;
   }
 
@@ -106,6 +106,48 @@ export function TrialBanner({
 
   // 2. ACTIVE (With credits): Show Pay-As-You-Go Credits Status
   if (effectiveStatus === "ACTIVE" || creditsBalance > 0) {
+    const isLowCredits = creditsBalance < 10;
+
+    if (isLowCredits) {
+      return (
+        <div className="relative overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 p-4 sm:p-5 text-xs shadow-md backdrop-blur-md">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="size-10 flex items-center justify-center rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
+                <AlertTriangle className="size-5 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="bg-amber-600 text-white font-extrabold uppercase tracking-widest text-[10px] px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                    <AlertTriangle className="size-3" />
+                    LOW CREDITS WARNING
+                  </Badge>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 dark:text-amber-200 bg-amber-500/20 px-2.5 py-0.5 rounded-md border border-amber-500/30">
+                    <strong>{creditsBalance}</strong> {creditsBalance === 1 ? "Credit" : "Credits"}{" "}
+                    Left
+                  </span>
+                </div>
+                <p className="text-xs text-amber-950 dark:text-amber-200 font-medium">
+                  Your balance has dropped below 10 credits. Your Telegram bot will alert you after
+                  every quote. Once your balance reaches 0, quote alerts from customers will pause.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+              <Button
+                asChild
+                size="sm"
+                className="h-8 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-500/20"
+              >
+                <Link to="/upgrade">Top Up Credits ($10 min)</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-600/10 via-teal-500/5 to-emerald-600/10 p-4 sm:p-5 text-xs shadow-md backdrop-blur-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -122,11 +164,6 @@ export function TrialBanner({
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
                   <strong>{creditsBalance}</strong> Credits Available
                 </span>
-                {creditsBalance <= 10 && (
-                  <span className="text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-                    (Low balance warning)
-                  </span>
-                )}
               </div>
               <p className="text-xs text-muted-foreground font-medium">
                 1 credit is deducted per successful customer quote sent to your Telegram phone

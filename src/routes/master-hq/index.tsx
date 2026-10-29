@@ -43,6 +43,9 @@ import {
   RotateCcw,
   Globe,
   Copy,
+  Coins,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -145,12 +148,28 @@ function AdminDashboardPage() {
 
   const [actionModal, setActionModal] = useState<{
     open: boolean;
-    type: "ban" | "extend_trial" | "delete" | "grant_pro" | "flag_suspicious";
+    type:
+      | "ban"
+      | "extend_trial"
+      | "delete"
+      | "grant_pro"
+      | "flag_suspicious"
+      | "credit_user"
+      | "deduct_user";
     user: AdminDetailerSummary | null;
     reason?: string;
     customDays?: number;
+    creditsAmount?: number;
     severity?: AdminAlertSeverity;
-  }>({ open: false, type: "ban", user: null, reason: "", customDays: 7, severity: "HIGH" });
+  }>({
+    open: false,
+    type: "ban",
+    user: null,
+    reason: "",
+    customDays: 7,
+    creditsAmount: 50,
+    severity: "HIGH",
+  });
 
   // 1. Verify admin session
   const [adminUser, setAdminUser] = useState<{ email: string; id: string } | null>(null);
@@ -305,9 +324,12 @@ function AdminDashboardPage() {
         | "reset_trial_pending"
         | "grant_pro"
         | "revoke_pro"
-        | "delete_user";
+        | "delete_user"
+        | "credit_user"
+        | "deduct_user";
       reason?: string;
       customDays?: number;
+      creditsAmount?: number;
     }) => adminPerformUserAction({ data: payload }),
     onSuccess: (res) => {
       if (res.success) {
@@ -770,6 +792,7 @@ function AdminDashboardPage() {
                     <th className="px-4 py-3">Shop & Public Link</th>
                     <th className="px-4 py-3">Contact Email & Phone</th>
                     <th className="px-4 py-3">Status & Security</th>
+                    <th className="px-4 py-3 text-center">Credits</th>
                     <th className="px-4 py-3 text-center">Link Views</th>
                     <th className="px-4 py-3 text-right">Quotes & Value</th>
                     <th className="px-4 py-3 text-center">Telegram</th>
@@ -779,14 +802,14 @@ function AdminDashboardPage() {
                 <tbody className="divide-y divide-slate-800/80">
                   {usersLoading ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-500">
+                      <td colSpan={8} className="py-12 text-center text-slate-500">
                         <RefreshCw className="mx-auto size-5 animate-spin text-primary" />
                         <span className="mt-2 block">Loading detailer database...</span>
                       </td>
                     </tr>
                   ) : users.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-500">
+                      <td colSpan={8} className="py-12 text-center text-slate-500">
                         No detailers match your search criteria.
                       </td>
                     </tr>
@@ -916,6 +939,55 @@ function AdminDashboardPage() {
                                 Reason: {user.suspiciousReason}
                               </div>
                             )}
+                          </div>
+                        </td>
+
+                        {/* Credits Balance & Quick Admin Controls */}
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="flex items-center gap-1 font-bold text-slate-100">
+                              <Coins className="size-3.5 text-amber-400" />
+                              <span className="text-xs">{user.creditsBalance ?? 0}</span>
+                            </div>
+                            {(user.creditsBalance ?? 0) < 10 ? (
+                              <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-bold text-amber-300 border border-amber-500/30">
+                                &lt; 10 LOW
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-400">credits</span>
+                            )}
+                            <div className="flex items-center gap-1 mt-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setActionModal({
+                                    open: true,
+                                    type: "credit_user",
+                                    user,
+                                    creditsAmount: 50,
+                                  })
+                                }
+                                className="rounded bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 px-1.5 py-0.5 text-[10px] font-bold border border-emerald-500/30 transition-colors flex items-center gap-0.5"
+                                title="Credit user account"
+                              >
+                                <Plus className="size-2.5" /> Credit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setActionModal({
+                                    open: true,
+                                    type: "deduct_user",
+                                    user,
+                                    creditsAmount: 10,
+                                  })
+                                }
+                                className="rounded bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 px-1.5 py-0.5 text-[10px] font-bold border border-rose-500/30 transition-colors flex items-center gap-0.5"
+                                title="Deduct credits from user"
+                              >
+                                <Minus className="size-2.5" /> Deduct
+                              </button>
+                            </div>
                           </div>
                         </td>
 
@@ -1094,6 +1166,38 @@ function AdminDashboardPage() {
                                   <Crown className="size-3.5" /> Grant Pro Access (Admin Override)
                                 </DropdownMenuItem>
                               )}
+
+                              <DropdownMenuSeparator className="bg-slate-800" />
+
+                              {/* Credit User */}
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setActionModal({
+                                    open: true,
+                                    type: "credit_user",
+                                    user,
+                                    creditsAmount: 50,
+                                  })
+                                }
+                                className="cursor-pointer gap-2 text-emerald-400 hover:bg-slate-800"
+                              >
+                                <Coins className="size-3.5" /> Credit User (+Credits)
+                              </DropdownMenuItem>
+
+                              {/* Deduct Credits */}
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setActionModal({
+                                    open: true,
+                                    type: "deduct_user",
+                                    user,
+                                    creditsAmount: 10,
+                                  })
+                                }
+                                className="cursor-pointer gap-2 text-rose-400 hover:bg-slate-800"
+                              >
+                                <Minus className="size-3.5" /> Deduct Credits (-Credits)
+                              </DropdownMenuItem>
 
                               <DropdownMenuSeparator className="bg-slate-800" />
 
@@ -2014,6 +2118,10 @@ function AdminDashboardPage() {
                   `Extend Free Trial for ${actionModal.user.businessName}`}
                 {actionModal.type === "delete" &&
                   `Delete Account: ${actionModal.user.businessName}`}
+                {actionModal.type === "credit_user" &&
+                  `Credit User Balance: ${actionModal.user.businessName}`}
+                {actionModal.type === "deduct_user" &&
+                  `Deduct User Credits: ${actionModal.user.businessName}`}
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-400">
                 {actionModal.type === "ban" &&
@@ -2024,6 +2132,10 @@ function AdminDashboardPage() {
                   "Grant additional free trial days to this shop."}
                 {actionModal.type === "delete" &&
                   "Warning: This action is permanent and will delete the profile, user account, and all associated quotes."}
+                {actionModal.type === "credit_user" &&
+                  "Manually add lead credits to this user's account. Their balance updates immediately and a Telegram confirmation is sent to their bot."}
+                {actionModal.type === "deduct_user" &&
+                  "Manually deduct lead credits from this user. Balance updates immediately and a Telegram notice is sent to their bot."}
               </DialogDescription>
             </DialogHeader>
 
@@ -2123,6 +2235,125 @@ function AdminDashboardPage() {
                   </div>
                 </div>
               )}
+
+              {actionModal.type === "credit_user" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 p-2.5">
+                    <span className="text-slate-400">Current Balance:</span>
+                    <span className="font-bold text-slate-100 flex items-center gap-1">
+                      <Coins className="size-3.5 text-amber-400" />
+                      {actionModal.user.creditsBalance ?? 0} credits
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-medium text-slate-300">Quick Credit Presets</label>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[10, 25, 50, 100, 250].map((amt) => (
+                        <button
+                          key={amt}
+                          type="button"
+                          onClick={() => setActionModal((p) => ({ ...p, creditsAmount: amt }))}
+                          className={`rounded py-1.5 text-center text-[11px] font-bold transition-colors ${
+                            actionModal.creditsAmount === amt
+                              ? "bg-emerald-600 text-white"
+                              : "border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800"
+                          }`}
+                        >
+                          +{amt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-medium text-slate-300">Credit Amount</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={10000}
+                      value={actionModal.creditsAmount || ""}
+                      onChange={(e) =>
+                        setActionModal((p) => ({
+                          ...p,
+                          creditsAmount: Math.max(1, parseInt(e.target.value, 10) || 0),
+                        }))
+                      }
+                      placeholder="e.g. 50"
+                      className="border-slate-800 bg-slate-900 text-xs text-white"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-emerald-300">
+                    <span className="font-medium">Projected New Balance:</span>
+                    <span className="font-extrabold text-sm">
+                      {(actionModal.user.creditsBalance ?? 0) + (actionModal.creditsAmount || 0)}{" "}
+                      credits
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {actionModal.type === "deduct_user" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 p-2.5">
+                    <span className="text-slate-400">Current Balance:</span>
+                    <span className="font-bold text-slate-100 flex items-center gap-1">
+                      <Coins className="size-3.5 text-amber-400" />
+                      {actionModal.user.creditsBalance ?? 0} credits
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-medium text-slate-300">Quick Deduct Presets</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[5, 10, 25, 50].map((amt) => (
+                        <button
+                          key={amt}
+                          type="button"
+                          onClick={() => setActionModal((p) => ({ ...p, creditsAmount: amt }))}
+                          className={`rounded py-1.5 text-center text-[11px] font-bold transition-colors ${
+                            actionModal.creditsAmount === amt
+                              ? "bg-rose-600 text-white"
+                              : "border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800"
+                          }`}
+                        >
+                          -{amt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-medium text-slate-300">Deduct Amount</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={actionModal.user.creditsBalance ?? 100}
+                      value={actionModal.creditsAmount || ""}
+                      onChange={(e) =>
+                        setActionModal((p) => ({
+                          ...p,
+                          creditsAmount: Math.max(1, parseInt(e.target.value, 10) || 0),
+                        }))
+                      }
+                      placeholder="e.g. 10"
+                      className="border-slate-800 bg-slate-900 text-xs text-white"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-amber-300">
+                    <span className="font-medium">Projected New Balance:</span>
+                    <span className="font-extrabold text-sm">
+                      {Math.max(
+                        0,
+                        (actionModal.user.creditsBalance ?? 0) - (actionModal.creditsAmount || 0),
+                      )}{" "}
+                      credits
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
@@ -2161,19 +2392,38 @@ function AdminDashboardPage() {
                       userId: actionModal.user!.id,
                       action: "delete_user",
                     });
+                  } else if (actionModal.type === "credit_user") {
+                    userActionMutation.mutate({
+                      userId: actionModal.user!.id,
+                      action: "credit_user",
+                      creditsAmount: actionModal.creditsAmount || 50,
+                    });
+                  } else if (actionModal.type === "deduct_user") {
+                    userActionMutation.mutate({
+                      userId: actionModal.user!.id,
+                      action: "deduct_user",
+                      creditsAmount: actionModal.creditsAmount || 10,
+                    });
                   }
                 }}
                 className={`text-xs font-semibold ${
                   actionModal.type === "delete" ||
                   actionModal.type === "ban" ||
-                  actionModal.type === "flag_suspicious"
+                  actionModal.type === "flag_suspicious" ||
+                  actionModal.type === "deduct_user"
                     ? "bg-rose-600 text-white hover:bg-rose-700"
-                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : actionModal.type === "credit_user"
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90"
                 }`}
               >
                 {userActionMutation.isPending || flagSuspiciousMutation.isPending
                   ? "Executing..."
-                  : "Confirm Action"}
+                  : actionModal.type === "credit_user"
+                    ? `Credit +${actionModal.creditsAmount || 50} Credits`
+                    : actionModal.type === "deduct_user"
+                      ? `Deduct -${actionModal.creditsAmount || 10} Credits`
+                      : "Confirm Action"}
               </Button>
             </DialogFooter>
           </DialogContent>

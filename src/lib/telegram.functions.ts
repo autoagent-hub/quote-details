@@ -466,7 +466,39 @@ export const sendQuoteAlert = createServerFn({ method: "POST" })
           textSent = true;
           // Only deduct credits if NOT in test mode AND NOT in 7-day free trial
           if (!data.isTest && !subAccess.isTrialActive) {
-            await deductCredit(data.detailerId, 1);
+            const deductRes = await deductCredit(data.detailerId, 1);
+            if (deductRes.creditsBalance < 10) {
+              const appUrl = process.env["PUBLIC_APP_URL"] || "https://detailr.online";
+              const upgradeUrl = `${appUrl.replace(/\/$/, "")}/upgrade`;
+              const lowWarningText = `⚠️ <b>Detailr Alert: Low Credit Balance</b>\n\nYour account has only <b>${deductRes.creditsBalance}</b> ${
+                deductRes.creditsBalance === 1 ? "lead credit" : "lead credits"
+              } remaining!\n\nOnce credits reach 0, incoming quote alerts will be paused.\n\n👉 <a href="${upgradeUrl}">Top up your credits now ($10 min / 50 leads)</a>`;
+              await fetchWithRetry(
+                `${API}${token}/sendMessage`,
+                {
+                  method: "POST",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    text: lowWarningText,
+                    parse_mode: "HTML",
+                    disable_web_page_preview: true,
+                    reply_markup: {
+                      inline_keyboard: [
+                        [
+                          {
+                            text: "💳 Top Up Credits Now",
+                            url: upgradeUrl,
+                          },
+                        ],
+                      ],
+                    },
+                  }),
+                  signal: AbortSignal.timeout(8000),
+                },
+                1,
+              ).catch((err) => console.warn("[telegram] Low credit warning send failed:", err));
+            }
           }
         } else {
           console.error(

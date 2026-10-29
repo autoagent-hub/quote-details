@@ -4,6 +4,7 @@ import { sendWeeklySummaryToDetailer } from "@/lib/weekly-summary.functions";
 import { sendAdminTelegramAlert } from "@/lib/admin-telegram.functions";
 import { logAdminAction } from "@/lib/audit-logger.server";
 import { isAdminEmail } from "@/lib/admin-auth";
+import { addCredits, getCreditBalance } from "@/lib/credit.server";
 
 const ADMIN_EMAIL = "support@detailr.online";
 
@@ -20,6 +21,7 @@ export interface AdminDetailerSummary {
   whopMembershipId: string | null;
   telegramChatId: string | null;
   telegramConnected: boolean;
+  creditsBalance: number;
   linkViews: number;
   firstVisitAt: string | null;
   quoteCount: number;
@@ -223,7 +225,7 @@ export const getAdminUsersList = createServerFn({ method: "POST" })
     const { data: profiles } = await admin
       .from("profiles")
       .select(
-        "id, business_name, slug, phone, currency, created_at, trial_status, trial_expiry, whop_membership_id, telegram_chat_id",
+        "id, business_name, slug, phone, currency, created_at, trial_status, trial_expiry, whop_membership_id, telegram_chat_id, credits_balance",
       )
       .order("created_at", { ascending: false });
 
@@ -323,6 +325,7 @@ export const getAdminUsersList = createServerFn({ method: "POST" })
         whopMembershipId: p.whop_membership_id,
         telegramChatId: p.telegram_chat_id,
         telegramConnected: !!p.telegram_chat_id,
+        creditsBalance: typeof p.credits_balance === "number" ? p.credits_balance : 0,
         linkViews,
         firstVisitAt,
         quoteCount: qStats.count,
@@ -381,21 +384,24 @@ export const adminPerformUserAction = createServerFn({ method: "POST" })
         | "reset_trial_pending"
         | "grant_pro"
         | "revoke_pro"
-        | "delete_user";
+        | "delete_user"
+        | "credit_user"
+        | "deduct_user";
       reason?: string;
       customDays?: number;
+      creditsAmount?: number;
     }) => data,
   )
   .handler(async ({ data }) => {
     const admin = getAdminClient();
     if (!admin) return { success: false, error: "Admin client unavailable" };
 
-    const { userId, action, reason, customDays } = data;
+    const { userId, action, reason, customDays, creditsAmount } = data;
 
     try {
       await logAdminAction({
         action: `ADMIN_${action.toUpperCase()}`,
-        details: { userId, reason, customDays },
+        details: { userId, reason, customDays, creditsAmount },
       });
 
       if (action === "flag_suspicious") {
@@ -585,6 +591,84 @@ export const adminPerformUserAction = createServerFn({ method: "POST" })
         await admin.auth.admin.deleteUser(userId);
 
         return { success: true, message: "User account and quotes deleted completely" };
+      }
+
+      if (action === "credit_user") {
+        const amount = Math.max(1, Math.round(creditsAmount || 10));
+        const newBalance = await addCredits(userId, amount);
+
+        // Notify user via Telegram bot if connected
+        try {
+          const { data: profile } = await admin
+            .from("profiles")
+            .select("telegram_chat_id")
+            .eq("id", userId)
+            .maybeSingle();
+
+          const token = process.env["TELEGRAM_BOT_TOKEN"];
+          if (token && profile?.telegram_chat_id) {
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                chat_id: profile.telegram_chat_id,
+                text: `🎉 <b>Detailr Account Update</b>\n\nAdministrator has credited your account with <b>+${amount} lead ${
+                  amount === 1 ? "credit" : "credits"
+                }</b>.\nYour new balance is <b>${newBalance} credits</b>.`,
+                parse_mode: "HTML",
+              }),
+            });
+          }
+        } catch (tgErr) {
+          console.warn("[admin] Telegram credit notification error:", tgErr);
+        }
+
+        return {
+          success: true,
+          message: `Successfully credited +${amount} credits (New balance: ${newBalance})`,
+        };
+      }
+
+      if (action === "deduct_user") {
+        const amount = Math.max(1, Math.round(creditsAmount || 5));
+        const current = await getCreditBalance(userId);
+        const newBalance = Math.max(0, current - amount);
+
+        await admin
+          .from("profiles")
+          .update({ credits_balance: newBalance } as never)
+          .eq("id", userId);
+
+        // Notify user via Telegram bot if connected
+        try {
+          const { data: profile } = await admin
+            .from("profiles")
+            .select("telegram_chat_id")
+            .eq("id", userId)
+            .maybeSingle();
+
+          const token = process.env["TELEGRAM_BOT_TOKEN"];
+          if (token && profile?.telegram_chat_id) {
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                chat_id: profile.telegram_chat_id,
+                text: `⚠️ <b>Detailr Account Update</b>\n\nAdministrator has deducted <b>-${amount} lead ${
+                  amount === 1 ? "credit" : "credits"
+                }</b> from your account.\nYour new balance is <b>${newBalance} credits</b>.`,
+                parse_mode: "HTML",
+              }),
+            });
+          }
+        } catch (tgErr) {
+          console.warn("[admin] Telegram deduct notification error:", tgErr);
+        }
+
+        return {
+          success: true,
+          message: `Successfully deducted -${amount} credits (New balance: ${newBalance})`,
+        };
       }
 
       return { success: false, error: "Unrecognized admin action" };
