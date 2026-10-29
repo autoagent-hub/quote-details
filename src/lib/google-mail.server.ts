@@ -71,11 +71,12 @@ export async function sendEmailUnified(options: SendMailOptions) {
     }
   }
 
-  // Fallback to Resend if available
+  // Resend dispatch
   const resendKey = process.env["RESEND_API_KEY"];
   if (resendKey) {
-    const rawFrom = process.env["EMAIL_FROM"] || "Detailr <onboarding@resend.dev>";
+    const rawFrom = process.env["EMAIL_FROM"] || "Detailr <noreply@detailr.online>";
     const from = rawFrom.includes("<") ? rawFrom : `Detailr <${rawFrom}>`;
+    const replyTo = options.replyTo || process.env["EMAIL_REPLY_TO"] || "support@detailr.online";
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -89,19 +90,25 @@ export async function sendEmailUnified(options: SendMailOptions) {
         subject: options.subject,
         html: options.html,
         text: options.text,
-        reply_to: options.replyTo,
+        reply_to: replyTo,
+        headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
       }),
     });
 
     if (!res.ok) {
       const err = await res.text();
+      console.error(`[email] Resend delivery failed [${res.status}]: ${err}`);
       throw new Error(`Email dispatch failed via Resend: ${err}`);
     }
 
-    return await res.json();
+    const data = (await res.json()) as { id?: string };
+    console.info(
+      `[email] Successfully dispatched email to ${options.to} via Resend (ID: ${data?.id})`,
+    );
+    return data;
   }
 
   throw new Error(
-    "No email service configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD to your environment.",
+    "No email service configured. Please set RESEND_API_KEY (or GMAIL_USER + GMAIL_APP_PASSWORD) in your environment.",
   );
 }
