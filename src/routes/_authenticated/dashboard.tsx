@@ -81,9 +81,8 @@ function DashboardPage() {
   const isSubscribed =
     profile?.trial_status === "SUBSCRIBED" ||
     profile?.trial_status === "ADMIN" ||
-    (typeof profile?.whop_membership_id === "string" &&
-      (profile.whop_membership_id.startsWith("mem_") ||
-        profile.whop_membership_id.startsWith("pay_"))) ||
+    (typeof (profile as { credits_balance?: number })?.credits_balance === "number" &&
+      (profile as { credits_balance?: number }).credits_balance! > 0) ||
     !!trial?.isSubscribed;
 
   if (isLoading) {

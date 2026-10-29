@@ -24,6 +24,7 @@ import {
   Settings,
   Bell,
   Tag,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -79,11 +80,10 @@ export function AppNavigation({
   const isSubscribed =
     profile?.trial_status === "SUBSCRIBED" ||
     profile?.trial_status === "ADMIN" ||
-    (typeof profile?.whop_membership_id === "string" &&
-      (profile.whop_membership_id.startsWith("mem_") ||
-        profile.whop_membership_id.startsWith("pay_"))) ||
+    (typeof (profile as { credits_balance?: number })?.credits_balance === "number" &&
+      (profile as { credits_balance?: number }).credits_balance! > 0) ||
     !!trial?.isSubscribed;
-  const isCancelled = profile?.trial_status === "CANCELLED" || !!trial?.isCancelled;
+  const isCancelled = profile?.trial_status === "CANCELLED";
 
   const isUserAdmin = isAdminEmail(userEmail) || profile?.trial_status === "ADMIN";
 
@@ -183,6 +183,21 @@ export function AppNavigation({
               ) : (
                 <span className="size-1.5 rounded-full bg-amber-500" />
               )}
+            </Link>
+
+            <Link
+              to="/upgrade"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === "upgrade" || activeTab === "credits"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
+            >
+              <Zap className="size-3.5 text-amber-500 fill-amber-500/30" />
+              <span>Credits</span>
+              <span className="rounded-full bg-amber-500/15 px-1.5 py-0.2 text-[9px] font-extrabold text-amber-600 dark:text-amber-400">
+                {trial?.creditsBalance ?? 50}
+              </span>
             </Link>
 
             <Link
@@ -299,40 +314,21 @@ export function AppNavigation({
                 </Button>
               )}
 
-              {isSubscribed ? (
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="h-8 rounded-xl px-2.5 border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 font-bold text-[10px] uppercase tracking-wider transition-all"
-                >
-                  <Link to="/upgrade">
-                    <Sparkles className="size-3.5 mr-1 text-primary" /> Pro Plan
-                  </Link>
-                </Button>
-              ) : isCancelled ? (
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="h-8 rounded-xl px-2.5 border-amber-500/30 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 font-bold text-[10px] uppercase tracking-wider transition-all"
-                >
-                  <Link to="/upgrade">
-                    <CreditCard className="size-3.5 mr-1 text-amber-600" /> Cancelled
-                  </Link>
-                </Button>
-              ) : (
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="h-8 rounded-xl px-3 border-border/60 font-bold text-[10px] uppercase tracking-wider transition-all hover:bg-surface"
-                >
-                  <Link to="/upgrade">
-                    <CreditCard className="size-3.5 mr-1 opacity-60" /> Upgrade
-                  </Link>
-                </Button>
-              )}
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-xl px-2.5 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 font-bold text-[11px] transition-all gap-1.5"
+                title="Credit Dashboard & Purchase History"
+              >
+                <Link to="/upgrade">
+                  <Zap className="size-3.5 text-amber-500 fill-amber-500" />
+                  <span>Credits</span>
+                  <span className="rounded-full bg-amber-500/25 px-1.5 py-0.2 text-[10px] font-extrabold text-amber-700 dark:text-amber-200">
+                    {trial?.creditsBalance ?? 50}
+                  </span>
+                </Link>
+              </Button>
 
               <Button
                 variant="ghost"
@@ -427,6 +423,29 @@ export function AppNavigation({
                   <div className="font-bold">Telegram Alerts</div>
                   <div className="text-[10px] font-normal text-muted-foreground">
                     Phone Notifications
+                  </div>
+                </div>
+              </Link>
+
+              <Link
+                to="/upgrade"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-bold text-left border ${
+                  activeTab === "upgrade" || activeTab === "credits"
+                    ? "border-primary/30 bg-primary/5 text-foreground"
+                    : "border-border/40 bg-muted/20 text-muted-foreground"
+                }`}
+              >
+                <Zap className="size-4 text-amber-500 shrink-0 fill-amber-500/20" />
+                <div>
+                  <div className="font-bold flex items-center gap-1.5">
+                    <span>Credits & Billing</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-600 font-extrabold">
+                      {trial?.creditsBalance ?? 50}
+                    </span>
+                  </div>
+                  <div className="text-[10px] font-normal text-muted-foreground">
+                    Balance & History
                   </div>
                 </div>
               </Link>
@@ -564,24 +583,12 @@ export function AppNavigation({
                 asChild
                 variant="ghost"
                 size="sm"
-                className={`h-9 rounded-xl px-3 font-bold text-xs gap-1.5 ${
-                  isSubscribed ? "text-primary" : ""
-                }`}
+                className="h-9 rounded-xl px-3 font-bold text-xs gap-1.5 text-foreground"
+                onClick={() => setMobileMenuOpen(false)}
               >
                 <Link to="/upgrade">
-                  {isSubscribed ? (
-                    <>
-                      <Sparkles className="size-4 text-primary" /> Pro Plan (Active)
-                    </>
-                  ) : isCancelled ? (
-                    <>
-                      <CreditCard className="size-4 text-amber-600" /> Plan Cancelled
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="size-4 opacity-60" /> Upgrade Plan
-                    </>
-                  )}
+                  <Zap className="size-4 text-amber-500 fill-amber-500/20" />
+                  <span>Credits ({trial?.creditsBalance ?? 50})</span>
                 </Link>
               </Button>
 

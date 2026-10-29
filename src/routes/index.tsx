@@ -55,7 +55,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Instant web quotes, real-time Telegram alerts, zero app installs. $12.99/month with a 7-day free trial on detailr.online.",
+          "Instant web quotes, real-time Telegram alerts, zero app installs. Start with a 7-day free trial on detailr.online.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://detailr.online/" },
@@ -144,8 +144,8 @@ const features = [
   },
   {
     icon: ShieldCheck,
-    title: "Flat $12.99/mo · 0% Commissions",
-    body: "We never take a cut of your detailing jobs. Keep 100% of your earnings with unlimited quotes and leads.",
+    title: "7-Day Free Trial · 0% Commissions",
+    body: "Start with 50 free credits and a 7-day trial. Top up as you grow with zero commission fees on your detailing jobs.",
     badge: "Fair Pricing",
   },
 ];
@@ -842,7 +842,7 @@ function Landing() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Pricing & Free Trial Section */}
       <section id="pricing" className="py-20">
         <div className="mx-auto max-w-5xl px-5">
           <div className="text-center mb-12 space-y-3">
@@ -850,69 +850,69 @@ function Landing() {
               Simple, Transparent Pricing
             </span>
             <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
-              100% Features Included. Choose Your Billing Term.
+              Start with a 7-Day Free Trial. Pay Only When You Win Leads.
             </h2>
-            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-              Start with a 7-day free trial (starts only after your first customer visit). Zero
-              commission fees on your detailing jobs.
+            <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+              Your 7-day trial clock begins <strong className="text-foreground">only</strong> after
+              a customer first visits your quote link. Includes 50 free credits, real-time Telegram
+              alerts, and zero commission fees.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-            {/* Monthly Plan Card */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+            {/* 7-Day Free Trial Card */}
             <div>
-              <Card className="h-full flex flex-col justify-between border-border/60 bg-card/50 p-6 sm:p-8 shadow-lg relative overflow-hidden transition-all duration-200 hover:border-border hover:bg-card/80 rounded-2xl">
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <Card className="h-full flex flex-col justify-between border-border/80 bg-card p-6 shadow-md relative overflow-hidden transition-all duration-200 hover:border-border rounded-2xl">
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between border-b border-border/40 pb-3">
                     <div className="flex items-center gap-2">
-                      <div className="size-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+                      <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
                         <Clock className="size-4" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-foreground">Monthly Membership</h3>
+                        <h3 className="text-sm font-bold text-foreground">7-Day Free Trial</h3>
                         <p className="text-[11px] text-muted-foreground">
-                          Month-to-month flexibility
+                          Zero credit card required
                         </p>
                       </div>
                     </div>
                     <Badge
-                      variant="secondary"
-                      className="text-[10px] font-bold px-2.5 py-0.5 rounded-md"
+                      variant="outline"
+                      className="text-[10px] font-bold px-2 py-0.5 text-emerald-600 border-emerald-500/30"
                     >
-                      1 Month
+                      FREE
                     </Badge>
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex items-baseline gap-1 font-mono">
-                      <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
-                        $12.99
+                      <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+                        $0
                       </span>
                       <span className="text-xs font-sans font-medium text-muted-foreground">
-                        / month
+                        / 7 days
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground pt-1">
-                      Billed monthly · Cancel anytime with 1 click
+                      Includes 50 free credits · Paused until first customer visit
                     </p>
                   </div>
 
-                  <div className="space-y-3 pt-2">
+                  <div className="space-y-2.5 pt-2">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Included in Monthly Plan
+                      Included in Free Trial
                     </p>
-                    <ul className="space-y-3 text-xs">
+                    <ul className="space-y-2.5 text-xs">
                       {[
-                        "Unlimited instant customer quote requests",
-                        "Real-time Telegram alerts sent to your phone",
-                        "Customized vehicle rates & add-on pricing",
-                        "Dedicated branded quote link (detailr.online/your-shop)",
-                        "Full customer CRM with 1-tap call & SMS",
-                        "Customer photo upload capabilities",
-                        "Zero commission fees on your detailing jobs",
+                        "50 free bot credits for customer quotes",
+                        "Trial countdown starts on first customer link visit",
+                        "Instant push notifications to Telegram",
+                        "Custom branded link: detailr.online/your-slug",
+                        "Photo uploads & vehicle rates calculator",
+                        "Test quote submissions are always 100% free",
                       ].map((item) => (
-                        <li key={`landing-monthly-${item}`} className="flex items-start gap-2.5">
-                          <Check className="mt-0.5 size-4 shrink-0 text-primary font-bold" />
+                        <li key={`trial-${item}`} className="flex items-start gap-2">
+                          <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-500 font-bold" />
                           <span className="text-foreground leading-snug">{item}</span>
                         </li>
                       ))}
@@ -920,83 +920,74 @@ function Landing() {
                   </div>
                 </div>
 
-                <div className="pt-8 mt-6 border-t border-border/40">
+                <div className="pt-6 mt-6 border-t border-border/40">
                   <Button
                     asChild
                     variant="outline"
-                    size="xl"
-                    className="w-full h-12 rounded-xl font-bold text-sm shadow-sm transition-all"
+                    className="w-full h-11 rounded-xl font-bold text-xs shadow-xs"
                   >
-                    <Link to="/signup">Start 7-Day Trial — Monthly ($12.99/mo)</Link>
+                    <Link to="/signup">Start Free 7-Day Trial</Link>
                   </Button>
                 </div>
               </Card>
             </div>
 
-            {/* Annual Plan Card (Featured) */}
+            {/* Pro Credit Pack (Featured) */}
             <div>
-              <Card className="h-full flex flex-col justify-between border-primary bg-card p-6 sm:p-8 shadow-2xl relative overflow-hidden transition-all duration-200 ring-2 ring-primary/30 rounded-2xl">
-                {/* Top Accent Bar */}
+              <Card className="h-full flex flex-col justify-between border-primary bg-card p-6 shadow-xl relative overflow-hidden transition-all duration-200 ring-2 ring-primary/30 rounded-2xl">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-primary to-amber-500" />
-
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-border/40 pb-4">
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between border-b border-border/40 pb-3">
                     <div className="flex items-center gap-2">
-                      <div className="size-8 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center">
+                      <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
                         <Sparkles className="size-4" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-foreground">Annual Membership</h3>
-                        <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
-                          Best Value · 12 Months Access
+                        <h3 className="text-sm font-bold text-foreground">
+                          Pro Pack (250 Credits)
+                        </h3>
+                        <p className="text-[11px] text-primary font-medium">
+                          Most Popular · Never Expires
                         </p>
                       </div>
                     </div>
-                    <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2.5 py-0.5 rounded-md">
-                      Annual Pass
+                    <Badge className="bg-primary text-primary-foreground text-[10px] font-extrabold uppercase px-2 py-0.5">
+                      Best Value
                     </Badge>
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex items-baseline gap-2 font-mono">
-                      <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
-                        $145
+                    <div className="flex items-baseline gap-1 font-mono">
+                      <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+                        $45
                       </span>
                       <span className="text-xs font-sans font-medium text-muted-foreground">
-                        / year
+                        / 250 leads
                       </span>
-                      <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary dark:text-blue-400 font-sans text-[11px] font-bold ml-auto">
-                        ~$12/mo equivalent
+                      <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary font-sans text-[10px] font-bold ml-auto">
+                        ~$0.18/lead
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground pt-1">
-                      Billed annually · Full 12 months uninterrupted access
+                      Pay once · Deducts only on valid Telegram leads
                     </p>
                   </div>
 
-                  <div className="space-y-3 pt-2">
-                    <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-center gap-2.5">
-                      <ShieldCheck className="size-4 text-amber-500 shrink-0" />
-                      <span className="text-xs font-bold text-foreground">
-                        12-Month Price Guarantee & Locked-in Access
-                      </span>
-                    </div>
-
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground pt-1">
-                      Included in Annual Plan
+                  <div className="space-y-2.5 pt-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Included in Pro Pack
                     </p>
-                    <ul className="space-y-3 text-xs">
+                    <ul className="space-y-2.5 text-xs">
                       {[
-                        "Unlimited instant customer quote requests",
-                        "Real-time Telegram alerts sent to your phone",
-                        "Customized vehicle rates & add-on pricing",
-                        "Dedicated branded quote link (detailr.online/your-shop)",
+                        "250 real customer quote alerts sent to phone",
+                        "Multi-currency reload (USD, NGN, GBP, EUR, CAD)",
+                        "Credits never expire · Roll over indefinitely",
                         "Full customer CRM with 1-tap call & SMS",
-                        "Customer photo upload capabilities",
-                        "Zero commission fees on your detailing jobs",
+                        "Instant online price calculator widget",
+                        "Zero commission fees on completed detailing jobs",
                       ].map((item) => (
-                        <li key={`landing-yearly-${item}`} className="flex items-start gap-2.5">
-                          <Check className="mt-0.5 size-4 shrink-0 text-primary font-bold" />
+                        <li key={`pro-${item}`} className="flex items-start gap-2">
+                          <Check className="mt-0.5 size-3.5 shrink-0 text-primary font-bold" />
                           <span className="text-foreground leading-snug">{item}</span>
                         </li>
                       ))}
@@ -1004,26 +995,98 @@ function Landing() {
                   </div>
                 </div>
 
-                <div className="pt-8 mt-6 border-t border-border/40">
+                <div className="pt-6 mt-6 border-t border-border/40">
                   <Button
                     asChild
                     variant="hero"
-                    size="xl"
-                    className="w-full h-12 rounded-xl font-bold text-sm shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all"
+                    className="w-full h-11 rounded-xl font-bold text-xs shadow-md shadow-primary/20"
                   >
-                    <Link to="/signup">Start 7-Day Trial — Yearly ($145/yr)</Link>
+                    <Link to="/signup">Get Pro Pack with Free Trial</Link>
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
+            {/* Starter Pack Card */}
+            <div>
+              <Card className="h-full flex flex-col justify-between border-border/80 bg-card p-6 shadow-md relative overflow-hidden transition-all duration-200 hover:border-border rounded-2xl">
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between border-b border-border/40 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="size-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+                        <Zap className="size-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-foreground">
+                          Starter Pack (50 Credits)
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground">Minimum top-up</p>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5">
+                      Min $10
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-baseline gap-1 font-mono">
+                      <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+                        $10
+                      </span>
+                      <span className="text-xs font-sans font-medium text-muted-foreground">
+                        / 50 leads
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground pt-1">
+                      $0.20 per quote lead · Reload anytime via Flutterwave
+                    </p>
+                  </div>
+
+                  <div className="space-y-2.5 pt-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Included in Starter Pack
+                    </p>
+                    <ul className="space-y-2.5 text-xs">
+                      {[
+                        "50 customer quotes sent directly to Telegram",
+                        "Deducted only upon successful message delivery",
+                        "Test customer quotes are always free",
+                        "Never expires · Top up custom amounts anytime",
+                        "Full access to quote calculator & Telegram bot",
+                        "Zero monthly contract or forced subscription",
+                      ].map((item) => (
+                        <li key={`starter-${item}`} className="flex items-start gap-2">
+                          <Check className="mt-0.5 size-3.5 shrink-0 text-primary font-bold" />
+                          <span className="text-foreground leading-snug">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-border/40">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full h-11 rounded-xl font-bold text-xs shadow-xs"
+                  >
+                    <Link to="/signup">Start with Starter Pack</Link>
                   </Button>
                 </div>
               </Card>
             </div>
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center space-y-2">
             <p className="text-xs text-muted-foreground">
               Already have an account?{" "}
               <Link to="/login" className="font-semibold text-primary hover:underline">
-                Sign in here
+                Sign in to your dashboard
               </Link>
+            </p>
+            <p className="text-[11px] text-muted-foreground/80">
+              Payments processed securely via Flutterwave. Supports Cards, Mobile Money, USSD & Bank
+              Transfers in all major currencies.
             </p>
           </div>
         </div>

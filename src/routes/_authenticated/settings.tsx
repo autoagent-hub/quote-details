@@ -15,6 +15,7 @@ import {
   Sparkles,
   ArrowRight,
   ReceiptText,
+  Coins,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -101,6 +102,14 @@ function SettingsPage() {
       to: "/quotes",
       icon: ReceiptText,
       badge: "Quotes",
+      color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+    },
+    {
+      title: "Credits & Top-Up",
+      description: "Buy quote credits ($10 min for 50 leads), monitor balance, and view purchase history.",
+      to: "/upgrade",
+      icon: Coins,
+      badge: `${typeof profile?.credits_balance === "number" ? profile.credits_balance : 50} Credits`,
       color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
     },
     {

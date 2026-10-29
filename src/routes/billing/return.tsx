@@ -25,7 +25,7 @@ function BillingReturnPage() {
           <Loader2 className="size-8 animate-spin text-primary mx-auto" />
           <h1 className="text-lg font-bold text-foreground">Redirecting to Dashboard...</h1>
           <p className="text-xs text-muted-foreground">
-            Subscription & billing sync is active. Taking you to your dashboard.
+            Credit balance & billing sync is active. Taking you to your dashboard.
           </p>
         </div>
       </div>

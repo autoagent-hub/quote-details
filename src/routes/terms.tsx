@@ -71,11 +71,13 @@ function TermsPage() {
             </p>
 
             <h2 className="text-lg font-bold text-foreground pt-4">
-              3. Pricing, Billings & Payments
+              3. Pricing, Billings & Credits
             </h2>
             <p>
-              Detailr operates as a flat subscription service billed monthly ($12.99) or annually
-              ($145). All transactions are processed securely via our payment gateways.{" "}
+              Detailr operates on a transparent pay-as-you-go credit model with an initial 7-day free
+              trial. Credits can be purchased starting at $10 for 50 credits ($0.20 per customer lead).
+              Purchased credits never expire and there are zero recurring monthly subscription charges.
+              All transactions are processed securely via our payment gateways.{" "}
               <strong className="text-foreground">We charge 0% commission fees</strong> on any
               bookings, quotes, or jobs you secure through our system. You keep 100% of your
               earnings.
@@ -93,8 +95,8 @@ function TermsPage() {
             <p>
               All software, source code, designs, branding, and algorithms of Detailr remain the
               exclusive property of founder <strong className="text-foreground">Nerochaze</strong>.
-              Your subscription grants you a limited, non-transferable license to utilize the
-              estimate tools for your active detailing business.
+              Your account grants you a limited, non-transferable license to utilize the estimate
+              tools for your active detailing business.
             </p>
 
             <h2 className="text-lg font-bold text-foreground pt-4">

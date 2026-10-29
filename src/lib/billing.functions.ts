@@ -10,8 +10,8 @@ export const getUpgradeCheckout = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     return {
-      monthlyHref: "#",
-      yearlyHref: "#",
+      monthlyHref: "/upgrade",
+      yearlyHref: "/upgrade",
     };
   });
 
@@ -39,6 +39,7 @@ export interface TrialStateResponse {
   planName: string;
   linkViews: number;
   firstVisitAt: string | null;
+  creditsBalance: number;
 }
 
 export const getTrialState = createServerFn({ method: "GET" })
@@ -51,9 +52,14 @@ export const getTrialState = createServerFn({ method: "GET" })
 
     const { data: profile } = await client
       .from("profiles")
-      .select("trial_status, trial_expiry, created_at")
+      .select("trial_status, trial_expiry, created_at, credits_balance")
       .eq("id", context.userId)
       .maybeSingle();
+
+    const creditsBalance =
+      typeof (profile as { credits_balance?: number })?.credits_balance === "number"
+        ? (profile as { credits_balance?: number }).credits_balance!
+        : 50;
 
     let linkViews = 0;
     let firstVisitAt: string | null = null;
@@ -71,43 +77,57 @@ export const getTrialState = createServerFn({ method: "GET" })
       }
     }
 
-    const planName = "Detailr Pro Unlimited";
+    const planName = "Detailr Pay-As-You-Go Credits & 7-Day Free Trial";
+
+    const formattedNextBilling = access.currentPeriodEnd
+      ? new Date(access.currentPeriodEnd).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : access.isTrialActive
+        ? `${access.daysLeft} days remaining`
+        : "Pay-As-You-Go Credits";
 
     return {
       status: access.status,
-      rawStatus: profile?.trial_status || "ACTIVE",
+      rawStatus: profile?.trial_status || "TRIAL_PENDING",
       hasActiveAccess: access.hasAccess,
-      isSubscribed: true,
+      isSubscribed: access.isSubscribed,
       isCancelled: false,
       cancelAtPeriodEnd: false,
       inGracePeriod: false,
-      expired: false,
+      expired: access.isExpired,
       isSuspended: access.isSuspended,
-      isPendingFirstVisit: false,
-      daysLeft: 365,
-      renewalDaysLeft: 365,
-      expiresAt: null,
-      nextBillingDate: null,
-      nextBillingDateFormatted: "Lifetime / Unlimited Access",
+      isPendingFirstVisit: access.isPendingFirstVisit,
+      daysLeft: access.daysLeft,
+      renewalDaysLeft: access.daysLeft,
+      expiresAt: access.currentPeriodEnd,
+      nextBillingDate: access.currentPeriodEnd,
+      nextBillingDateFormatted: formattedNextBilling,
       subscriptionStartedAt: profile?.created_at || null,
       whopMembershipId: null,
       whopCustomerEmail: userEmail,
-      whopPortalUrl: "#",
-      planType: "yearly",
+      whopPortalUrl: "/upgrade",
+      planType: "monthly",
       planName,
       linkViews,
       firstVisitAt,
+      creditsBalance,
     };
   });
 
 export const cancelUserSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
-    return { success: true, message: "Subscription active." };
+    return {
+      success: true,
+      message: "Detailr operates on pay-as-you-go credits. There are no recurring auto-renewals to cancel.",
+    };
   });
 
 export const reconcileCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
-    return { isSubscribed: true, message: "Subscription is active." };
+    return { isSubscribed: true, message: "Pay-as-you-go credit billing active." };
   });

@@ -88,9 +88,9 @@ function PrivacyPage() {
             <h2 className="text-lg font-bold text-foreground pt-4">4. GDPR & CCPA Compliance</h2>
             <p>
               Under global data regulations, you retain full rights to request access to, edit, or
-              delete your entire database records. If you decide to deactivate your subscription,
-              you can contact Nerochaze at any time to request a complete wipe of all your
-              historical leads and shop configurations.
+              delete your entire database records. If you decide to close your account, you can
+              contact Nerochaze at any time to request a complete wipe of all your historical leads
+              and shop configurations.
             </p>
           </div>
         </div>

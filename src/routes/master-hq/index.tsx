@@ -863,14 +863,8 @@ function AdminDashboardPage() {
                             {user.calculatedState === "SUBSCRIBED" ? (
                               <div>
                                 <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
-                                  <CheckCircle2 className="mr-1 size-3 text-emerald-400" /> Pro
-                                  Subscribed
+                                  <CheckCircle2 className="mr-1 size-3 text-emerald-400" /> Pro Active
                                 </Badge>
-                                {user.whopMembershipId && (
-                                  <div className="text-[10px] text-slate-500 font-mono truncate max-w-[120px]">
-                                    {user.whopMembershipId}
-                                  </div>
-                                )}
                               </div>
                             ) : user.calculatedState === "TRIAL_PENDING" ? (
                               <div>
@@ -1084,7 +1078,7 @@ function AdminDashboardPage() {
                                   }
                                   className="cursor-pointer gap-2 text-amber-400 hover:bg-slate-800"
                                 >
-                                  <AlertTriangle className="size-3.5" /> Revoke Pro Subscription
+                                  <AlertTriangle className="size-3.5" /> Revoke Pro Access
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem
@@ -1096,7 +1090,7 @@ function AdminDashboardPage() {
                                   }
                                   className="cursor-pointer gap-2 text-emerald-400 hover:bg-slate-800"
                                 >
-                                  <Crown className="size-3.5" /> Grant Pro Plan (Admin Override)
+                                  <Crown className="size-3.5" /> Grant Pro Access (Admin Override)
                                 </DropdownMenuItem>
                               )}
 
@@ -1825,13 +1819,12 @@ function AdminDashboardPage() {
                   </Badge>
                 ) : (
                   <Badge className="bg-slate-800 text-slate-400 border-slate-700 text-[10px] font-mono">
-                    DEFAULT WHOP LINK
+                    DEFAULT CHECKOUT LINK
                   </Badge>
                 )}
               </div>
               <p className="text-xs text-slate-400">
-                Set the checkout URL used when detailers click &quot;Upgrade to Pro&quot; or
-                &quot;Activate Subscription&quot; across the app. Detailer metadata (ID & email)
+                Set the checkout destination URL used across the app. Detailer metadata (ID & email)
                 will be appended automatically.
               </p>
 
@@ -1848,7 +1841,7 @@ function AdminDashboardPage() {
                   <Input
                     value={checkoutUrlInput}
                     onChange={(e) => setCheckoutUrlInput(e.target.value)}
-                    placeholder="https://whop.com/checkout/plan_..."
+                    placeholder="/upgrade"
                     className="bg-slate-950 border-slate-800 text-xs font-mono text-slate-100 placeholder:text-slate-600 focus:border-primary h-10"
                   />
                 </div>

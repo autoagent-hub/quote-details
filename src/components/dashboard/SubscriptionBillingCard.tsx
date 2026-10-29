@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import {
-  ShieldCheck,
+  Coins,
   CheckCircle2,
   Calendar,
   CreditCard,
@@ -11,28 +11,18 @@ import {
   Sparkles,
   Clock,
   AlertCircle,
-  Copy,
-  Check,
   ChevronRight,
   Zap,
-  ExternalLink,
-  AlertTriangle,
+  ShieldCheck,
+  TrendingUp,
+  History,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { getTrialState, cancelUserSubscription } from "@/lib/billing.functions";
-import { ChangePlanDialog } from "./ChangePlanDialog";
+import { getTrialState } from "@/lib/billing.functions";
 
 interface SubscriptionBillingCardProps {
   className?: string;
@@ -45,13 +35,8 @@ export function SubscriptionBillingCard({
 }: SubscriptionBillingCardProps) {
   const queryClient = useQueryClient();
   const fetchTrialState = useServerFn(getTrialState);
-  const doCancelSubscription = useServerFn(cancelUserSubscription);
 
-  const [copiedId, setCopiedId] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [changePlanOpen, setChangePlanOpen] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
 
   const {
     data: trial,
@@ -72,36 +57,11 @@ export function SubscriptionBillingCard({
         queryClient.invalidateQueries({ queryKey: ["profile"] }),
         queryClient.invalidateQueries({ queryKey: ["upgrade-account"] }),
       ]);
-      toast.success("Billing status re-synchronized with server.");
+      toast.success("Credit balance and billing status re-synchronized.");
     } catch {
       toast.error("Failed to re-sync billing status.");
     } finally {
       setIsRefreshing(false);
-    }
-  };
-
-  const handleCopyMembershipId = (id: string) => {
-    void navigator.clipboard.writeText(id);
-    setCopiedId(true);
-    toast.success("Membership ID copied to clipboard");
-    setTimeout(() => setCopiedId(false), 2000);
-  };
-
-  const handleConfirmCancel = async () => {
-    setIsCancelling(true);
-    try {
-      const res = await doCancelSubscription();
-      toast.success(res.message);
-      setCancelModalOpen(false);
-      await Promise.all([
-        refetch(),
-        queryClient.invalidateQueries({ queryKey: ["profile"] }),
-        queryClient.invalidateQueries({ queryKey: ["upgrade-account"] }),
-      ]);
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to cancel subscription.");
-    } finally {
-      setIsCancelling(false);
     }
   };
 
@@ -123,28 +83,15 @@ export function SubscriptionBillingCard({
     );
   }
 
-  const isSubscribed = !!trial?.isSubscribed;
-  const isCancelled = !!trial?.isCancelled;
-  const cancelAtPeriodEnd = !!trial?.cancelAtPeriodEnd;
-  const inGracePeriod = !!trial?.inGracePeriod;
+  const creditsBalance = trial?.creditsBalance ?? 50;
   const isPendingFirstVisit = !!trial?.isPendingFirstVisit;
+  const isTrialActive = trial?.status === "TRIALING";
+  const daysRemaining = trial?.daysLeft ?? 7;
+  const isOutOfCredits = creditsBalance === 0;
+  const isLowCredits = creditsBalance > 0 && creditsBalance <= 10;
 
-  const planName = trial?.planName || "Detailr Pro Monthly ($12.99/mo)";
-
-  const nextBillingFormatted =
-    trial?.nextBillingDateFormatted ||
-    (trial?.expiresAt
-      ? new Date(trial.expiresAt).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
-      : null);
-
-  const daysRemaining = trial?.renewalDaysLeft ?? trial?.daysLeft;
-
-  const startDateFormatted = trial?.subscriptionStartedAt
-    ? new Date(trial.subscriptionStartedAt).toLocaleDateString("en-US", {
+  const trialExpiryFormatted = trial?.expiresAt
+    ? new Date(trial.expiresAt).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -152,324 +99,217 @@ export function SubscriptionBillingCard({
     : null;
 
   return (
-    <>
-      <Card
-        className={`rounded-2xl border-2 transition-all shadow-xl bg-card overflow-hidden ${
-          cancelAtPeriodEnd || inGracePeriod
-            ? "border-amber-500/40 dark:border-amber-500/30 shadow-amber-500/5"
-            : isSubscribed
-              ? "border-emerald-500/40 dark:border-emerald-500/30 shadow-emerald-500/5"
-              : isCancelled
-                ? "border-amber-500/40 dark:border-amber-500/30 shadow-amber-500/5"
-                : "border-primary/40 shadow-primary/5"
-        } ${className}`}
-      >
-        {/* Top Accent Header Bar */}
-        <div
-          className={`h-1.5 w-full ${
-            cancelAtPeriodEnd || inGracePeriod
-              ? "bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600"
-              : isSubscribed
-                ? "bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600"
-                : isCancelled
-                  ? "bg-gradient-to-r from-amber-500 to-rose-500"
-                  : "bg-gradient-to-r from-primary via-indigo-500 to-sky-400"
-          }`}
-        />
+    <Card
+      className={`rounded-2xl border-2 transition-all shadow-xl bg-card overflow-hidden ${
+        isOutOfCredits
+          ? "border-rose-500/40 shadow-rose-500/5"
+          : isLowCredits
+            ? "border-amber-500/40 shadow-amber-500/5"
+            : "border-emerald-500/30 shadow-emerald-500/5"
+      } ${className}`}
+    >
+      {/* Top Accent Header Bar */}
+      <div
+        className={`h-1.5 w-full ${
+          isOutOfCredits
+            ? "bg-gradient-to-r from-rose-500 via-orange-500 to-rose-600"
+            : isLowCredits
+              ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600"
+              : "bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600"
+        }`}
+      />
 
-        <CardHeader className="p-5 sm:p-6 pb-4 border-b border-border/60">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <CardTitle className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
-                <CreditCard className="size-5 text-primary" />
-                Subscription & Billing
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                Whop Billing & Membership
-              </CardDescription>
+      <CardHeader className="p-5 sm:p-6 pb-4 border-b border-border/60">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Coins className="size-5 text-emerald-500" />
+              Credits & Billing Overview
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              Pay-as-you-go lead alerts · Zero recurring subscriptions · 7-day free trial guarantee
+            </CardDescription>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Status Badges */}
+            {isOutOfCredits ? (
+              <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
+                <AlertCircle className="size-3.5" />
+                Credits Depleted
+              </Badge>
+            ) : isLowCredits ? (
+              <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
+                <AlertCircle className="size-3.5" />
+                Low Credits ({creditsBalance} left)
+              </Badge>
+            ) : isPendingFirstVisit ? (
+              <Badge className="bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
+                <Clock className="size-3.5" />
+                Trial Paused · Pending 1st Visit
+              </Badge>
+            ) : isTrialActive ? (
+              <Badge className="bg-primary/15 text-primary border-primary/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
+                <Sparkles className="size-3.5" />
+                Free Trial ({daysRemaining}d left)
+              </Badge>
+            ) : (
+              <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                <CheckCircle2 className="size-3.5" />
+                Credits Active
+              </Badge>
+            )}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 rounded-full text-muted-foreground hover:text-foreground"
+              onClick={handleRefresh}
+              disabled={isRefreshing || isRefetching}
+              title="Re-sync credits balance with database"
+            >
+              <RefreshCw
+                className={`size-3.5 ${isRefreshing || isRefetching ? "animate-spin text-primary" : ""}`}
+              />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-5 sm:p-6 space-y-5">
+        {/* Credit Balance Highlight Hero */}
+        <div
+          className={`rounded-2xl p-4 sm:p-6 border flex flex-col sm:flex-row sm:items-center justify-between gap-5 ${
+            isOutOfCredits
+              ? "bg-rose-500/5 border-rose-500/25"
+              : isLowCredits
+                ? "bg-amber-500/5 border-amber-500/25"
+                : "bg-emerald-500/5 border-emerald-500/25"
+          }`}
+        >
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Zap className="size-3.5 text-emerald-500" /> Current Available Balance
+            </span>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                {creditsBalance}
+              </h3>
+              <span className="text-sm font-bold text-muted-foreground">Credits Available</span>
+            </div>
+            <p className="text-xs text-muted-foreground max-w-xl">
+              1 credit is deducted per successful customer quote sent to your Telegram phone alert.
+              Visits to your quote link, admin tests, and pricing calculations do not consume credits.
+            </p>
+          </div>
+
+          {showActions && (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+              <Button
+                asChild
+                variant="hero"
+                size="default"
+                className="font-bold text-xs shadow-md rounded-xl px-5 gap-1.5"
+              >
+                <Link to="/upgrade">
+                  <Coins className="size-4" />
+                  <span>Top Up Credits ($10 min)</span>
+                  <ChevronRight className="size-3.5 ml-0.5" />
+                </Link>
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* 3 Metric Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          {/* Billing Model */}
+          <div className="p-4 rounded-xl bg-surface border border-border/60 space-y-1.5">
+            <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
+              <CreditCard className="size-3.5 text-emerald-500" />
+              Billing Structure:
+            </span>
+            <p className="font-bold text-foreground text-sm">Pay-As-You-Go</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              No monthly or annual recurring charges. Top up on demand. Purchased credits never expire.
+            </p>
+          </div>
+
+          {/* 7-Day Trial Status */}
+          <div className="p-4 rounded-xl bg-surface border border-border/60 space-y-1.5">
+            <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
+              <Calendar className="size-3.5 text-primary" />
+              7-Day Trial Status:
+            </span>
+            <p className="font-bold text-foreground text-sm">
+              {isPendingFirstVisit
+                ? "Paused (0/7 Used)"
+                : isTrialActive
+                  ? `${daysRemaining} Days Left`
+                  : trialExpiryFormatted
+                    ? `Ended on ${trialExpiryFormatted}`
+                    : "Included on Signup"}
+            </p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {isPendingFirstVisit
+                ? "Activates strictly when your first real customer visits your shop link."
+                : isTrialActive
+                  ? "Full quote alerts and dashboard access active during your trial."
+                  : "Covered by active credit balance."}
+            </p>
+          </div>
+
+          {/* Pricing & Deductions */}
+          <div className="p-4 rounded-xl bg-surface border border-border/60 space-y-1.5">
+            <span className="text-muted-foreground font-semibold flex items-center gap-1.5">
+              <TrendingUp className="size-3.5 text-sky-500" />
+              Lead Rate:
+            </span>
+            <p className="font-bold text-foreground text-sm">$10 for 50 Credits</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Equivalent to $0.20 per verified customer quote alert. 0% booking commission taken.
+            </p>
+          </div>
+        </div>
+
+        {/* Bottom Actions & Policy Guarantee */}
+        {showActions && (
+          <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-border/60">
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <ShieldCheck className="size-4 text-emerald-500 shrink-0" />
+              <span>Zero recurring pain: no unexpected auto-renewals or monthly contracts.</span>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Main Status Badge */}
-              {cancelAtPeriodEnd ? (
-                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
-                  <AlertCircle className="size-3.5" />
-                  Auto-Renew Cancelled
-                </Badge>
-              ) : inGracePeriod ? (
-                <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
-                  <AlertTriangle className="size-3.5" />
-                  Grace Period Active
-                </Badge>
-              ) : isSubscribed ? (
-                <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full shadow-sm">
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <CheckCircle2 className="size-3.5" />
-                  Active Pro Member
-                </Badge>
-              ) : isCancelled ? (
-                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full">
-                  <AlertCircle className="size-3.5" />
-                  Cancelled
-                </Badge>
-              ) : isPendingFirstVisit ? (
-                <Badge className="bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full">
-                  <Clock className="size-3.5" />
-                  Trial Pending
-                </Badge>
-              ) : (
-                <Badge className="bg-primary/15 text-primary border-primary/30 px-3 py-1 font-extrabold uppercase text-[10px] tracking-wider flex items-center gap-1.5 rounded-full">
-                  <Sparkles className="size-3.5" />
-                  Free Trial
-                </Badge>
-              )}
+            <div className="flex items-center gap-2">
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs font-bold gap-1.5 rounded-xl border-border/70 hover:bg-muted/50"
+              >
+                <Link to="/upgrade">
+                  <History className="size-3.5 text-muted-foreground" />
+                  <span>Purchase History</span>
+                </Link>
+              </Button>
 
               <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-full text-muted-foreground hover:text-foreground"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs font-bold rounded-xl"
                 onClick={handleRefresh}
                 disabled={isRefreshing || isRefetching}
-                title="Re-sync subscription state with database"
               >
                 <RefreshCw
-                  className={`size-3.5 ${isRefreshing || isRefetching ? "animate-spin text-primary" : ""}`}
+                  className={`size-3 mr-1.5 ${isRefreshing || isRefetching ? "animate-spin" : ""}`}
                 />
+                Sync Balance
               </Button>
             </div>
           </div>
-        </CardHeader>
-
-        <CardContent className="p-5 sm:p-6 space-y-5">
-          {/* Plan Highlight Banner */}
-          <div
-            className={`rounded-2xl p-4 sm:p-5 border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-              cancelAtPeriodEnd || inGracePeriod
-                ? "bg-amber-500/5 border-amber-500/20"
-                : isSubscribed
-                  ? "bg-emerald-500/5 border-emerald-500/20"
-                  : isCancelled
-                    ? "bg-amber-500/5 border-amber-500/20"
-                    : "bg-primary/5 border-primary/20"
-            }`}
-          >
-            <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Zap className="size-3.5 text-primary" /> Active Plan
-              </span>
-              <h4 className="text-base sm:text-lg font-extrabold text-foreground">{planName}</h4>
-              <p className="text-xs text-muted-foreground">
-                {cancelAtPeriodEnd
-                  ? "Auto-renew has been cancelled. Your quote requests and link remain 100% active until your prepaid period ends."
-                  : inGracePeriod
-                    ? "Payment retry in progress. Your live shop link remains active during this 72-hour grace period."
-                    : isSubscribed
-                      ? "Unlimited quote requests, real-time Telegram alerts & vehicle pricing engine."
-                      : isCancelled
-                        ? "Your subscription has expired. Upgrade to keep receiving customer quote requests."
-                        : "7-day free trial active. Upgrade anytime to lock in uninterrupted lead alerts."}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {isSubscribed && !cancelAtPeriodEnd && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setChangePlanOpen(true)}
-                  className="font-bold text-xs shrink-0 rounded-xl border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 gap-1.5 shadow-sm"
-                >
-                  <Sparkles className="size-3.5 text-amber-500" />
-                  <span>
-                    {trial?.planType === "yearly"
-                      ? "Switch to Monthly"
-                      : "Switch to Annual (Save ~$11)"}
-                  </span>
-                </Button>
-              )}
-
-              {(!isSubscribed || cancelAtPeriodEnd) && showActions && (
-                <Button
-                  asChild
-                  variant="hero"
-                  size="sm"
-                  className="font-bold text-xs shrink-0 shadow-md"
-                >
-                  <Link to="/upgrade">
-                    <span>{cancelAtPeriodEnd ? "Re-enable Auto-Renew" : "Upgrade to Pro"}</span>
-                    <ChevronRight className="size-3.5 ml-1" />
-                  </Link>
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Details Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
-            {/* Next Billing / Renewal Date */}
-            <div className="p-3.5 rounded-xl bg-surface border border-border/60 space-y-1">
-              <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                <Calendar className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                {cancelAtPeriodEnd
-                  ? "Access Active Until:"
-                  : isSubscribed
-                    ? "Next Renewal Date:"
-                    : "Trial Expiry Date:"}
-              </span>
-              <p className="font-bold text-foreground text-sm flex items-center justify-between gap-1">
-                <span>{nextBillingFormatted || "Active"}</span>
-                {daysRemaining !== undefined && daysRemaining > 0 && (
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    {daysRemaining} {daysRemaining === 1 ? "day" : "days"} left
-                  </span>
-                )}
-              </p>
-            </div>
-
-            {/* Subscription Started Date */}
-            {startDateFormatted && (
-              <div className="p-3.5 rounded-xl bg-surface border border-border/60 space-y-1">
-                <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                  <Clock className="size-3.5 text-primary" />
-                  Subscription Started:
-                </span>
-                <p className="font-bold text-foreground text-sm">{startDateFormatted}</p>
-              </div>
-            )}
-
-            {/* Linked Email */}
-            {trial?.whopCustomerEmail && (
-              <div className="p-3.5 rounded-xl bg-surface border border-border/60 space-y-1">
-                <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                  <ShieldCheck className="size-3.5 text-sky-500" />
-                  Whop Checkout Email:
-                </span>
-                <p className="font-mono font-bold text-foreground truncate text-xs">
-                  {trial.whopCustomerEmail}
-                </p>
-              </div>
-            )}
-
-            {/* Membership ID Reference */}
-            {trial?.whopMembershipId && (
-              <div className="p-3.5 rounded-xl bg-surface border border-border/60 space-y-1 sm:col-span-2 lg:col-span-1">
-                <span className="text-muted-foreground font-medium flex items-center justify-between gap-1">
-                  <span>Membership Ref ID:</span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyMembershipId(trial.whopMembershipId!)}
-                    className="text-[10px] text-primary hover:underline flex items-center gap-1"
-                  >
-                    {copiedId ? (
-                      <Check className="size-3 text-emerald-500" />
-                    ) : (
-                      <Copy className="size-3" />
-                    )}
-                    {copiedId ? "Copied" : "Copy"}
-                  </button>
-                </span>
-                <p className="font-mono font-bold text-foreground truncate text-xs">
-                  {trial.whopMembershipId}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Action Links */}
-          {showActions && (
-            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-border/60">
-              <a
-                href={trial?.whopPortalUrl || "https://whop.com/hub/memberships/"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-semibold text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors"
-              >
-                <span>Manage Invoices & Cards in Whop Hub</span>
-                <ExternalLink className="size-3 opacity-70" />
-              </a>
-
-              <div className="flex items-center gap-2">
-                {isSubscribed && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs font-bold gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                    onClick={() => setChangePlanOpen(true)}
-                  >
-                    <Zap className="size-3 text-primary" />
-                    Change Plan
-                  </Button>
-                )}
-
-                {isSubscribed && !cancelAtPeriodEnd && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-500/10 border-rose-500/30"
-                    onClick={() => setCancelModalOpen(true)}
-                  >
-                    Cancel Auto-Renew
-                  </Button>
-                )}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs font-bold"
-                  onClick={handleRefresh}
-                  disabled={isRefreshing || isRefetching}
-                >
-                  <RefreshCw
-                    className={`size-3 mr-1.5 ${isRefreshing || isRefetching ? "animate-spin" : ""}`}
-                  />
-                  Sync Billing
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Change Plan & Dynamic Proration Dialog */}
-      <ChangePlanDialog open={changePlanOpen} onOpenChange={setChangePlanOpen} trial={trial} />
-
-      {/* Cancellation Confirmation Dialog */}
-      <Dialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-rose-600">
-              <AlertCircle className="size-5" />
-              Cancel Detailr Pro Auto-Renew?
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-              Are you sure you want to cancel auto-renewal? <strong>Don&apos;t worry:</strong> your
-              quote requests, Telegram alerts, and public link will remain 100% active until the end
-              of your prepaid billing cycle ({nextBillingFormatted || "current period"}).
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCancelModalOpen(false)}
-              disabled={isCancelling}
-              className="w-full sm:w-auto font-bold text-xs"
-            >
-              Keep Auto-Renew
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleConfirmCancel}
-              disabled={isCancelling}
-              className="w-full sm:w-auto font-bold text-xs"
-            >
-              {isCancelling ? "Cancelling..." : "Confirm Cancel Auto-Renew"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

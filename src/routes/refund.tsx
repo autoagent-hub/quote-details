@@ -63,21 +63,20 @@ function RefundPage() {
               complete guarantee to give you pressure-free setup time.
             </p>
 
-            <h2 className="text-lg font-bold text-foreground pt-4">2. Frictionless Cancellation</h2>
+            <h2 className="text-lg font-bold text-foreground pt-4">2. Zero Recurring Charges</h2>
             <p>
-              You can cancel your subscription inside your Dashboard Billing hub at any time with a
-              single click. There are no support tickets to raise, no phone numbers to call, and no
-              exit surveys to fill out. Your link will remain active until the end of your billing
-              cycle.
+              Detailr operates purely on a pay-as-you-go credit system. There are no recurring
+              monthly or annual subscriptions, no surprise renewals, and no unexpected bank
+              deductions. You buy credits strictly when you need them.
             </p>
 
             <h2 className="text-lg font-bold text-foreground pt-4">
-              3. Full 14-Day Refund Guarantee
+              3. Full 14-Day Credit Guarantee
             </h2>
             <p>
-              If you are billed for any monthly or annual cycle and are unsatisfied with the leads
-              or services, email support@detailr.online within 14 days and we will issue a full,
-              prompt refund. No questions asked.
+              If you purchase a credit pack and experience any technical issues or are unsatisfied
+              with the platform within 14 days of purchase without having used your credits, email
+              support@detailr.online and we will issue a full, prompt refund.
             </p>
           </div>
         </div>

@@ -1,7 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAdminClient } from "@/lib/admin.server";
-import { addCredits } from "@/lib/credit.server";
+import {
+  addCredits,
+  getCreditBalance,
+  recordCreditPurchase,
+  getCreditPurchases,
+  type CreditPurchaseRecord,
+} from "@/lib/credit.server";
 
 const FX_RATES: Record<string, number> = {
   USD: 1.0,
@@ -18,6 +24,7 @@ const FX_RATES: Record<string, number> = {
 };
 
 export const initiateFlutterwaveTopup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: { amountUsd: number; creditsAmount: number; currency?: string }) => data)
   .handler(async ({ data, context }) => {
     const amount = Math.max(1, Number(data.amountUsd) || 10);
@@ -68,13 +75,66 @@ export const initiateFlutterwaveTopup = createServerFn({ method: "POST" })
   });
 
 export const verifyFlutterwaveTopup = createServerFn({ method: "POST" })
-  .validator((data: { txRef: string; creditsAmount: number }) => data)
+  .middleware([requireSupabaseAuth])
+  .validator(
+    (data: { txRef: string; creditsAmount: number; amountPaid?: number; currency?: string }) =>
+      data,
+  )
   .handler(async ({ data, context }) => {
-    const credits = Math.max(1, Number(data.creditsAmount) || 100);
+    const credits = Math.max(1, Number(data.creditsAmount) || 50);
     const newBalance = await addCredits(context.userId, credits);
+
+    const amountPaid = Number(data.amountPaid) || Math.round((credits / 50) * 10);
+    const currency = (data.currency || "USD").toUpperCase();
+
+    // Log purchase to audit logs for purchase history
+    await recordCreditPurchase(context.userId, {
+      txRef: data.txRef,
+      credits,
+      amount: amountPaid,
+      currency,
+    });
+
     return {
       success: true,
       newBalance,
       message: `Successfully added ${credits} credits to your account!`,
+    };
+  });
+
+export const getUserCreditPurchases = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<CreditPurchaseRecord[]> => {
+    return await getCreditPurchases(context.userId);
+  });
+
+export const getCreditDashboardData = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const balance = await getCreditBalance(context.userId);
+    const purchases = await getCreditPurchases(context.userId);
+
+    const admin = getAdminClient();
+    const db = admin ?? context.supabase;
+
+    // Count customer quotes delivered
+    let totalQuotesDelivered = 0;
+    try {
+      const { count } = await db
+        .from("quotes")
+        .select("id", { count: "exact", head: true })
+        .eq("detailer_id", context.userId)
+        .eq("is_test", false);
+
+      totalQuotesDelivered = count || 0;
+    } catch {
+      /* ignore */
+    }
+
+    return {
+      balance,
+      purchases,
+      totalQuotesDelivered,
+      lowBalance: balance < 10,
     };
   });

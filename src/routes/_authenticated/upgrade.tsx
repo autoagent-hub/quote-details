@@ -2,7 +2,21 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Check, Zap, CreditCard, Loader2, AlertTriangle, Globe } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Zap,
+  CreditCard,
+  Loader2,
+  AlertTriangle,
+  Globe,
+  Receipt,
+  History,
+  CheckCircle2,
+  Clock,
+  ShieldCheck,
+  TrendingUp,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +32,12 @@ import {
 } from "@/components/ui/select";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { getTrialState } from "@/lib/billing.functions";
-import { initiateFlutterwaveTopup, verifyFlutterwaveTopup } from "@/lib/flutterwave.functions";
+import {
+  initiateFlutterwaveTopup,
+  verifyFlutterwaveTopup,
+  getUserCreditPurchases,
+  getCreditDashboardData,
+} from "@/lib/flutterwave.functions";
 import { money } from "@/lib/pricing";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,10 +45,11 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Credits & Billing — Detailr Online" },
+      { title: "Credit Dashboard & Billing — Detailr Online" },
       {
         name: "description",
-        content: "Manage your AI bot usage credits and top up via Flutterwave on Detailr Online.",
+        content:
+          "Manage your bot credits, view purchase history, and top up via Flutterwave on Detailr Online.",
       },
     ],
   }),
@@ -59,6 +79,8 @@ function UpgradePage() {
   const fetchTrial = useServerFn(getTrialState);
   const doInitiate = useServerFn(initiateFlutterwaveTopup);
   const doVerify = useServerFn(verifyFlutterwaveTopup);
+  const fetchPurchases = useServerFn(getUserCreditPurchases);
+  const fetchDashboardData = useServerFn(getCreditDashboardData);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [customCreditsInput, setCustomCreditsInput] = useState<string>("50");
@@ -67,6 +89,16 @@ function UpgradePage() {
   const { data: trial } = useQuery({
     queryKey: ["trial-state"],
     queryFn: () => fetchTrial(),
+  });
+
+  const { data: dashboardData, isLoading: isDashboardLoading } = useQuery({
+    queryKey: ["credit-dashboard-data"],
+    queryFn: () => fetchDashboardData(),
+  });
+
+  const { data: purchases = [], isLoading: isPurchasesLoading } = useQuery({
+    queryKey: ["credit-purchases"],
+    queryFn: () => fetchPurchases(),
   });
 
   const { data: profile } = useQuery({
@@ -123,7 +155,8 @@ function UpgradePage() {
   const customBaseUsd = Math.max(10, Math.round(effectiveCredits * 0.2 * 100) / 100);
   const customAdjustedAmount = getAdjustedAmount(customBaseUsd);
 
-  const [creditsBalance, setCreditsBalance] = useState<number>(50);
+  const creditsBalance = dashboardData?.balance ?? 50;
+  const isLowBalance = creditsBalance < 10;
 
   // Load Flutterwave v3 script
   useEffect(() => {
@@ -158,11 +191,17 @@ function UpgradePage() {
           callback: async (response: { status: string; tx_ref: string }) => {
             if (response.status === "successful" || response.status === "completed") {
               const res = await doVerify({
-                data: { txRef: response.tx_ref, creditsAmount: credits },
+                data: {
+                  txRef: response.tx_ref,
+                  creditsAmount: credits,
+                  amountPaid: init.amount,
+                  currency: init.currency,
+                },
               });
               toast.success(res.message);
-              setCreditsBalance(res.newBalance);
               await queryClient.invalidateQueries({ queryKey: ["trial-state"] });
+              await queryClient.invalidateQueries({ queryKey: ["credit-dashboard-data"] });
+              await queryClient.invalidateQueries({ queryKey: ["credit-purchases"] });
             } else {
               toast.info("Payment was cancelled or failed.");
             }
@@ -174,10 +213,18 @@ function UpgradePage() {
         });
       } else {
         // Fallback simulation if script didn't load
-        const res = await doVerify({ data: { txRef: init.txRef, creditsAmount: credits } });
+        const res = await doVerify({
+          data: {
+            txRef: init.txRef,
+            creditsAmount: credits,
+            amountPaid: init.amount,
+            currency: init.currency,
+          },
+        });
         toast.success(res.message);
-        setCreditsBalance(res.newBalance);
         await queryClient.invalidateQueries({ queryKey: ["trial-state"] });
+        await queryClient.invalidateQueries({ queryKey: ["credit-dashboard-data"] });
+        await queryClient.invalidateQueries({ queryKey: ["credit-purchases"] });
         setIsProcessing(false);
       }
     } catch (err: unknown) {
@@ -185,9 +232,6 @@ function UpgradePage() {
       setIsProcessing(false);
     }
   };
-
-  const currentCredits = creditsBalance;
-  const isLowBalance = currentCredits < 10;
 
   return (
     <div className="min-h-screen bg-surface pb-20 font-sans">
@@ -210,8 +254,8 @@ function UpgradePage() {
             <AlertTriangle className="size-5 text-amber-600 shrink-0" />
             <div>
               <strong className="font-bold">Low Credit Warning:</strong> You have only{" "}
-              {currentCredits} credits remaining. Top up your account below to ensure uninterrupted
-              AI bot quotes and Telegram lead alerts.
+              {creditsBalance} credits remaining. Top up your account below to ensure uninterrupted
+              customer quote alerts sent to Telegram.
             </div>
           </div>
         )}
@@ -220,7 +264,7 @@ function UpgradePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              AI Bot Credits & Billing
+              Credit Dashboard & Billing
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               Credits are deducted only per successful customer quote sent to Telegram (test quotes
@@ -246,35 +290,93 @@ function UpgradePage() {
           </div>
         </div>
 
-        {/* Current Balance Card */}
-        <Card className="rounded-2xl border-2 border-primary/40 bg-card shadow-sm overflow-hidden">
-          <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
+        {/* Credit Dashboard Overview Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Card 1: Balance */}
+          <Card className="rounded-2xl border-2 border-primary/40 bg-card p-5 shadow-xs flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                  <Zap className="size-3.5 text-primary" /> Bot Credit Balance
+                  <Zap className="size-3.5 text-primary" /> Active Balance
                 </span>
-                <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                  {currentCredits} Credits Available
+                <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  Never Expires
                 </Badge>
               </div>
-
-              <h2 className="text-lg sm:text-xl font-black text-foreground">
-                Pay-As-You-Go Credit System ({currency})
-              </h2>
-
-              <p className="text-xs text-muted-foreground">
-                1 credit is deducted only when a valid customer quote is successfully delivered to
-                your Telegram chat. Test submissions do not deduct credits.
-              </p>
+              <div className="text-3xl font-extrabold tracking-tight text-foreground pt-1">
+                {isDashboardLoading ? "..." : creditsBalance}{" "}
+                <span className="text-xs font-semibold text-muted-foreground">Credits</span>
+              </div>
             </div>
-          </div>
-        </Card>
+            <p className="text-[11px] text-muted-foreground pt-3 border-t border-border/40 mt-3">
+              1 credit = 1 real customer quote delivered to Telegram.
+            </p>
+          </Card>
+
+          {/* Card 2: 7-Day Free Trial Status */}
+          <Card className="rounded-2xl border-2 border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <Clock className="size-3.5 text-amber-500" /> Free Trial Status
+                </span>
+                {trial?.isPendingFirstVisit ? (
+                  <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    Paused Until 1st Visit
+                  </Badge>
+                ) : trial?.status === "TRIALING" ? (
+                  <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {trial.daysLeft} Days Left
+                  </Badge>
+                ) : (
+                  <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    Active
+                  </Badge>
+                )}
+              </div>
+              <div className="text-lg font-bold text-foreground pt-1">
+                {trial?.isPendingFirstVisit
+                  ? "7-Day Trial Ready"
+                  : trial?.status === "TRIALING"
+                    ? `${trial.daysLeft} Days Remaining`
+                    : "7-Day Trial Included"}
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground pt-3 border-t border-border/40 mt-3">
+              {trial?.isPendingFirstVisit
+                ? "Countdown begins only when your 1st customer visits."
+                : trial?.expiresAt
+                  ? `Expires on ${new Date(trial.expiresAt).toLocaleDateString()}`
+                  : "50 Free Credits provided during trial."}
+            </p>
+          </Card>
+
+          {/* Card 3: Delivered Quotes */}
+          <Card className="rounded-2xl border-2 border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <TrendingUp className="size-3.5 text-emerald-500" /> Leads Delivered
+                </span>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                  100% Commission-free
+                </span>
+              </div>
+              <div className="text-3xl font-extrabold tracking-tight text-foreground pt-1">
+                {dashboardData?.totalQuotesDelivered ?? 0}{" "}
+                <span className="text-xs font-semibold text-muted-foreground">Telegram Alerts</span>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground pt-3 border-t border-border/40 mt-3">
+              Test quotes are always free and never deducted.
+            </p>
+          </Card>
+        </div>
 
         {/* Custom Credit Amount Calculator */}
         <Card className="rounded-2xl border-2 border-border/80 bg-card p-6 space-y-4 shadow-sm">
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-foreground">Custom Credit Amount</h3>
+            <h3 className="text-base font-bold text-foreground">Custom Credit Top-Up</h3>
             <p className="text-xs text-muted-foreground">
               Minimum purchase is 50 credits ($10 USD equivalent). Enter your desired credits below
               to see the real-time price in {currency}.
@@ -343,7 +445,7 @@ function UpgradePage() {
           </div>
         </Card>
 
-        {/* Credit Packages */}
+        {/* Preset Packages */}
         <div className="space-y-4">
           <div className="space-y-1">
             <h3 className="text-base font-bold text-foreground">Preset Credit Packages</h3>
@@ -385,7 +487,7 @@ function UpgradePage() {
                     <ul className="space-y-2 text-xs text-muted-foreground pt-2">
                       <li className="flex items-center gap-2">
                         <Check className="size-3.5 text-emerald-500 font-bold" />
-                        <span>{pkg.credits} AI Bot Interactions</span>
+                        <span>{pkg.credits} Customer Quote Leads</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="size-3.5 text-emerald-500 font-bold" />
@@ -417,6 +519,85 @@ function UpgradePage() {
               );
             })}
           </div>
+        </div>
+
+        {/* Purchase History Section */}
+        <div className="space-y-4 pt-4 border-t border-border/60">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Receipt className="size-4 text-primary" /> Purchase & Recharge History
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                All completed credit recharges and payment receipts via Flutterwave.
+              </p>
+            </div>
+            <Badge variant="outline" className="text-xs font-mono">
+              {purchases.length} Transactions
+            </Badge>
+          </div>
+
+          <Card className="rounded-2xl border-2 border-border/80 bg-card overflow-hidden shadow-xs">
+            {isPurchasesLoading ? (
+              <div className="py-12 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                <Loader2 className="size-4 animate-spin text-primary" /> Loading purchase records...
+              </div>
+            ) : purchases.length === 0 ? (
+              <div className="py-12 px-6 text-center space-y-2">
+                <History className="size-8 mx-auto text-muted-foreground/50" />
+                <p className="text-sm font-semibold text-foreground">No purchases yet</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  When you top up credits via Flutterwave, your transaction references and receipts
+                  will appear here automatically.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground font-semibold">
+                    <tr>
+                      <th className="px-5 py-3">Date</th>
+                      <th className="px-5 py-3">Reference</th>
+                      <th className="px-5 py-3">Credits Added</th>
+                      <th className="px-5 py-3">Amount</th>
+                      <th className="px-5 py-3">Payment Method</th>
+                      <th className="px-5 py-3 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {purchases.map((p) => (
+                      <tr key={p.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-5 py-3.5 whitespace-nowrap text-foreground font-medium">
+                          {new Date(p.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                        <td className="px-5 py-3.5 font-mono text-[11px] text-muted-foreground">
+                          {p.txRef.length > 24 ? `${p.txRef.slice(0, 24)}...` : p.txRef}
+                        </td>
+                        <td className="px-5 py-3.5 font-bold text-emerald-600 dark:text-emerald-400">
+                          +{p.credits} Credits
+                        </td>
+                        <td className="px-5 py-3.5 font-mono font-bold text-foreground">
+                          {money(p.amount, p.currency)}
+                        </td>
+                        <td className="px-5 py-3.5 text-muted-foreground">Flutterwave Secure</td>
+                        <td className="px-5 py-3.5 text-right">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            <CheckCircle2 className="size-3" /> Completed
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
         </div>
       </main>
     </div>

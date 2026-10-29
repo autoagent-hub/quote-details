@@ -3,13 +3,12 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  CreditCard,
   Sparkles,
   X,
   CheckCircle2,
-  Calendar,
   AlertTriangle,
-  ArrowRight,
+  Coins,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +22,7 @@ export function TrialBanner({
   profile?: {
     trial_status?: string | null;
     trial_expiry?: string | null;
-    whop_membership_id?: string | null;
+    credits_balance?: number | null;
   };
   hideIfSubscribed?: boolean;
 } = {}) {
@@ -42,7 +41,7 @@ export function TrialBanner({
   });
 
   // Query profile from cache or database if not passed
-  const { data: cachedProfile, isLoading: isProfileLoading } = useQuery({
+  const { data: cachedProfile } = useQuery({
     queryKey: ["profile"],
     enabled: !propProfile,
     queryFn: async () => {
@@ -56,27 +55,25 @@ export function TrialBanner({
   });
 
   const profile = propProfile || cachedProfile;
-
-  const isSubscribed =
-    profile?.trial_status === "SUBSCRIBED" ||
-    profile?.trial_status === "ADMIN" ||
-    (typeof profile?.whop_membership_id === "string" &&
-      (profile.whop_membership_id.startsWith("mem_") ||
-        profile.whop_membership_id.startsWith("pay_"))) ||
-    !!trial?.isSubscribed;
-
-  const isCancelled = profile?.trial_status === "CANCELLED" || !!trial?.isCancelled;
+  const creditsBalance =
+    typeof profile?.credits_balance === "number"
+      ? profile.credits_balance
+      : (trial?.creditsBalance ?? 50);
 
   const isSuspended =
     profile?.trial_status === "SUSPENDED" ||
     profile?.trial_status === "BANNED" ||
     !!trial?.isSuspended;
 
-  // If the user is subscribed, hide trial banner completely from tabs
-  if (isSubscribed) {
-    if (hideIfSubscribed) {
-      return null;
-    }
+  const isSubscribed =
+    profile?.trial_status === "SUBSCRIBED" ||
+    profile?.trial_status === "ADMIN" ||
+    creditsBalance > 0 ||
+    !!trial?.isSubscribed;
+
+  // If user has ample credits and hideIfSubscribed is on, hide banner
+  if (isSubscribed && creditsBalance > 10 && hideIfSubscribed) {
+    return null;
   }
 
   // Prevent flicker during initial load
@@ -86,33 +83,8 @@ export function TrialBanner({
     ? "SUSPENDED"
     : isSubscribed
       ? "ACTIVE"
-      : isCancelled
-        ? "CANCELLED"
-        : trial?.status ||
-          (profile?.trial_status === "TRIAL_PENDING" ? "TRIAL_PENDING" : "TRIALING");
-
-  const effectiveNextBillingDate =
-    trial?.nextBillingDateFormatted ||
-    (profile?.trial_expiry
-      ? new Date(profile.trial_expiry).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
-      : null);
-
-  const effectiveRenewalDays =
-    trial?.renewalDaysLeft ??
-    (profile?.trial_expiry
-      ? Math.max(
-          0,
-          Math.ceil(
-            (new Date(profile.trial_expiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-          ),
-        )
-      : undefined);
-
-  if (isTrialLoading && !isSubscribed) return null;
+      : trial?.status ||
+        (profile?.trial_status === "TRIAL_PENDING" ? "TRIAL_PENDING" : "TRIALING");
 
   const daysLeft = trial?.daysLeft ?? 7;
   const firstVisitAt = trial?.firstVisitAt ?? null;
@@ -140,37 +112,33 @@ export function TrialBanner({
     );
   }
 
-  // 2. SUBSCRIBED: Show PRO BADGE and Next Billing Date on Dashboard
-  if (effectiveStatus === "ACTIVE" || isSubscribed) {
+  // 2. ACTIVE (With credits): Show Pay-As-You-Go Credits Status
+  if (effectiveStatus === "ACTIVE" || creditsBalance > 0) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-blue-600/10 via-primary/5 to-indigo-600/10 p-4 sm:p-5 text-xs shadow-md backdrop-blur-md">
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-600/10 via-teal-500/5 to-emerald-600/10 p-4 sm:p-5 text-xs shadow-md backdrop-blur-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start sm:items-center gap-3.5">
-            <div className="size-10 flex items-center justify-center rounded-xl bg-primary/20 text-primary dark:text-blue-400 border border-primary/30 shrink-0">
-              <Sparkles className="size-5" />
+            <div className="size-10 flex items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
+              <Coins className="size-5" />
             </div>
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="bg-primary text-white font-extrabold uppercase tracking-widest text-[10px] px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                <Badge className="bg-emerald-600 text-white font-extrabold uppercase tracking-widest text-[10px] px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
                   <CheckCircle2 className="size-3" />
-                  PRO MEMBER
+                  CREDITS ACTIVE
                 </Badge>
-                {effectiveNextBillingDate && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary dark:text-blue-300 bg-primary/10 px-2.5 py-0.5 rounded-md border border-primary/20">
-                    <Calendar className="size-3 opacity-80" />
-                    Next billing date: <strong>{effectiveNextBillingDate}</strong>
-                  </span>
-                )}
-                {effectiveRenewalDays !== undefined && effectiveRenewalDays > 0 && (
-                  <span className="text-[11px] text-muted-foreground font-medium">
-                    ({effectiveRenewalDays} {effectiveRenewalDays === 1 ? "day" : "days"} remaining
-                    in cycle)
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
+                  <strong>{creditsBalance}</strong> Credits Available
+                </span>
+                {creditsBalance <= 10 && (
+                  <span className="text-[11px] text-amber-600 dark:text-amber-400 font-bold">
+                    (Low balance warning)
                   </span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground font-medium">
-                Your Detailr Pro membership is active. You have unlimited customer quotes, custom
-                rates, and real-time Telegram alerts.
+                1 credit is deducted per successful customer quote sent to your Telegram phone alert.
+                Zero recurring monthly fees.
               </p>
             </div>
           </div>
@@ -180,9 +148,9 @@ export function TrialBanner({
               asChild
               variant="outline"
               size="sm"
-              className="h-8 rounded-xl font-bold text-xs border-primary/30 bg-background/80 text-primary hover:bg-primary/10 shadow-sm"
+              className="h-8 rounded-xl font-bold text-xs border-emerald-500/30 bg-background/80 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 shadow-sm"
             >
-              <Link to="/upgrade">Manage Plan & Billing</Link>
+              <Link to="/upgrade">Top Up Credits</Link>
             </Button>
           </div>
         </div>
@@ -190,44 +158,7 @@ export function TrialBanner({
     );
   }
 
-  // 3. Subscription Cancelled
-  if (isCancelled || effectiveStatus === "CANCELLED") {
-    return (
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 backdrop-blur-sm px-5 py-3.5 text-xs text-amber-950 dark:text-amber-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="size-8 flex items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
-            <AlertTriangle className="size-4 shrink-0" />
-          </div>
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <span className="font-bold uppercase tracking-widest text-[10px] text-amber-600 opacity-90 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                Subscription Cancelled
-              </span>
-              {effectiveNextBillingDate && (
-                <span className="text-[11px] font-semibold">
-                  Access active until: <strong>{effectiveNextBillingDate}</strong>
-                </span>
-              )}
-            </div>
-            <p className="font-medium text-muted-foreground">
-              Your subscription will not renew. You retain full access through the end of your
-              prepaid period.
-            </p>
-          </div>
-        </div>
-        <Button
-          asChild
-          variant="hero"
-          size="sm"
-          className="h-8 text-[11px] font-bold px-4 rounded-xl shadow-sm shrink-0"
-        >
-          <Link to="/upgrade">Re-subscribe to Pro</Link>
-        </Button>
-      </div>
-    );
-  }
-
-  // 4. Trial Pending First Customer Visit
+  // 3. Trial Pending First Customer Visit
   if (effectiveStatus === "TRIAL_PENDING") {
     if (isDismissed) return null;
 
@@ -248,10 +179,9 @@ export function TrialBanner({
                 Your 7-Day Free Trial Starts Only After Your First Customer Visit
               </h4>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl font-medium">
-                Before subscribing, your 7-day free trial stays completely paused and only begins
-                counting down after your very first customer visits your quote link or submits a
-                quote. Take all the time you need to set up your services and pricing with zero
-                wasted trial days!
+                Your 7-day free trial stays paused and will only start counting down after your very
+                first customer visits your quote link or submits a quote. Configure your rates and
+                services pressure-free with zero wasted trial days!
               </p>
             </div>
           </div>
@@ -281,7 +211,7 @@ export function TrialBanner({
     );
   }
 
-  // 5. Active Trial Countdown
+  // 4. Active Trial Countdown
   if (effectiveStatus === "TRIALING") {
     return (
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 backdrop-blur-sm px-5 py-3 text-xs text-amber-950 dark:text-amber-200 shadow-sm">
@@ -298,9 +228,9 @@ export function TrialBanner({
               <strong className="font-bold">
                 {daysLeft} {daysLeft === 1 ? "day" : "days"}
               </strong>{" "}
-              remaining in your premium trial.
+              remaining in your free trial.
               {firstVisitAt && (
-                <span className="opacity-60 ml-1.5 font-normal">· Triggered by first visitor</span>
+                <span className="opacity-60 ml-1.5 font-normal">· Triggered by first customer visit</span>
               )}
             </p>
           </div>
@@ -311,26 +241,26 @@ export function TrialBanner({
           size="sm"
           className="h-8 text-[11px] font-bold px-4 rounded-xl shadow-lg shadow-amber-500/10"
         >
-          <Link to="/upgrade">Upgrade to Pro</Link>
+          <Link to="/upgrade">Add Credits ($10 min)</Link>
         </Button>
       </div>
     );
   }
 
-  // 6. Trial Expired
+  // 5. Trial Expired & 0 Credits
   return (
     <div className="flex items-center justify-between gap-4 rounded-2xl border border-rose-500/30 bg-rose-500/5 backdrop-blur-sm px-5 py-3 text-xs text-rose-950 dark:text-rose-200 shadow-sm">
       <div className="flex items-center gap-3">
         <div className="size-8 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-600">
-          <CreditCard className="size-4 shrink-0" />
+          <AlertTriangle className="size-4 shrink-0" />
         </div>
         <div className="space-y-0.5">
           <p className="font-bold uppercase tracking-widest text-[10px] text-rose-600 opacity-80">
-            Trial Expired
+            Credits Required
           </p>
           <p className="font-medium">
-            Your free trial has ended. Upgrade now to keep receiving customer quote requests and
-            Telegram alerts.
+            Your free trial has ended and your balance is 0 credits. Top up credits to receive
+            customer quote alerts on Telegram.
           </p>
         </div>
       </div>
@@ -340,7 +270,7 @@ export function TrialBanner({
         size="sm"
         className="h-8 text-[11px] font-bold px-4 rounded-xl shadow-lg shadow-rose-500/10"
       >
-        <Link to="/upgrade">Activate Pro</Link>
+        <Link to="/upgrade">Top Up Credits ($10 min)</Link>
       </Button>
     </div>
   );
