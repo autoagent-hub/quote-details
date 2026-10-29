@@ -2,13 +2,20 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Check, Zap, CreditCard, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Check, Zap, CreditCard, Loader2, AlertTriangle, Globe } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { QuoteFlowLogo } from "@/components/QuoteFlowLogo";
 import { getTrialState } from "@/lib/billing.functions";
 import { initiateFlutterwaveTopup, verifyFlutterwaveTopup } from "@/lib/flutterwave.functions";
@@ -35,6 +42,18 @@ const BASE_CREDIT_PACKAGES = [
   { credits: 600, baseAmount: 100, label: "Scale Pack (600 Credits)" },
 ];
 
+const SUPPORTED_CURRENCIES = [
+  { code: "USD", label: "USD ($) — US Dollar" },
+  { code: "NGN", label: "NGN (₦) — Nigerian Naira" },
+  { code: "GBP", label: "GBP (£) — British Pound" },
+  { code: "EUR", label: "EUR (€) — Euro" },
+  { code: "CAD", label: "CAD (C$) — Canadian Dollar" },
+  { code: "AUD", label: "AUD (A$) — Australian Dollar" },
+  { code: "KES", label: "KES (KSh) — Kenyan Shilling" },
+  { code: "GHS", label: "GHS (GH₵) — Ghanaian Cedi" },
+  { code: "ZAR", label: "ZAR (R) — South African Rand" },
+];
+
 function UpgradePage() {
   const queryClient = useQueryClient();
   const fetchTrial = useServerFn(getTrialState);
@@ -42,7 +61,8 @@ function UpgradePage() {
   const doVerify = useServerFn(verifyFlutterwaveTopup);
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [customCredits, setCustomCredits] = useState<number>(50);
+  const [customCreditsInput, setCustomCreditsInput] = useState<string>("50");
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("");
 
   const { data: trial } = useQuery({
     queryKey: ["trial-state"],
@@ -63,7 +83,25 @@ function UpgradePage() {
     },
   });
 
-  const currency = (profile?.currency || "USD").toUpperCase();
+  const currency = (selectedCurrency || profile?.currency || "USD").toUpperCase();
+
+  const handleCurrencyChange = async (newCurr: string) => {
+    setSelectedCurrency(newCurr);
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (user.user) {
+        await supabase
+          .from("profiles")
+          .update({ currency: newCurr } as never)
+          .eq("id", user.user.id);
+        await queryClient.invalidateQueries({ queryKey: ["profile-currency"] });
+        await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      }
+      toast.success(`Currency switched to ${newCurr}`);
+    } catch (err) {
+      console.warn("Failed to persist currency change:", err);
+    }
+  };
 
   const getAdjustedAmount = (baseAmount: number) => {
     if (currency === "NGN") return baseAmount * 1500;
@@ -77,7 +115,12 @@ function UpgradePage() {
     return baseAmount;
   };
 
-  const customBaseUsd = Math.max(10, Math.round(customCredits * 0.2 * 100) / 100);
+  const rawNum = parseInt(customCreditsInput, 10);
+  const isValidNum = !isNaN(rawNum) && rawNum > 0;
+  const numericCredits = isValidNum ? rawNum : 0;
+  const isBelowMin = !isValidNum || numericCredits < 50;
+  const effectiveCredits = isBelowMin ? 50 : numericCredits;
+  const customBaseUsd = Math.max(10, Math.round(effectiveCredits * 0.2 * 100) / 100);
   const customAdjustedAmount = getAdjustedAmount(customBaseUsd);
 
   const [creditsBalance, setCreditsBalance] = useState<number>(50);
@@ -96,7 +139,9 @@ function UpgradePage() {
   const handleBuyCredits = async (credits: number, baseAmount: number) => {
     setIsProcessing(true);
     try {
-      const init = await doInitiate({ data: { amountUsd: baseAmount, creditsAmount: credits } });
+      const init = await doInitiate({
+        data: { amountUsd: baseAmount, creditsAmount: credits, currency },
+      });
 
       // @ts-expect-error FlutterwaveCheckout global
       if (typeof window.FlutterwaveCheckout === "function") {
@@ -171,15 +216,34 @@ function UpgradePage() {
           </div>
         )}
 
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            AI Bot Credits & Billing
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Credits are deducted per successful customer quote sent to Telegram (test quotes are
-            free). Minimum purchase is $10 for 50 credits. Prices automatically adapt to your
-            account currency ({currency}).
-          </p>
+        {/* Header & Currency Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+              AI Bot Credits & Billing
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              Credits are deducted only per successful customer quote sent to Telegram (test quotes
+              are free).
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 bg-card border border-border/80 px-3 py-2 rounded-xl shadow-xs shrink-0">
+            <Globe className="size-4 text-primary shrink-0" />
+            <span className="text-xs font-bold text-foreground">Currency:</span>
+            <Select value={currency} onValueChange={handleCurrencyChange}>
+              <SelectTrigger className="h-8 w-36 text-xs font-semibold rounded-lg border-border bg-background">
+                <SelectValue placeholder="Currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code} className="text-xs">
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Current Balance Card */}
@@ -212,22 +276,26 @@ function UpgradePage() {
           <div className="space-y-1">
             <h3 className="text-base font-bold text-foreground">Custom Credit Amount</h3>
             <p className="text-xs text-muted-foreground">
-              Minimum purchase is $10 for 50 credits. Enter your desired credits below to see the
-              real-time equivalent in {currency}.
+              Minimum purchase is 50 credits ($10 USD equivalent). Enter your desired credits below
+              to see the real-time price in {currency}.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div className="space-y-1.5 md:col-span-2">
               <label className="text-xs font-bold text-foreground">
-                Number of Credits (Min 50)
+                Number of Credits (Minimum 50)
               </label>
               <Input
-                type="number"
-                min={50}
-                max={10000}
-                value={customCredits}
-                onChange={(e) => setCustomCredits(Math.max(50, parseInt(e.target.value) || 50))}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="50"
+                value={customCreditsInput}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/[^0-9]/g, "");
+                  setCustomCreditsInput(cleaned);
+                }}
                 className="bg-background border-border text-sm font-bold h-11"
               />
             </div>
@@ -238,18 +306,28 @@ function UpgradePage() {
               <div className="h-11 px-3 rounded-xl bg-muted/50 border border-border flex items-center justify-between font-mono text-sm font-bold text-foreground">
                 <span>{money(customAdjustedAmount, currency)}</span>
                 <span className="text-xs font-sans text-muted-foreground">
-                  {customCredits} Credits
+                  {effectiveCredits} Credits
                 </span>
               </div>
             </div>
           </div>
 
+          {customCreditsInput && numericCredits < 50 && (
+            <p className="text-xs text-amber-500 font-medium">
+              Minimum order is 50 credits. Your order will be set to 50 credits upon checkout.
+            </p>
+          )}
+
           <div className="pt-2">
             <Button
               variant="hero"
               className="w-full h-11 rounded-xl font-bold text-xs shadow-sm"
-              disabled={isProcessing || customCredits < 50}
-              onClick={() => handleBuyCredits(customCredits, customBaseUsd)}
+              disabled={isProcessing}
+              onClick={() => {
+                const targetCredits = Math.max(50, numericCredits || 50);
+                const targetUsd = Math.max(10, Math.round(targetCredits * 0.2 * 100) / 100);
+                handleBuyCredits(targetCredits, targetUsd);
+              }}
             >
               {isProcessing ? (
                 <>
@@ -257,7 +335,7 @@ function UpgradePage() {
                 </>
               ) : (
                 <>
-                  <CreditCard className="size-4 mr-2" /> Top Up {customCredits} Credits for{" "}
+                  <CreditCard className="size-4 mr-2" /> Top Up {effectiveCredits} Credits for{" "}
                   {money(customAdjustedAmount, currency)}
                 </>
               )}
@@ -268,9 +346,7 @@ function UpgradePage() {
         {/* Credit Packages */}
         <div className="space-y-4">
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-foreground">
-              Preset Credit Packages (Min $10)
-            </h3>
+            <h3 className="text-base font-bold text-foreground">Preset Credit Packages</h3>
             <p className="text-xs text-muted-foreground">
               Select a popular reload package below to pay securely via Flutterwave in {currency}.
             </p>

@@ -1,11 +1,10 @@
-export async function sendWelcomeEmail(to: string, businessName?: string, slug?: string) {
-  const apiKey = process.env["RESEND_API_KEY"];
-  if (!apiKey) {
-    console.warn("[welcome-email] RESEND_API_KEY not configured, skipping welcome email.");
-    return;
-  }
+import { sendEmailUnified } from "@/lib/google-mail.server";
 
-  const emailFrom = process.env["EMAIL_FROM"] || "noreply@detailr.online";
+export async function sendWelcomeEmail(to: string, businessName?: string, slug?: string) {
+  const emailFrom =
+    process.env["EMAIL_FROM"] && !process.env["EMAIL_FROM"].includes("detailr.online")
+      ? process.env["EMAIL_FROM"]
+      : "onboarding@resend.dev";
   const from = emailFrom.includes("<") ? emailFrom : `Detailr <${emailFrom}>`;
   const rawUrl =
     process.env["PUBLIC_APP_URL"] || process.env["RENDER_EXTERNAL_URL"] || "https://detailr.online";
@@ -329,53 +328,13 @@ Open your dashboard to get started: ${dashboardUrl}
 Detailr · detailr.online`;
 
   try {
-    let res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [to],
-        subject,
-        html,
-        text,
-        reply_to: process.env["EMAIL_REPLY_TO"] ?? "support@detailr.online",
-        headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
-      }),
+    await sendEmailUnified({
+      to,
+      subject,
+      html,
+      text,
+      replyTo: process.env["EMAIL_REPLY_TO"] ?? undefined,
     });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.warn(
-        `[welcome-email] primary send failed [${res.status}]: ${errText}. Retrying with onboarding@resend.dev...`,
-      );
-
-      // Fallback to Resend sandbox/testing sender if custom domain is unverified
-      res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "Detailr <onboarding@resend.dev>",
-          to: [to],
-          subject,
-          html,
-          text,
-          reply_to: process.env["EMAIL_REPLY_TO"] ?? "support@detailr.online",
-          headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
-        }),
-      });
-
-      if (!res.ok) {
-        const fallbackErr = await res.text();
-        console.error(`[welcome-email] fallback send failed [${res.status}]: ${fallbackErr}`);
-        throw new Error(`Resend API error: ${fallbackErr}`);
-      }
-    }
   } catch (err) {
     console.error("[welcome-email] failed to dispatch email:", err);
     throw err;

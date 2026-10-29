@@ -18,30 +18,32 @@ const FX_RATES: Record<string, number> = {
 };
 
 export const initiateFlutterwaveTopup = createServerFn({ method: "POST" })
-  .validator((data: { amountUsd: number; creditsAmount: number }) => data)
+  .validator((data: { amountUsd: number; creditsAmount: number; currency?: string }) => data)
   .handler(async ({ data, context }) => {
     const amount = Math.max(1, Number(data.amountUsd) || 10);
-    const credits = Math.max(10, Number(data.creditsAmount) || 100);
+    const credits = Math.max(10, Number(data.creditsAmount) || 50);
 
     const admin = getAdminClient();
     const db = admin ?? context.supabase;
 
     let email = "detailer@detailr.online";
-    let currency = "USD";
+    let currency = data.currency ? data.currency.toUpperCase() : "USD";
 
     if (admin) {
       try {
         const { data: authUser } = await admin.auth.admin.getUserById(context.userId);
         if (authUser?.user?.email) email = authUser.user.email;
 
-        const { data: profile } = await admin
-          .from("profiles")
-          .select("currency")
-          .eq("id", context.userId)
-          .maybeSingle();
+        if (!data.currency) {
+          const { data: profile } = await admin
+            .from("profiles")
+            .select("currency")
+            .eq("id", context.userId)
+            .maybeSingle();
 
-        if (profile?.currency) {
-          currency = profile.currency.toUpperCase();
+          if (profile?.currency) {
+            currency = profile.currency.toUpperCase();
+          }
         }
       } catch {
         /* ignore */

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { sendAdminTelegramAlert } from "@/lib/admin-telegram.functions";
 import { sendWelcomeEmail } from "@/lib/welcome-email.server";
+import { sendEmailUnified } from "@/lib/google-mail.server";
 
 type Purpose = "signup" | "recovery";
 
@@ -94,10 +95,6 @@ function emailHtml(code: string, purpose: Purpose, appUrl = "https://detailr.onl
 }
 
 async function sendCodeEmail(to: string, code: string, purpose: Purpose) {
-  const apiKey = process.env["RESEND_API_KEY"];
-  if (!apiKey) throw new Error("Email sending is not configured yet.");
-  const emailFrom = process.env["EMAIL_FROM"] || "noreply@detailr.online";
-  const from = emailFrom.includes("<") ? emailFrom : `Detailr <${emailFrom}>`;
   const rawUrl =
     process.env["PUBLIC_APP_URL"] || process.env["RENDER_EXTERNAL_URL"] || "https://detailr.online";
   const appUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
@@ -107,28 +104,13 @@ async function sendCodeEmail(to: string, code: string, purpose: Purpose) {
       ? `${code} is your Detailr confirmation code`
       : `${code} is your Detailr password reset code`;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      html: emailHtml(code, purpose, appUrl),
-      text: `${purpose === "signup" ? "Confirm your email" : "Reset your password"}\n\nYour Detailr code is ${code}. It expires in 10 minutes.\n\nIf you didn't request this, ignore this email.\n\nDetailr · detailr.online`,
-      reply_to: process.env["EMAIL_REPLY_TO"] ?? "support@detailr.online",
-      headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
-    }),
+  await sendEmailUnified({
+    to,
+    subject,
+    html: emailHtml(code, purpose, appUrl),
+    text: `${purpose === "signup" ? "Confirm your email" : "Reset your password"}\n\nYour Detailr code is ${code}. It expires in 10 minutes.\n\nIf you didn't request this, ignore this email.\n\nDetailr · detailr.online`,
+    replyTo: process.env["EMAIL_REPLY_TO"] ?? undefined,
   });
-
-  if (!res.ok) {
-    const body = await res.text();
-    console.error(`[resend] send failed [${res.status}]: ${body}`);
-    throw new Error("We couldn't send the email right now. Please try again.");
-  }
 }
 
 export const requestAuthCode = createServerFn({ method: "POST" })

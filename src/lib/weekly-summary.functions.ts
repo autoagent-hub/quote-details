@@ -5,6 +5,7 @@ import { getAdminClient } from "@/lib/admin.server";
 import { money } from "@/lib/pricing";
 import { sendWelcomeEmail } from "@/lib/welcome-email.server";
 import { requireAdminAuth } from "@/lib/admin-auth";
+import { sendEmailUnified } from "@/lib/google-mail.server";
 
 export interface WeeklyQuoteSummaryItem {
   id: string;
@@ -298,40 +299,13 @@ async function sendResendEmail({
   html: string;
   text: string;
 }) {
-  const apiKey = process.env["RESEND_API_KEY"];
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not configured.");
-  }
-  const emailFrom = process.env["EMAIL_FROM"] || "noreply@detailr.online";
-  const from = emailFrom.includes("<") ? emailFrom : `Detailr <${emailFrom}>`;
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      html,
-      text,
-      reply_to: process.env["EMAIL_REPLY_TO"] ?? "support@detailr.online",
-      headers: {
-        "X-Entity-Ref-ID": crypto.randomUUID(),
-        "X-Mailer": "Detailr-Nerochaze-Summary/1.0",
-      },
-    }),
+  return await sendEmailUnified({
+    to,
+    subject,
+    html,
+    text,
+    replyTo: process.env["EMAIL_REPLY_TO"] ?? undefined,
   });
-
-  if (!res.ok) {
-    const errBody = await res.text();
-    console.error(`[weekly-summary] Resend API error [${res.status}]:`, errBody);
-    throw new Error(`Failed to deliver email via Resend: ${res.statusText}`);
-  }
-
-  return await res.json();
 }
 
 /**
