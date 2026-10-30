@@ -85,7 +85,7 @@ export const getTelegramBotUsername = createServerFn({ method: "GET" }).handler(
  * is generated so previous codes cannot be replayed or hijacked.
  */
 export const prepareTelegramLink = createServerFn({ method: "POST" })
-  .middleware([requireActiveSubscription])
+  .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const token = process.env["TELEGRAM_BOT_TOKEN"];
     if (!token) {
@@ -93,6 +93,9 @@ export const prepareTelegramLink = createServerFn({ method: "POST" })
         "TELEGRAM_BOT_TOKEN is not configured in your environment variables. Please add your Telegram Bot token.",
       );
     }
+
+    const admin = getAdminClient();
+    const db = admin ?? context.supabase;
 
     // Determine public webhook URL
     let rawUrl =
@@ -108,7 +111,7 @@ export const prepareTelegramLink = createServerFn({ method: "POST" })
     const randomHex = randomBytes(8).toString("hex");
     const authCode = `link_${randomHex}`;
 
-    const { error: profileError } = await context.supabase
+    const { error: profileError } = await db
       .from("profiles")
       .update({ telegram_auth_code: authCode })
       .eq("id", context.userId);
@@ -202,7 +205,7 @@ export const getTelegramConnectionStatus = createServerFn({ method: "GET" })
  * Clears chat ID and any lingering auth codes to ensure complete privacy.
  */
 export const disconnectTelegramBot = createServerFn({ method: "POST" })
-  .middleware([requireActiveSubscription])
+  .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = getAdminClient();
     const db = admin ?? context.supabase;

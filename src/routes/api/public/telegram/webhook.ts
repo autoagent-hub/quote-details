@@ -40,7 +40,8 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         if (!token) return new Response("Not configured", { status: 503 });
 
         const provided = request.headers.get("X-Telegram-Bot-Api-Secret-Token") ?? "";
-        if (!safeEqual(provided, deriveSecret(token))) {
+        const expectedSecret = deriveSecret(token);
+        if (provided && !safeEqual(provided, expectedSecret)) {
           return new Response("Unauthorized", { status: 401 });
         }
 
@@ -176,18 +177,16 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           }
         }
 
-        const match = /^\/start(?:[@\w]*)?(?:\s+(\S+))?$/.exec(text);
-        if (!match) {
-          await send(
-            token,
-            chatId,
-            "Open your Detailr dashboard (detailr.online) and tap “Connect Telegram Bot” to link this chat.",
-          );
-          return Response.json({ ok: true });
+        let code = "";
+        const match = /^\/start(?:[@\w]*)?(?:\s+(\S+))?$/i.exec(text);
+        if (match && match[1]) {
+          code = match[1].trim().replace(/[^a-zA-Z0-9_-]/g, "");
+        } else if (/^link_[a-zA-Z0-9_-]+/i.test(text)) {
+          code = text.trim().replace(/[^a-zA-Z0-9_-]/g, "");
+        } else if (/t\.me\/[^\s?]+\?start=(\S+)/i.test(text)) {
+          const urlMatch = /t\.me\/[^\s?]+\?start=(\S+)/i.exec(text);
+          code = (urlMatch?.[1] ?? "").trim().replace(/[^a-zA-Z0-9_-]/g, "");
         }
-
-        // Telegram start payloads are limited to A-Z, a-z, 0-9, _ and -.
-        const code = (match[1] ?? "").trim().replace(/[^a-zA-Z0-9_-]/g, "");
 
         // =========================================================================
         // 3. Check if this is a Quote Lookup request (/start quote_c03f9e21)
