@@ -116,10 +116,15 @@ export const getAdminOverviewMetrics = createServerFn({ method: "GET" }).handler
   async (): Promise<AdminMetrics> => {
     const admin = getAdminClient() ?? supabase;
 
-    // 1. Fetch all profiles
-    const { data: profiles } = await admin
-      .from("profiles")
-      .select("id, trial_status, trial_expiry, whop_membership_id, created_at");
+    // 1. Fetch all profiles with fallback
+    let profiles: Record<string, unknown>[] = [];
+    const { data: pData } = await admin.from("profiles").select("*");
+    if (pData && pData.length > 0) {
+      profiles = pData as Record<string, unknown>[];
+    } else {
+      const { data: fbData } = await supabase.from("profiles").select("*");
+      if (fbData) profiles = fbData as Record<string, unknown>[];
+    }
 
     // 2. Fetch all auth users to compute total views and metadata
     const userMetaMap = new Map<string, Record<string, unknown>>();
@@ -152,20 +157,24 @@ export const getAdminOverviewMetrics = createServerFn({ method: "GET" }).handler
     let expiredCount = 0;
     let suspendedCount = 0;
 
-    for (const p of profiles || []) {
-      const isSub =
-        p.trial_status === "SUBSCRIBED" ||
-        p.trial_status === "ADMIN" ||
-        (!!p.whop_membership_id &&
-          (p.whop_membership_id.startsWith("mem_") || p.whop_membership_id.startsWith("pay_")));
+    for (const p of profiles) {
+      const trialStatus = String(p["trial_status"] || "");
+      const trialExpiry = (p["trial_expiry"] as string) || null;
+      const whopMembershipId = (p["whop_membership_id"] as string) || null;
 
-      if (p.trial_status === "SUSPENDED" || p.trial_status === "BANNED") {
+      const isSub =
+        trialStatus === "SUBSCRIBED" ||
+        trialStatus === "ADMIN" ||
+        (!!whopMembershipId &&
+          (whopMembershipId.startsWith("mem_") || whopMembershipId.startsWith("pay_")));
+
+      if (trialStatus === "SUSPENDED" || trialStatus === "BANNED") {
         suspendedCount++;
       } else if (isSub) {
         subscribedCount++;
-      } else if (p.trial_status === "TRIAL_PENDING" || !p.trial_expiry) {
+      } else if (trialStatus === "TRIAL_PENDING" || !trialExpiry) {
         pendingVisitCount++;
-      } else if (p.trial_expiry && new Date(p.trial_expiry).getTime() > now) {
+      } else if (trialExpiry && new Date(trialExpiry).getTime() > now) {
         activeTrialCount++;
       } else {
         expiredCount++;
@@ -184,7 +193,7 @@ export const getAdminOverviewMetrics = createServerFn({ method: "GET" }).handler
     const last30DaysValue = last30Quotes.reduce((acc, q) => acc + (q.estimated_price || 0), 0);
 
     return {
-      totalDetailers: profiles?.length || 0,
+      totalDetailers: profiles.length || userMetaMap.size,
       subscribedCount,
       activeTrialCount,
       pendingVisitCount,
@@ -209,71 +218,111 @@ export const getAdminUsersList = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<AdminDetailerSummary[]> => {
     const admin = getAdminClient() ?? supabase;
 
-    // 1. Fetch profiles
-    const { data: profiles, error: profileErr } = await admin
-      .from("profiles")
-      .select(
-        "id, business_name, slug, phone, currency, created_at, trial_status, trial_expiry, whop_membership_id, telegram_chat_id, credits_balance",
-      )
-      .order("created_at", { ascending: false });
+    // 1. Fetch profiles safely with fallbacks
+    let profiles: Record<string, unknown>[] = [];
+    try {
+      const { data: pData, error: pErr } = await admin
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (profileErr) {
-      console.error("[admin] Failed to fetch profiles:", profileErr);
-      return [];
+      if (!pErr && pData && pData.length > 0) {
+        profiles = pData as Record<string, unknown>[];
+      } else {
+        const { data: fbData } = await supabase
+          .from("profiles")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (fbData) {
+          profiles = fbData as Record<string, unknown>[];
+        }
+      }
+    } catch (err) {
+      console.warn("[admin] Profiles query failed:", err);
     }
 
     // 2. Fetch auth users
-    const authMap = new Map<string, { email: string; metadata: Record<string, unknown> }>();
+    const authMap = new Map<
+      string,
+      { email: string; metadata: Record<string, unknown>; createdAt: string }
+    >();
     try {
       const adminRaw = getAdminClient();
       if (adminRaw) {
-        const { data: authUsers } = await adminRaw.auth.admin.listUsers();
-        for (const u of authUsers?.users || []) {
-          authMap.set(u.id, { email: u.email || "", metadata: u.user_metadata || {} });
+        const { data: authUsers, error: authErr } = await adminRaw.auth.admin.listUsers();
+        if (!authErr && authUsers?.users) {
+          for (const u of authUsers.users) {
+            authMap.set(u.id, {
+              email: u.email || (u.user_metadata?.["email"] as string) || "",
+              metadata: u.user_metadata || {},
+              createdAt: u.created_at || new Date().toISOString(),
+            });
+          }
         }
       }
-    } catch {
-      /* ignore auth listing errors */
+    } catch (err) {
+      console.warn("[admin] Auth users list error:", err);
     }
 
     // 3. Fetch all quotes grouped by detailer
-    const { data: quotes } = await admin
-      .from("quotes")
-      .select("id, detailer_id, estimated_price, created_at");
-
     const quotesByDetailer = new Map<
       string,
       { count: number; totalValue: number; lastQuoteAt: string | null }
     >();
 
-    for (const q of quotes || []) {
-      const curr = quotesByDetailer.get(q.detailer_id) || {
-        count: 0,
-        totalValue: 0,
-        lastQuoteAt: null,
-      };
-      curr.count++;
-      curr.totalValue += q.estimated_price || 0;
-      if (!curr.lastQuoteAt || new Date(q.created_at) > new Date(curr.lastQuoteAt)) {
-        curr.lastQuoteAt = q.created_at;
+    try {
+      const { data: quotes } = await admin
+        .from("quotes")
+        .select("id, detailer_id, estimated_price, created_at");
+
+      for (const q of quotes || []) {
+        if (!q.detailer_id) continue;
+        const curr = quotesByDetailer.get(q.detailer_id) || {
+          count: 0,
+          totalValue: 0,
+          lastQuoteAt: null,
+        };
+        curr.count++;
+        curr.totalValue += q.estimated_price || 0;
+        if (!curr.lastQuoteAt || new Date(q.created_at) > new Date(curr.lastQuoteAt)) {
+          curr.lastQuoteAt = q.created_at;
+        }
+        quotesByDetailer.set(q.detailer_id, curr);
       }
-      quotesByDetailer.set(q.detailer_id, curr);
+    } catch (qErr) {
+      console.warn("[admin] Quotes query warning:", qErr);
     }
 
     const now = Date.now();
     const list: AdminDetailerSummary[] = [];
+    const seenUserIds = new Set<string>();
 
-    for (const p of profiles || []) {
-      const auth = authMap.get(p.id);
-      const email = auth?.email || "unknown@user";
+    for (const p of profiles) {
+      const pId = String(p["id"] || "");
+      if (!pId) continue;
+      seenUserIds.add(pId);
+
+      const auth = authMap.get(pId);
+      const email =
+        auth?.email || (p["email"] as string) || (p["user_email"] as string) || "unknown@user";
       const meta = auth?.metadata || {};
+
+      const trialStatus = String(p["trial_status"] || "TRIAL_PENDING");
+      const trialExpiry = (p["trial_expiry"] as string) || null;
+      const whopMembershipId = (p["whop_membership_id"] as string) || null;
+      const telegramChatId = (p["telegram_chat_id"] as string) || null;
+      const creditsBalance = typeof p["credits_balance"] === "number" ? p["credits_balance"] : 0;
+      const businessName =
+        (p["business_name"] as string) || (meta["business_name"] as string) || "Unnamed Business";
+      const slug = (p["slug"] as string) || (meta["slug"] as string) || "";
+      const phone = (p["phone"] as string) || (meta["phone"] as string) || "";
+      const currency = (p["currency"] as string) || "USD";
+      const createdAt = (p["created_at"] as string) || new Date().toISOString();
 
       const linkViews = typeof meta["link_views"] === "number" ? meta["link_views"] : 0;
       const firstVisitAt = (meta["first_customer_visit_at"] as string) || null;
       const isSuspended =
-        p.trial_status === "SUSPENDED" ||
-        p.trial_status === "BANNED" ||
-        meta["is_suspended"] === true;
+        trialStatus === "SUSPENDED" || trialStatus === "BANNED" || meta["is_suspended"] === true;
       const suspensionReason = (meta["suspension_reason"] as string) || undefined;
 
       const isFlaggedSuspicious = meta["is_flagged_suspicious"] === true;
@@ -281,14 +330,14 @@ export const getAdminUsersList = createServerFn({ method: "POST" })
       const suspiciousSeverity = (meta["suspicious_severity"] as string) || undefined;
       const suspiciousFlaggedAt = (meta["suspicious_flagged_at"] as string) || undefined;
 
-      const qStats = quotesByDetailer.get(p.id) || { count: 0, totalValue: 0, lastQuoteAt: null };
+      const qStats = quotesByDetailer.get(pId) || { count: 0, totalValue: 0, lastQuoteAt: null };
       const avg = qStats.count > 0 ? Math.round(qStats.totalValue / qStats.count) : 0;
 
       const isSub =
-        p.trial_status === "SUBSCRIBED" ||
-        p.trial_status === "ADMIN" ||
-        (!!p.whop_membership_id &&
-          (p.whop_membership_id.startsWith("mem_") || p.whop_membership_id.startsWith("pay_")));
+        trialStatus === "SUBSCRIBED" ||
+        trialStatus === "ADMIN" ||
+        (!!whopMembershipId &&
+          (whopMembershipId.startsWith("mem_") || whopMembershipId.startsWith("pay_")));
 
       let calculatedState:
         "SUBSCRIBED" | "TRIAL_ACTIVE" | "TRIAL_PENDING" | "EXPIRED" | "SUSPENDED";
@@ -298,14 +347,14 @@ export const getAdminUsersList = createServerFn({ method: "POST" })
         calculatedState = "SUSPENDED";
       } else if (isSub) {
         calculatedState = "SUBSCRIBED";
-      } else if (p.trial_status === "TRIAL_PENDING" || !p.trial_expiry) {
+      } else if (trialStatus === "TRIAL_PENDING" || !trialExpiry) {
         calculatedState = "TRIAL_PENDING";
         daysLeft = 7;
-      } else if (p.trial_expiry && new Date(p.trial_expiry).getTime() > now) {
+      } else if (trialExpiry && new Date(trialExpiry).getTime() > now) {
         calculatedState = "TRIAL_ACTIVE";
         daysLeft = Math.max(
           0,
-          Math.ceil((new Date(p.trial_expiry).getTime() - now) / (1000 * 60 * 60 * 24)),
+          Math.ceil((new Date(trialExpiry).getTime() - now) / (1000 * 60 * 60 * 24)),
         );
       } else {
         calculatedState = "EXPIRED";
@@ -313,19 +362,19 @@ export const getAdminUsersList = createServerFn({ method: "POST" })
       }
 
       list.push({
-        id: p.id,
+        id: pId,
         email,
-        businessName: p.business_name || "Unnamed Business",
-        slug: p.slug,
-        phone: p.phone || "",
-        currency: p.currency || "USD",
-        createdAt: p.created_at,
-        trialStatus: p.trial_status,
-        trialExpiry: p.trial_expiry,
-        whopMembershipId: p.whop_membership_id,
-        telegramChatId: p.telegram_chat_id,
-        telegramConnected: !!p.telegram_chat_id,
-        creditsBalance: typeof p.credits_balance === "number" ? p.credits_balance : 0,
+        businessName,
+        slug,
+        phone,
+        currency,
+        createdAt,
+        trialStatus,
+        trialExpiry,
+        whopMembershipId,
+        telegramChatId,
+        telegramConnected: !!telegramChatId,
+        creditsBalance,
         linkViews,
         firstVisitAt,
         quoteCount: qStats.count,
@@ -343,6 +392,37 @@ export const getAdminUsersList = createServerFn({ method: "POST" })
       });
     }
 
+    // 4. Include any registered Auth users missing from profiles table
+    for (const [authId, authInfo] of authMap.entries()) {
+      if (seenUserIds.has(authId)) continue;
+      seenUserIds.add(authId);
+
+      list.push({
+        id: authId,
+        email: authInfo.email || "unknown@user",
+        businessName: (authInfo.metadata?.["business_name"] as string) || "Pending Setup",
+        slug: (authInfo.metadata?.["slug"] as string) || "",
+        phone: (authInfo.metadata?.["phone"] as string) || "",
+        currency: "USD",
+        createdAt: authInfo.createdAt,
+        trialStatus: "TRIAL_PENDING",
+        trialExpiry: null,
+        whopMembershipId: null,
+        telegramChatId: null,
+        telegramConnected: false,
+        creditsBalance: 0,
+        linkViews: 0,
+        firstVisitAt: null,
+        quoteCount: 0,
+        totalQuoteValue: 0,
+        averageTicket: 0,
+        lastQuoteAt: null,
+        isSuspended: false,
+        calculatedState: "TRIAL_PENDING",
+        daysLeft: 7,
+      });
+    }
+
     // Apply search filter
     let filtered = list;
     if (data?.search && data.search.trim()) {
@@ -352,7 +432,8 @@ export const getAdminUsersList = createServerFn({ method: "POST" })
           u.businessName.toLowerCase().includes(q) ||
           u.email.toLowerCase().includes(q) ||
           u.slug.toLowerCase().includes(q) ||
-          u.phone.toLowerCase().includes(q),
+          u.phone.toLowerCase().includes(q) ||
+          u.id.toLowerCase().includes(q),
       );
     }
 
