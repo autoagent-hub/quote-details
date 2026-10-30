@@ -114,24 +114,7 @@ export const adminVerifyLogin = createServerFn({ method: "POST" })
  */
 export const getAdminOverviewMetrics = createServerFn({ method: "GET" }).handler(
   async (): Promise<AdminMetrics> => {
-    const admin = getAdminClient();
-    if (!admin) {
-      return {
-        totalDetailers: 0,
-        subscribedCount: 0,
-        activeTrialCount: 0,
-        pendingVisitCount: 0,
-        expiredCount: 0,
-        suspendedCount: 0,
-        totalQuotes: 0,
-        totalPipelineValue: 0,
-        averageTicketSize: 0,
-        estimatedMRR: 0,
-        totalLinkViews: 0,
-        last30DaysQuotes: 0,
-        last30DaysValue: 0,
-      };
-    }
+    const admin = getAdminClient() ?? supabase;
 
     // 1. Fetch all profiles
     const { data: profiles } = await admin
@@ -139,16 +122,22 @@ export const getAdminOverviewMetrics = createServerFn({ method: "GET" }).handler
       .select("id, trial_status, trial_expiry, whop_membership_id, created_at");
 
     // 2. Fetch all auth users to compute total views and metadata
-    const { data: authUsers } = await admin.auth.admin.listUsers();
     const userMetaMap = new Map<string, Record<string, unknown>>();
     let totalViews = 0;
-
-    for (const u of authUsers?.users || []) {
-      const meta = u.user_metadata || {};
-      userMetaMap.set(u.id, meta);
-      if (typeof meta["link_views"] === "number") {
-        totalViews += meta["link_views"];
+    try {
+      const adminRaw = getAdminClient();
+      if (adminRaw) {
+        const { data: authUsers } = await adminRaw.auth.admin.listUsers();
+        for (const u of authUsers?.users || []) {
+          const meta = u.user_metadata || {};
+          userMetaMap.set(u.id, meta);
+          if (typeof meta["link_views"] === "number") {
+            totalViews += meta["link_views"];
+          }
+        }
       }
+    } catch {
+      /* ignore auth listing errors */
     }
 
     // 3. Fetch all quotes
@@ -218,22 +207,33 @@ export const getAdminOverviewMetrics = createServerFn({ method: "GET" }).handler
 export const getAdminUsersList = createServerFn({ method: "POST" })
   .validator((data: { search?: string; statusFilter?: string } | undefined) => data || {})
   .handler(async ({ data }): Promise<AdminDetailerSummary[]> => {
-    const admin = getAdminClient();
-    if (!admin) return [];
+    const admin = getAdminClient() ?? supabase;
 
     // 1. Fetch profiles
-    const { data: profiles } = await admin
+    const { data: profiles, error: profileErr } = await admin
       .from("profiles")
       .select(
         "id, business_name, slug, phone, currency, created_at, trial_status, trial_expiry, whop_membership_id, telegram_chat_id, credits_balance",
       )
       .order("created_at", { ascending: false });
 
+    if (profileErr) {
+      console.error("[admin] Failed to fetch profiles:", profileErr);
+      return [];
+    }
+
     // 2. Fetch auth users
-    const { data: authUsers } = await admin.auth.admin.listUsers();
     const authMap = new Map<string, { email: string; metadata: Record<string, unknown> }>();
-    for (const u of authUsers?.users || []) {
-      authMap.set(u.id, { email: u.email || "", metadata: u.user_metadata || {} });
+    try {
+      const adminRaw = getAdminClient();
+      if (adminRaw) {
+        const { data: authUsers } = await adminRaw.auth.admin.listUsers();
+        for (const u of authUsers?.users || []) {
+          authMap.set(u.id, { email: u.email || "", metadata: u.user_metadata || {} });
+        }
+      }
+    } catch {
+      /* ignore auth listing errors */
     }
 
     // 3. Fetch all quotes grouped by detailer
