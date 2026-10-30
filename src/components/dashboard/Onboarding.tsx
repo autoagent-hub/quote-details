@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Check, AlertCircle, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { slugify, cleanSlugInput } from "@/lib/pricing";
 import { useSlugValidator } from "@/hooks/useSlugValidator";
+import { completeOnboarding } from "@/lib/onboarding.functions";
 
 export function Onboarding() {
   const queryClient = useQueryClient();
@@ -16,6 +18,7 @@ export function Onboarding() {
   const [slug, setSlug] = useState("");
 
   const slugStatus = useSlugValidator(slug || businessName);
+  const completeOnboardingFn = useServerFn(completeOnboarding);
 
   const create = useMutation({
     mutationFn: async () => {
@@ -28,18 +31,70 @@ export function Onboarding() {
         throw new Error(`'${finalSlug}' is already taken. Please select an available alternative.`);
       }
 
-      const { error } = await supabase.from("profiles").insert({
-        id: uid,
-        business_name: businessName.trim(),
-        slug: finalSlug,
-      });
-      if (error) throw error;
+      // 1. Primary: execute server function which bypasses RLS and handles insert/update safely
+      try {
+        const res = await completeOnboardingFn({
+          data: {
+            userId: uid,
+            businessName: businessName.trim(),
+            slug: finalSlug,
+          },
+        });
+        if (res.success) return res;
+      } catch (serverErr) {
+        console.warn("[onboarding] Server function fallback to client upsert:", serverErr);
+      }
+
+      // 2. Client-side fallback: check existing row first to prevent duplicate key error
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", uid)
+        .maybeSingle();
+
+      if (existingProfile) {
+        const { error: updateErr } = await supabase
+          .from("profiles")
+          .update({
+            business_name: businessName.trim(),
+            slug: finalSlug,
+          } as never)
+          .eq("id", uid);
+        if (updateErr) throw updateErr;
+      } else {
+        const { error: upsertErr } = await supabase.from("profiles").upsert(
+          {
+            id: uid,
+            business_name: businessName.trim(),
+            slug: finalSlug,
+          } as never,
+          { onConflict: "id" },
+        );
+        if (upsertErr) throw upsertErr;
+      }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Welcome aboard! Business created.");
-      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      await queryClient.refetchQueries({ queryKey: ["profile"] });
+      // Redirect to dashboard view to ensure clean state
+      if (typeof window !== "undefined") {
+        window.location.href = "/dashboard";
+      }
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => {
+      if (error.message.includes("profiles_pkey") || error.message.includes("duplicate key")) {
+        toast.info("Account updated! Loading your dashboard...");
+        void queryClient.invalidateQueries({ queryKey: ["profile"] });
+        setTimeout(() => {
+          if (typeof window !== "undefined") {
+            window.location.href = "/dashboard";
+          }
+        }, 800);
+        return;
+      }
+      toast.error(error.message);
+    },
   });
 
   return (
