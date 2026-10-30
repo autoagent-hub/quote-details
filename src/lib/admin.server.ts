@@ -9,12 +9,11 @@ let cached: SupabaseClient<Database> | null = null;
 export function getAdminClient(): SupabaseClient<Database> | null {
   if (cached) return cached;
 
-  const url = process.env["SUPABASE_URL"] ?? process.env["EXTERNAL_SUPABASE_URL"];
-  const key =
-    process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? process.env["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"];
+  const proc = typeof process !== "undefined" && process?.env ? process.env : {};
+  const url = proc["SUPABASE_URL"] ?? proc["EXTERNAL_SUPABASE_URL"];
+  const key = proc["SUPABASE_SERVICE_ROLE_KEY"] ?? proc["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"];
 
   if (!url || !key) {
-    console.error("[admin] Missing Supabase URL or service role key");
     return null;
   }
 

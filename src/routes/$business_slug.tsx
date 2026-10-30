@@ -116,16 +116,25 @@ export const Route = createFileRoute("/$business_slug")({
   loader: async ({ params }): Promise<PublicProfile | null> => {
     try {
       const slug = (params.business_slug || "").trim().toLowerCase();
-      const { getAdminClient } = await import("@/lib/admin.server");
-      const admin = getAdminClient();
-      const client = admin ?? supabase;
-      const { data, error } = await client.rpc("get_public_pricing", {
+      if (!slug) return null;
+
+      const { data, error } = await supabase.rpc("get_public_pricing", {
         _slug: slug,
       });
-      if (!error && data && data.length > 0) {
+      if (!error && data && Array.isArray(data) && data.length > 0) {
         return (data[0] as PublicProfile) ?? null;
       }
-      return null;
+
+      // Fallback query if RPC returns empty or is unavailable
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select(
+          "id, business_name, slug, tagline, phone, logo_url, currency, allow_photos, services, packages, vehicle_categories",
+        )
+        .eq("slug", slug)
+        .maybeSingle();
+
+      return (profile as PublicProfile) ?? null;
     } catch {
       return null;
     }

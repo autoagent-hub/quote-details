@@ -46,6 +46,18 @@ function NotFoundComponent() {
   );
 }
 
+function isModuleImportError(error?: Error | null): boolean {
+  if (!error?.message) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes("importing a module script failed") ||
+    msg.includes("failed to fetch dynamically imported module") ||
+    msg.includes("error loading dynamically imported module") ||
+    msg.includes("loading chunk") ||
+    msg.includes("dynamically imported module")
+  );
+}
+
 function ErrorComponent({ error, reset }: { error: Error | null; reset: () => void }) {
   if (typeof window !== "undefined") {
     console.error("[detailr-error]", error);
@@ -56,43 +68,81 @@ function ErrorComponent({ error, reset }: { error: Error | null; reset: () => vo
     }
   }
 
-  const handleReset = () => {
+  const isChunkError = isModuleImportError(error);
+
+  // Auto recovery for chunk or module script load errors
+  useEffect(() => {
+    if (isChunkError && typeof window !== "undefined") {
+      const lastReload = sessionStorage.getItem("detailr_root_chunk_reload");
+      const now = Date.now();
+      if (!lastReload || now - Number(lastReload) > 10000) {
+        sessionStorage.setItem("detailr_root_chunk_reload", String(now));
+        if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: "CLEAR_ALL_CACHES" });
+        }
+        window.location.reload();
+      }
+    }
+  }, [isChunkError]);
+
+  const handleReloadFresh = () => {
+    if (typeof window !== "undefined") {
+      try {
+        if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: "CLEAR_ALL_CACHES" });
+        }
+      } catch {
+        // ignore
+      }
+      window.location.href = window.location.pathname + "?_v=" + Date.now();
+      return;
+    }
+    reset();
+  };
+
+  const handleTryAgain = () => {
     try {
       reset();
     } catch {
-      if (typeof window !== "undefined") {
-        window.location.reload();
-      }
+      handleReloadFresh();
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
-      <div className="max-w-md text-center">
+      <div className="max-w-md text-center rounded-2xl border border-border bg-card p-8 shadow-xl shadow-black/5">
         <div className="mb-6 flex justify-center">
           <QuoteFlowLogo size="lg" linkToHome />
         </div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
+          {isChunkError ? "App Update Available" : "This page didn't load"}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+          {isChunkError
+            ? "A newer version of the Detailr application was deployed. Loading the latest application files..."
+            : "Something went wrong loading this view. You can try refreshing, reloading fresh code, or return home."}
         </p>
-        {error?.message && (
-          <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3 text-left">
+        {error?.message && !isChunkError && (
+          <div className="mt-4 rounded-xl border border-border bg-muted/50 p-3 text-left">
             <p className="font-mono text-xs text-muted-foreground break-all">{error.message}</p>
           </div>
         )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={handleReset}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            onClick={handleTryAgain}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-105"
           >
-            Try again
+            <RefreshCw className="size-4" /> Try again
+          </button>
+          <button
+            onClick={handleReloadFresh}
+            className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-accent"
+          >
+            Reload fresh app
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-accent"
           >
             Go home
           </a>
